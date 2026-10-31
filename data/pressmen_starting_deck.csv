@@ -3,7 +3,7 @@ Hammer Blow,4,Sledgehammer,weapon,4 damage to one unit,0,0,1,Force,1,1
 Sweeping Swing,1,Sledgehammer,weapon,2 damage to every enemy in the lane,1,0,1,Force,1,1
 Chain Lash,2,Pit chains,weapon,2 damage to one unit and Exposed,0,0,0,Nerve,1,1
 Vent Steam,2,Pressman skill,skill,Your next heavy attack skips its wind-up,0,0,0,Tech,1,1
-Build Pressure,2,Pressman skill,skill,Add +1 damage to one wind-up you are holding,0,0,0,Wits,1,1
+Close Ranks,2,Pressman skill,skill,Each Pressman in this lane gains 2 soak,0,0,0,Nerve,1,1
 Shake It Off,2,Brawler skill,skill,Remove a status from a unit,0,0,0,Nerve,1,1
 Brace the Line,2,Mantlet,armor,Gain 3 soak,0,0,0,Force,1,1
 Take the Hit,1,Mantlet,armor,The next attack aimed at another unit in this lane hits this unit instead,0,0,0,Nerve,1,1

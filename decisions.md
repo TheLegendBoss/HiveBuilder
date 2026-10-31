@@ -25,7 +25,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 
 **Factions**
 - TSC (Tenebrae Security Combine): droids, forgiving recovery through brain chips and credit repair; credit hunger is the cost.
-- Pressmen Union: heavy-gravity-world smelter labor (not vat-grown), enters at the foundry strata. Faction rule is Pressure: heavy weapons have a 1-round wind-up and can be held for +1 damage per extra round (max +2), no new counters. Cost is ration hunger (burn rations faster, working rate 1.5x). Starting crew of 4.
+- Pressmen Union: heavy-gravity-world smelter labor (not vat-grown), enters at the foundry strata. Faction rule is Solidarity: Shoulder to Shoulder (sharing a lane with another Pressman gives +1 soak per round and +1 melee damage) and Union Grudge (when a Pressman is downed, the others deal +1 damage for the rest of the fight, no stacking). Cost is ration hunger (working rate 1.5x). Heavy weapons keep a 1-round wind-up. Starting crew of 4.
 - Gang engine: AI gangs with 4 difficulties and 4 attitudes (Raiders, Builders, Swarm, Cadre), each with 3 paths.
 
 ## Open questions
@@ -51,6 +51,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [ ] Attachments: how many cards can they add, and do they count against a gear's card budget?
 - [ ] Do higher-rarity cards carry more than 1 fuel, or only supplies?
 - [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
+- [ ] Pressmen Solidarity: does Union Grudge stack for each downed Pressman or stay at +1, how is the 1 soak per round limited by maximum soak, and what is the exact ration hunger rate? Heavy weapons keep a 1-round wind-up, so is that the right size of drawback?
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 
 ## Next steps

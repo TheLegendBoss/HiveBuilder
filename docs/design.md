@@ -61,7 +61,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Arbites / police | Medium-easy | Enters from above with warrants and a mandate. Reactive, strong early control, thin offense. |
 | Planetary militia | Intro | Many cheap conscripts, fragile, morale and attrition. |
 | Imperial guard-style platoon | Mid | Team with specialist roles and a command structure. |
-| Pressmen Union (heavy brute gang) | Easy-medium (second recommended) | Huge, tough smelter labor from a heavy-gravity world. High HP and slow, heavy hits, territory by intimidation. Simple to learn: a few big plays with one timing choice. |
+| Pressmen Union (heavy brute gang) | Easy-medium (second recommended) | Huge, tough smelter labor from a heavy-gravity world. High HP and slow, heavy hits, territory by intimidation. Simple to learn: stay together and the squad gets stronger. |
 | Fast knife gang | Medium-easy | Quick, flashy, knife-and-dance tactics. |
 | Tech gang | Medium-hard | Plasma and drones. Fragile tech needs upkeep. |
 | Stealth gang | Hard | Ambush and espionage, rewards reading the deck. |
@@ -125,7 +125,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 
 - **Origin.** Their ancestors were shipped down from a crushing-gravity world as indentured press-labor for the hive's foundries. The hive's gravity is light by comparison, so they are bigger and stronger than hivers and stay that way through hard work and heavy diets. They are not vat-grown or engineered. The union worked the smelters and hydraulic presses for generations, then turned its fight pits and its hall into a gang. The faction enters the hive at the foundry strata.
 - **Identity.** An easy-medium second faction for players who have learned the basics. Units have about 2 more HP than a baseline unit, hit hard and are slow. Humanoid, so injuries, prosthetics and negative cards from the aftermath deck all apply, and prosthetics are common and carry no stigma in the union.
-- **Faction rule, Pressure.** Heavy weapons have a wind-up of 1 round. A Pressman can hold a wind-up instead of releasing it: each extra round held adds +1 damage, up to +2. The player simply chooses between hitting now and waiting for a bigger blow. There are no new counters. While a unit holds a wind-up it is Exposed, and a Stun breaks the hold and wastes the card. Cards such as Vent Steam skip the wind-up for a base-damage hit, and Build Pressure adds +1 to a wind-up already held.
+- **Faction rule, Solidarity.** Two simple parts, with no counters to track. Shoulder to Shoulder: a Pressman who shares a lane with another Pressman restores 1 soak at the start of each round and deals +1 damage with melee attacks. Union Grudge: when a Pressman is downed, every other Pressman deals +1 damage until the end of the fight (it does not stack). The squad has four members and there are three lanes, so at least two Pressmen always share a lane, and the rule teaches itself. Heavy weapons are slow, with a 1-round wind-up, which is part of the faction's weight. Cards such as Vent Steam skip the wind-up.
 - **Cost, ration hunger.** Big bodies eat. Pressmen burn rations faster than other factions (working rate: about one and a half times), so the expedition clock runs shorter and every extra squad member makes it worse. This is easy to tune with one number.
 - **Starting crew (4).** Hammerhand (heavy melee), Ironback (mantlet shield and defense), Rivet Gunner (support fire) and Furnace Medic (welding torch, repairs and heals). Hand of 7, about 30 cards. New crew come from packs and from the Pit.
 - **Gear.** Heavy melee (sledgehammers, mauls, press-arms), chains and other pit weapons, mantlet shields, furnace plating, rivet guns, welding torches and a gravity harness accessory. Medium and light weapons exist but are less common. Gear is sturdy and plentiful, and rarely fancy.
@@ -138,7 +138,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Sweeping Swing (x1) | Sledgehammer | Costs 1 fuel. 2 damage to every enemy in the lane. Wind-up 1 | +1 Force | 1 |
 | Chain Lash (x2) | Pit chains | 2 damage to one unit, and Exposed | +1 Nerve | 1 |
 | Vent Steam (x2) | Pressman skill | Your next heavy attack skips its wind-up | +1 Tech | 1 |
-| Build Pressure (x2) | Pressman skill | Add +1 damage to one wind-up you are holding | +1 Wits | 1 |
+| Close Ranks (x2) | Pressman skill | Each Pressman in this lane gains 2 soak | +1 Nerve | 1 |
 | Shake It Off (x2) | Brawler skill | Remove a status from a unit | +1 Nerve | 1 |
 | Brace the Line (x2) | Mantlet | Gain 3 soak | +1 Force | 1 |
 | Take the Hit (x1) | Mantlet | The next attack aimed at another unit in this lane hits this unit instead | +1 Nerve | 1 |
@@ -161,8 +161,8 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 
 **Pressmen passive tree (working design)**
 
-- Power (gang influence) grants points on four branches: **Labor** (economy: income from claimed rooms, cheaper heavy gear), **Press** (combat: stronger holds, cheaper wind-ups and heavy weapon bonuses), **Mess** (supplies: slower ration use, bigger packs) and **Pit** (recruits, renown and cheaper training).
-- Each branch ends in a capstone that changes a rule. For example, a Press capstone lets a unit hold a wind-up for a third round, and a Mess capstone removes ration hunger.
+- Power (gang influence) grants points on four branches: **Labor** (economy: income from claimed rooms, cheaper heavy gear), **Press** (combat: stronger Solidarity bonuses, cheaper wind-ups and heavy weapon bonuses), **Mess** (supplies: slower ration use, bigger packs) and **Pit** (recruits, renown and cheaper training).
+- Each branch ends in a capstone that changes a rule. For example, a Press capstone makes Union Grudge stack once for every downed Pressman, and a Mess capstone removes ration hunger.
 
 ## The hive and floor map
 
@@ -445,6 +445,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Do higher-rarity cards carry more than 1 fuel, or only supplies?
 - [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
+- [ ] Pressmen Solidarity: does Union Grudge stack for each downed Pressman or stay at +1, how is the 1 soak per round limited by maximum soak, and what is the exact ration hunger rate? Heavy weapons keep a 1-round wind-up, so is that the right size of drawback?
 
 **Next steps**
 
