@@ -61,7 +61,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Arbites / police | Medium-easy | Enters from above with warrants and a mandate. Reactive, strong early control, thin offense. |
 | Planetary militia | Intro | Many cheap conscripts, fragile, morale and attrition. |
 | Imperial guard-style platoon | Mid | Team with specialist roles and a command structure. |
-| Heavy brute gang | Medium | High HP, slow, territory by intimidation. |
+| Pressmen Union (heavy brute gang) | Easy-medium (second recommended) | Huge, tough smelter labor from a heavy-gravity world. High HP and slow, heavy hits, territory by intimidation. Simple to learn: a few big plays with one timing choice. |
 | Fast knife gang | Medium-easy | Quick, flashy, knife-and-dance tactics. |
 | Tech gang | Medium-hard | Plasma and drones. Fragile tech needs upkeep. |
 | Stealth gang | Hard | Ambush and espionage, rewards reading the deck. |
@@ -120,6 +120,49 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 - Power (gang influence) grants points to spend on the tree. There are four branches of about five nodes each: **Procurement** (economy: cheaper packs and gear, more credits from claimed rooms), **Firmware** (combat: chassis bonuses, cheaper activations on faction gear), **Logistics** (supplies: bigger inventory, more rations, ammo counters that refill more easily) and **Field Service** (recovery: cheaper repairs, faster charging, a better chance that a brain chip survives).
 - Each branch ends in a capstone that changes a rule instead of adding a number. For example, a Field Service capstone makes the head-destroyed result less likely, and a Procurement capstone lets you buy from rival markets.
 - Branches are mostly separate. Only a very few nodes need points in two branches.
+
+**Pressmen Union (working design)**
+
+- **Origin.** Their ancestors were shipped down from a crushing-gravity world as indentured press-labor for the hive's foundries. The hive's gravity is light by comparison, so they are bigger and stronger than hivers and stay that way through hard work and heavy diets. They are not vat-grown or engineered. The union worked the smelters and hydraulic presses for generations, then turned its fight pits and its hall into a gang. The faction enters the hive at the foundry strata.
+- **Identity.** An easy-medium second faction for players who have learned the basics. Units have about 2 more HP than a baseline unit, hit hard and are slow. Humanoid, so injuries, prosthetics and negative cards from the aftermath deck all apply, and prosthetics are common and carry no stigma in the union.
+- **Faction rule, Pressure.** Heavy weapons have a wind-up of 1 round. A Pressman can hold a wind-up instead of releasing it: each extra round held adds +1 damage, up to +2. The player simply chooses between hitting now and waiting for a bigger blow. There are no new counters. While a unit holds a wind-up it is Exposed, and a Stun breaks the hold and wastes the card. Cards such as Vent Steam skip the wind-up for a base-damage hit, and Build Pressure adds +1 to a wind-up already held.
+- **Cost, ration hunger.** Big bodies eat. Pressmen burn rations faster than other factions (working rate: about one and a half times), so the expedition clock runs shorter and every extra squad member makes it worse. This is easy to tune with one number.
+- **Starting crew (4).** Hammerhand (heavy melee), Ironback (mantlet shield and defense), Rivet Gunner (support fire) and Furnace Medic (welding torch, repairs and heals). Hand of 7, about 30 cards. New crew come from packs and from the Pit.
+- **Gear.** Heavy melee (sledgehammers, mauls, press-arms), chains and other pit weapons, mantlet shields, furnace plating, rivet guns, welding torches and a gravity harness accessory. Medium and light weapons exist but are less common. Gear is sturdy and plentiful, and rarely fancy.
+
+**Pressmen starting deck (draft, placeholder numbers)**
+
+| Card | Source | Play effect | Check | Fuel |
+| --- | --- | --- | --- | --- |
+| Hammer Blow (x4) | Sledgehammer | 4 damage to one unit. Wind-up 1 | +1 Force | 1 |
+| Sweeping Swing (x1) | Sledgehammer | Costs 1 fuel. 2 damage to every enemy in the lane. Wind-up 1 | +1 Force | 1 |
+| Chain Lash (x2) | Pit chains | 2 damage to one unit, and Exposed | +1 Nerve | 1 |
+| Vent Steam (x2) | Pressman skill | Your next heavy attack skips its wind-up | +1 Tech | 1 |
+| Build Pressure (x2) | Pressman skill | Add +1 damage to one wind-up you are holding | +1 Wits | 1 |
+| Shake It Off (x2) | Brawler skill | Remove a status from a unit | +1 Nerve | 1 |
+| Brace the Line (x2) | Mantlet | Gain 3 soak | +1 Force | 1 |
+| Take the Hit (x1) | Mantlet | The next attack aimed at another unit in this lane hits this unit instead | +1 Nerve | 1 |
+| Rivet Burst (x3) | Rivet gun | 2 damage to up to two units. Uses 1 ammo | +1 Force | 1 |
+| Weld Seam (x1) | Welding torch | Restore 3 soak to a unit | +1 Tech | 1 |
+| Cauterize (x1) | Welding torch | Heal 2 HP on one unit | +1 Tech | 1 |
+| Furnace Apron (x2) | Furnace plating | Restore 2 soak to a unit in the lane | +1 Nerve | 1 |
+| Ration Pack (x3) | Supplies | Heal 2 HP on one unit | none | 2 |
+| Rivet Crate (x2) | Supplies | Refill 2 ammo on one gear | none | 2 |
+| Counterweight (x1) | Gravity harness (accessory) | Gain 3 soak | +1 Force | 1 |
+| Heavy Step (x1) | Gravity harness (accessory) | Your next melee attack deals +2 damage, then this unit is Slowed | +1 Force | 1 |
+
+The starting deck has no negative cards. Injuries from the aftermath deck add them later.
+
+**Pressmen buildings (first pass)**
+
+- **The Pit.** Hosts fights for credits and recruits and lets crew train between expeditions. It needs a large open room.
+- **Mess Hall.** Makes rations cheaper and offsets ration hunger. It needs a room with a kitchen or storage.
+- Held for later: Press Floor (produces heavy melee gear, needs an industrial room) and Union Hall (raises the roster size).
+
+**Pressmen passive tree (working design)**
+
+- Power (gang influence) grants points on four branches: **Labor** (economy: income from claimed rooms, cheaper heavy gear), **Press** (combat: stronger holds, cheaper wind-ups and heavy weapon bonuses), **Mess** (supplies: slower ration use, bigger packs) and **Pit** (recruits, renown and cheaper training).
+- Each branch ends in a capstone that changes a rule. For example, a Press capstone lets a unit hold a wind-up for a third round, and a Mess capstone removes ration hunger.
 
 ## The hive and floor map
 

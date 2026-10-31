@@ -25,6 +25,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 
 **Factions**
 - TSC (Tenebrae Security Combine): droids, forgiving recovery through brain chips and credit repair; credit hunger is the cost.
+- Pressmen Union: heavy-gravity-world smelter labor (not vat-grown), enters at the foundry strata. Faction rule is Pressure: heavy weapons have a 1-round wind-up and can be held for +1 damage per extra round (max +2), no new counters. Cost is ration hunger (burn rations faster, working rate 1.5x). Starting crew of 4.
 - Gang engine: AI gangs with 4 difficulties and 4 attitudes (Raiders, Builders, Swarm, Cadre), each with 3 paths.
 
 ## Open questions
@@ -54,7 +55,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 
 ## Next steps
 
-1. Build the Heavy brute gang and the Arbites squad as the next two player factions; hold the rest for a later pass.
+1. Build the Arbites squad as the third player faction; hold the rest for a later pass.
 2. The Hive Deck and encounters: floor generation, room cards, enemy forces, and how the deck grows as you explore.
 3. Crafting numbers: pitch values, upgrade costs, pack odds and prices.
 4. Claimed rooms, buildings and downtime: room traits, building requirements, income, and XP for members left behind.
