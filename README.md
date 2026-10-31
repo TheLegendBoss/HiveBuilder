@@ -1,0 +1,25 @@
+# HiveBuilder (working title: Hive Deck)
+
+A grim-dark deckbuilding campaign game. You lead a gang through a procedurally generated hive city and claim it district by district. Your crew, gear, perks and skills all feed one shared squad deck, and every card can be played for its effect or burned as fuel.
+
+**Status:** design phase. Everything is placeholder numbers and placeholder names.
+
+## Repo layout
+
+| Path | What it is |
+| --- | --- |
+| `docs/design.md` | The full design document, exported from the living doc. Source of truth for rules. |
+| `decisions.md` | Short list of locked rules, plus the open-questions checklist. |
+| `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 19 designs, 30 cards. |
+
+## The short version
+
+- **Combat:** a Caravan-style duel across 3 lanes. Overwhelm 2 of 3 lanes to win.
+- **Cards:** one shared squad hand (baseline 7). Every card is an effect and fuel.
+- **No player dice:** randomness comes from a 52-card results deck.
+- **Campaign:** a generated hive of floors built from room, encounter, denizen and loot decks. Supplies are the expedition clock; power is gang influence.
+- **Factions:** the TSC (droids) is the intro faction. A heavy brute gang and the Arbites squad are next.
+
+## Workflow
+
+The living design doc is edited in Claude. After a design session, re-export it to `docs/design.md` and update `decisions.md` and any `data/` files that changed.

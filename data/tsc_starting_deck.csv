@@ -1,0 +1,20 @@
+name,count,source,source_type,play_effect,play_cost_fuel,ammo_cost,check_attribute,check_bonus,fuel_value
+Burst Fire,4,Autogun,weapon,3 damage to one unit in the lane,0,0,Force,1,1
+Suppressing Fire,2,Autogun,weapon,1 damage to every enemy in the lane and Slowed,1,0,Nerve,1,1
+Brace,2,Light plating,armor,Restore 2 soak to a unit in the lane,0,0,Nerve,1,1
+Focus Fire,2,Line droid skill,skill,Your next attack against the same target deals +1 damage,0,0,Wits,1,1
+Shield Up,2,Combat shield,armor,Gain 3 soak,0,0,Force,1,1
+Counter,1,Combat shield,armor,When this unit is next attacked this round deal 2 damage to the attacker,0,0,Nerve,1,1
+Bulwark,1,Vanguard skill,skill,The next attack aimed at another unit in this lane hits this unit instead,0,0,Nerve,1,1
+Sustained Fire,2,Heavy autofire,weapon,2 damage to up to two units in the lane,0,1,Force,1,1
+Pin Down,1,Heavy autofire,weapon,Stun one unit,0,2,Nerve,1,1
+Overdrive,1,Heavy arms skill,skill,Your next gear action costs 1 fuel less,0,0,Tech,1,1
+Jury-Rig,1,Repair kit,tool,Restore 2 soak to a unit,0,0,Tech,2,1
+Field Fix,1,Repair kit,tool,Remove a status from a unit,0,0,Tech,1,1
+Patch,1,Repair droid skill,skill,Heal 2 HP on one unit,0,0,Tech,1,1
+Ammo Crate,3,Supplies,supply,Refill 2 ammo on one gear,0,0,,0,2
+Repair Parts,2,Supplies,supply,Restore 3 soak to a unit,0,0,,0,2
+Sight Alignment,1,Laser Sight,attachment,The next attack with the attached gear deals +1 damage and costs 1 fuel less (same bonus when burned as fuel for that gear),0,0,Wits,1,1
+Paint Target,1,Laser Sight,attachment,Exposed on one unit,0,0,Wits,1,1
+Data Burst,1,Uplink Module,accessory,Look at the top 3 cards of the results deck and put them back in any order,0,0,Tech,1,1
+Sync,1,Uplink Module,accessory,Another droid's next attack in this lane deals +1 damage,0,0,Tech,1,1
