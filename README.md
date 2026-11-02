@@ -12,6 +12,7 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | `decisions.md` | Short list of locked rules, plus the open-questions checklist. |
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 19 designs, 30 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 30 cards. |
+| `data/concord_starting_deck.csv` | The Concord Marshals starter deck: 14 designs, 30 cards. |
 
 ## The short version
 
@@ -19,7 +20,7 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 - **Cards:** one shared squad hand (baseline 7). Every card is an effect and fuel.
 - **No player dice:** randomness comes from a 52-card results deck.
 - **Campaign:** a generated hive of floors built from room, encounter, denizen and loot decks. Supplies are the expedition clock; power is gang influence.
-- **Factions:** the TSC (droids) is the intro faction. The Pressmen Union (heavy brute gang) is the second; the Arbites squad is next.
+- **Factions:** the TSC (droids) is the intro faction. The Pressmen Union (heavy brute gang) and the Concord Marshals (elite law squad) are the second and third starters.
 
 ## Workflow
 

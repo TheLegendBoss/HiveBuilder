@@ -58,7 +58,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Faction (placeholder) | Difficulty | Identity |
 | --- | --- | --- |
 | Tenebrae Security Combine (TSC) | Intro (recommended) | Disposable, just-above-average drones from a corporate gang. Not hostile artificial intelligence. Very forgiving. |
-| Arbites / police | Medium-easy | Enters from above with warrants and a mandate. Reactive, strong early control, thin offense. |
+| Concord Marshals (law squad) | Medium-easy | An elite three-person writ squad from the upper hive. Fewer, better tools, arrests and bounties. Easy to pilot, with a more advanced kit than the droids. Strong control, thin on raw damage. |
 | Planetary militia | Intro | Many cheap conscripts, fragile, morale and attrition. |
 | Imperial guard-style platoon | Mid | Team with specialist roles and a command structure. |
 | Pressmen Union (heavy brute gang) | Easy-medium (second recommended) | Huge, tough smelter labor from a heavy-gravity world. High HP and slow, heavy hits, territory by intimidation. Simple to learn: stay together and the squad gets stronger. |
@@ -72,7 +72,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 
 - **The crew is the deck.** Each member has a role, and the role contributes cards. Who you bring on an expedition shapes your options.
 - **Members left at home** do downtime: healing, training and scheming.
-- **Example roles (Arbites):** Judge (command cards), Enforcer (restraint and strike), Tracker (scout and reveal), Medic (triage and stress relief).
+- **Example roles (Concord Marshals):** Marshal (command and tagging), Sentinel (shield and hold), Warden (carbine and cuffs), Medic (triage, a later recruit).
 - **Squad sizes** follow the faction, from a tight elite team to a large gang with expendable members.
 - **Hand size** is derived from faction, team size and skills.
 - **Recruiting** comes from both your faction's home district (reliable) and the hive's desperate (cheap, random, risky).
@@ -163,6 +163,48 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 
 - Power (gang influence) grants points on four branches: **Labor** (economy: income from claimed rooms, cheaper heavy gear), **Press** (combat: stronger Solidarity bonuses, cheaper wind-ups and heavy weapon bonuses), **Mess** (supplies: slower ration use, bigger packs) and **Pit** (recruits, renown and cheaper training).
 - Each branch ends in a capstone that changes a rule. For example, a Press capstone makes Union Grudge stack once for every downed Pressman, and a Mess capstone removes ration hunger.
+
+**Concord Marshals (working design)**
+
+- **Origin.** The Concord is the upper hive's court-and-collections service: bailiffs, assessors and writ-servers who answer to the Spire's magistrates. When a district stops paying or stops answering, the Concord sends a Marshal squad with a writ. They do not patrol. They serve warrants, arrest named targets and collect. The faction enters the hive from above, at the upper strata. They are our own service, with no tie to any existing police force, and their gear is built around restraint, not riot control.
+- **Identity.** A medium-easy faction and the third starter. A squad of three elite members, one per lane, so the board is easy to read. Fewer cards than the other factions, but each does more, and every weapon starts with one built-in attachment, so the kit is more advanced than the droids'. They are about 1 HP above a baseline unit, strong in Wits and Nerve, and thin on raw damage. Recruits are expensive.
+- **Faction rule, Warrant.** It has three linked parts, and each is one sentence on the board.
+  - **Warrant Mark.** At the start of each fight, mark one enemy unit as Warranted (the gang's leader or a named bounty target by default). Your units deal +1 damage to the Warranted unit.
+  - **Subdue.** Cuff and stun cards carry the Subdue keyword. A unit taken to 0 by a Subdue attack is arrested instead of killed. Arresting the Warranted unit pays its bounty (credits and 1 Authority). Arresting any other unit pays a small bounty. Killing the Warranted unit pays nothing and costs 1 Authority.
+  - **Tag and Cuff.** Tag cards make a unit Exposed. Cuff cards deal damage with Subdue, and also Stun the target if it was Exposed. The usual turn is tag first, then cuff.
+- **Cost, Authority.** A campaign track (working range 0 to 10, starting at 3). It rises with arrests and completed bounties and falls when a Warranted unit is killed instead of arrested. Some gates and sections are marked with a writ and open only if Authority is high enough, instead of costing power (gang influence). Authority is separate from power. Low Authority means the hive treats you as just another gang, and high Authority makes home-district recruiting cheaper. All numbers are placeholders.
+- **Starting crew (3).** Marshal (command and tagging), Sentinel (glass shield and hold) and Warden (carbine and cuff launcher). Hand of 7, about 30 cards. A Medic is a later recruit.
+- **Gear.** Flechette carbines, cuff and net launchers, sonic stunners, ballistic-glass shields, ceramic plate and sealed visors with tagging optics. Fewer items than the TSC's catalogue, each with a built-in attachment. Humanoids can arrest humanoids and denizens. Monsters and droids cannot be arrested.
+
+**Concord Marshals starting deck (draft, placeholder numbers)**
+
+| Card | Source | Play effect | Check | Fuel |
+| --- | --- | --- | --- | --- |
+| Flechette Volley (x4) | Flechette carbine | 2 damage to one unit, +1 if it is Exposed | +1 Wits | 1 |
+| Pinning Shot (x1) | Flechette carbine | 1 damage to one unit, and Slowed | +1 Nerve | 1 |
+| Cuff Shot (x4) | Cuff launcher | Subdue. 2 damage to one unit, and Stun it if it is Exposed. Uses 1 ammo | +1 Wits | 1 |
+| Stun Pulse (x2) | Sonic stunner | Costs 1 fuel. Subdue. 1 damage to every enemy in the lane | +1 Tech | 1 |
+| Tag Target (x3) | Tag optics (attachment) | Exposed on one unit | +1 Wits | 1 |
+| Revise Warrant (x1) | Marshal skill | Move the Warranted mark to another enemy unit | +2 Wits | 1 |
+| Close In (x2) | Marshal skill | Another unit's next attack in this lane deals +1 damage | +1 Nerve | 1 |
+| Halt (x2) | Marshal skill | Costs 1 fuel. Stun one unit | +1 Nerve | 1 |
+| Shield Wall (x3) | Glass shield | Gain 3 soak | +1 Force | 1 |
+| Interpose (x1) | Glass shield | The next attack aimed at another unit in this lane hits this unit instead | +1 Nerve | 1 |
+| Plate Check (x2) | Ceramic plate | Restore 2 soak to a unit in the lane | +1 Tech | 1 |
+| Field Dressing (x2) | Supplies | Heal 2 HP on one unit | none | 2 |
+| Ammo Mag (x2) | Supplies | Refill 2 ammo on one gear | none | 2 |
+| Spare Cuffs (x1) | Supplies | Refill 2 ammo on the cuff launcher | none | 2 |
+
+**Concord Marshals buildings (first pass)**
+
+- **Holding Cells.** Holds arrested prisoners. Each can be ransomed for credits, interrogated to reveal a rival gang's attitude and then its path, or recruited at a risk. Without cells, prisoners are handed over on the spot for a small bounty. It needs a secure room such as a vault or cell block.
+- **Bounty Office.** At the start of each expedition, draw a few contracts on named targets from the denizens and rival gangs, and pick one or two to hunt for credits, power and Authority. It needs a claimed room with a comms link.
+- Held for later: Armory (produces specialty restraint gear) and Records Hall (raises the roster size).
+
+**Concord Marshals passive tree (working design)**
+
+- Power (gang influence) grants points on four branches: **Writs** (campaign: more Authority from arrests, cheaper writ gates), **Pursuit** (combat: stronger Warrant Mark, Subdue and tagging), **Custody** (prisoners: better ransoms, interrogation and recruiting) and **Quartermaster** (gear: attachments and supplies).
+- Each branch ends in a capstone that changes a rule. For example, a Pursuit capstone lets you mark two Warranted units, and a Writs capstone makes killing a Warranted unit cost no Authority.
 
 ## The hive and floor map
 
@@ -445,7 +487,8 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Do higher-rarity cards carry more than 1 fuel, or only supplies?
 - [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
-- [ ] Pressmen Solidarity: does Union Grudge stack for each downed Pressman or stay at +1, how is the 1 soak per round limited by maximum soak, and what is the exact ration hunger rate? Heavy weapons keep a 1-round wind-up, so is that the right size of drawback?
+- [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.
+- [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? How does Warrant Mark work against monsters, where parts fill lanes? Is Revise Warrant too strong, and are the Subdue cards too weak against units with a lot of HP?
 
 **Next steps**
 
