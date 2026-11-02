@@ -443,6 +443,51 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 - An enemy force is a card in the denizens deck. It lists its type (gang, monster or non-gang humanoid), its threat tier (patrol, squad or warband, matching short, medium and long fights), its units, which units start in lanes and which wait in its unit deck, its AI (a priority list for gangs, a scripted pattern otherwise), theme tags that pair with battlefield tags, and its rewards.
 - Gang units are built from the same gear cards the player uses, under the same rules, so defeating one can drop its gear. Monsters and non-gang humanoids use printed actions only.
 
+**Test enemy forces (draft, placeholder numbers)**
+
+Five small forces for testing the starter decks. They are not a bestiary. Each stresses a different part of the card system.
+
+- **Test battlefield, Service corridor.** Lane HP 3 / 4 / 3 for both sides, no modifiers.
+- **How scripted forces act (working rule).** The force takes one action per enemy action, cycling through its lanes in order (lane 1, 2, 3) with the unit there, and each unit steps through its printed actions in order and repeats. A unit with no legal action is skipped. Wind-ups are telegraphed as usual.
+- **Unit table columns.** HP, soak (an absorb pool that does not refill), where it starts, and printed actions in order.
+
+**1. Scavver pack** (non-gang humanoids, patrol tier). Tests area cards. Tags: ruins, scrap. Reward: 1 loot draw and 2 credits.
+
+| Unit | HP | Soak | Starts | Actions |
+| --- | --- | --- | --- | --- |
+| Scavver (x4) | 3 | 0 | Lanes 1 and 3, two wait in the deck | 1. Pot Shot: 2 damage to a unit in this lane (ranged). 2. Shiv: 1 damage (melee) |
+| Scavver Chief (x1) | 5 | 0 | Lane 2 | 1. Rally: deploy a Scavver from the deck into this lane. 2. Bludgeon: 2 damage (melee) |
+
+**2. Slag hauler** (non-gang humanoids, squad tier). Tests big single hits and armor. Tags: industrial, foundry. Reward: 2 loot draws and 4 credits.
+
+| Unit | HP | Soak | Starts | Actions |
+| --- | --- | --- | --- | --- |
+| Slag Hauler (x1) | 8 | 4 | Lane 2 | 1. Shove: 1 damage (melee) and Slowed. 2. Heavy Swing: 4 damage (melee), wind-up 1 |
+| Furnace Hand (x2) | 4 | 0 | Lanes 1 and 3 | 1. Hammer: 2 damage (melee). 2. Brace: gain 2 soak |
+
+**3. Sump sniper team** (non-gang humanoids, squad tier). Tests redirects and soak. Tags: sump, ruins. Reward: 2 loot draws and 4 credits.
+
+| Unit | HP | Soak | Starts | Actions |
+| --- | --- | --- | --- | --- |
+| Sump Sniper (x2) | 4 | 0 | Lane 2, one waits in the deck | 1. Mark: Exposed on the unit with the lowest HP in this lane. 2. Long Shot: 3 damage to an Exposed unit in this lane (the lowest HP unit if none), wind-up 1 |
+| Sump Guard (x3) | 3 | 0 | Lanes 1 and 3, one waits in the deck | 1. Stock Bash: 1 damage (melee). 2. Cover: the next attack aimed at a Sump Sniper in this lane hits this unit instead |
+
+**4. Sump squid** (monster, squad tier). Tests the part and body rules and Warrant Mark against monsters. Tags: sump, flooded. Reward: 2 loot draws and 3 credits.
+
+| Unit | HP | Soak | Starts | Actions |
+| --- | --- | --- | --- | --- |
+| Tentacle (x3 parts) | 3 | 0 | One in each lane | Passive: Regrow. Once per lane, the squid may spend an action to redeploy a cleared tentacle. 1. Lash: 2 damage to a unit in this lane. 2. Grapple: 1 damage and Slowed |
+| Body (pooled HP) | 10 | 0 | Behind the tentacles | Acts after lane 3. Ink Cloud: Exposed on every unit in the lane with the most of your units |
+
+When a lane has no tentacle, attacks in that lane hit the body. Clearing the tentacles from two lanes defeats the squid.
+
+**5. Deserter patrol** (non-gang humanoids, patrol tier). Tests Subdue and arrests. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
+
+| Unit | HP | Soak | Starts | Actions |
+| --- | --- | --- | --- | --- |
+| Deserter Captain (x1) | 6 | 0 | Lane 2 | 1. Sidearm: 2 damage to a unit in this lane (ranged). 2. Rally Order: the next attack by another Deserter in this lane deals +1 damage |
+| Deserter Guard (x3) | 4 | 2 | Lanes 1 and 3, one waits in the deck | 1. Carbine: 2 damage (ranged). 2. Baton: 1 damage (melee) and Slowed |
+
 **Considered and set aside**
 
 - Ranks, zones and range bands: they track body position on top of gear, and a seat count does not scale across different squad sizes.
@@ -489,6 +534,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 - [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? How does Warrant Mark work against monsters, where parts fill lanes? Is Revise Warrant too strong, and are the Subdue cards too weak against units with a lot of HP?
+- [ ] Rules gaps found in playtest 01 (TSC vs the Scavver pack, see `playtests/` in the repo): lane capacity (assumed 2 per side), what each side does in the setup rounds (assumed deploy only, no attacks), whether downed units screen their lane HP (assumed no), whether the soak "gain" effects can exceed an armor's maximum (assumed no), how much built-in and armor soak a droid has, and whether a stunned scripted unit loses its turn (assumed yes). Balance: the patrol is far too easy, with soak very large and grunt HP of 3 against 3-damage Burst Fire.
 
 **Next steps**
 

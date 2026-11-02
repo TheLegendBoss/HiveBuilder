@@ -13,6 +13,8 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 19 designs, 30 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 30 cards. |
 | `data/concord_starting_deck.csv` | The Concord Marshals starter deck: 14 designs, 30 cards. |
+| `playtests/` | Paper-fight reports. Start with `01-tsc-vs-scavver-pack.md`. |
+| `tools/paper_fight_sim.py` | Small simulator that plays the TSC starter deck against the test enemy forces. Run `python3 tools/paper_fight_sim.py log 1` or `stats 3000`. |
 
 ## The short version
 
