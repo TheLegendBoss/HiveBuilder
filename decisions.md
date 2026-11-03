@@ -11,6 +11,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Alternating single actions; a round is one action from each side. Setup: first 3 rounds deploy one unit per lane, no attacks.
 - Downed members do not screen their lane and cannot act. Healing can stand them up mid-fight; after a fight they rise at 1 HP. Soak gains cannot exceed an armor's maximum. Armor soak refills between fights; built-in soak is not refilled mid-fight.
 - Slots: two weapon slots per member (one-handed takes one, two-handed takes both, shields take a weapon slot), an accessory slot for tools, armor, implant and perk. Two-handed is set by weapon class. Backpacks and implants can add a third or fourth weapon slot; a large droid chassis can carry up to 6; a melee droid has built-in melee plus a two-handed backup slot; a cult faction can have a third arm.
+- Supplies: the ration clock ticks on movement only, not on fights. Ammo counters reload both ways (an ammo card mid-fight, and counters refill between rooms). Inventory is one shared squad bag plus a personal carry limit per member.
 - Fixed damage, no misses. Armor is an absorb pool (soak). Working soak numbers: built-in 1 for small chassis, 2 for large chassis; 3 per armor piece (vanguard 6), +1 enemy damage against every force. Melee triggers a free immediate fight-back.
 - Difficulty target for the TSC starting kit (2 Repair Packs): about 85 to 90% of dungeons finished at 5 rooms and 60% at 10 (playtest 06 gets 86% and 66%).
 - Fight length: short 8-10 rounds, medium 14-18, long 24+.
@@ -55,9 +56,9 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [x] Is a round one action from each side? Decided: yes.
 - [x] *Guns Akimbo*: Decided: one action fires both guns as two separate attacks (needs two weapon slots).
 - [x] Hand size and discard and draw: Decided: per-faction baseline hand size; discard up to 2, raised by skills and upgrades.
-- [ ] Disposable gear: how plentiful is it at each tier, and which buildings produce it each expedition?
-- [ ] Is the inventory cap per member or one shared squad bag? Supplies: does a fight also tick the clock, and how does reloading gear with an ammo counter work (an action in a fight, between rooms, or both)?
-- [ ] Rarity: how rare are orange, red and gold, how do red (named or unique) and gold (archeotech or lostech) play differently, and does loot tier scale with hive depth?
+- [ ] Disposable gear: Decided: common at low tiers, a rare perk of buildings at higher tiers (a few pieces per expedition); Consumed cards leave your collection for good. Still open: exact numbers per tier, and which buildings produce it.
+- [x] Inventory and supplies: Decided: one shared squad bag plus a personal carry limit per member; only movement ticks the ration clock; reloading works both ways (an ammo card mid-fight, counters refill between rooms).
+- [ ] Rarity: Decided: loot tier scales with hive depth, so orange, red and gold need deep floors, but a pack can always hold one with a small chance. Still open: how red and gold play differently, and the exact odds.
 - [ ] Packs: how do pack tiers change the rarity ramp, is 5 vs 15 only a size difference, what do packs cost, what does a single-item pack contain, do specialty packs use a fixed ramp, and how does price scale with how narrow the scope is?
 - [x] Attachments: Decided: three kinds (a card outside the gear's budget, a card that counts against it, or no card and just a rule bend).
 - [ ] Do higher-rarity cards carry more than 1 fuel? Decided: yes, rarer cards can be worth 2 fuel. Still open: which rarities carry 2, and whether any carry more.
