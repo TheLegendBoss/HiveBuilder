@@ -81,9 +81,9 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 
 - Inspired by the robot units of a corporate gang. They are disposable drones, not hostile artificial intelligence, just above average and very forgiving.
 - Modular bipedal chassis in roles such as line droid, vanguard (shield), heavy arms, rocket unit, marksman, winged assault unit and repair droid. The starting squad is five droids: two line droids, a vanguard, a heavy-arms droid and a repair droid. New chassis come from packs. The rocket unit's rocket hits every enemy in the lane and uses a small ammo counter. The marksman's sniper rifle has reach, so it can target an adjacent lane before you capture one. The winged assault unit makes one free basic attack when it is deployed.
-- Every chassis has balanced stats, just above average with no weak stat. There is no stress track, and the aftermath deck is made of damage reports that are mostly repairable, apart from a rare head destroyed result that is permanent. Their gear is efficient and widely available to produce or buy, and they are jacks of all trades, so melee, ranged and mixed builds are all viable without heavy punishment. Gear is cheap to produce or buy but has solid stats for the price. A wide range is available at the start: pistols (light, standard and heavy), machine pistols, SMGs, shotguns (pistol-grip, pump and semi-auto), light and medium assault rifles, battle rifles, light and medium machine guns, DMRs and snipers, grenades, light and medium armor plates, and shields, plus melee weapons (machetes, combat knives, hatchets, light and heavy axes, and breaching axes, hammers and mauls). TSC also has attachments from the start. As machines, droids also have built-in soak points on top of any armor. This soak is temporary: it refills between fights and cannot be refilled once used.
+- Every chassis has balanced stats, just above average with no weak stat. There is no stress track, and the aftermath deck is made of damage reports that are mostly repairable, apart from a rare head destroyed result that is permanent. Their gear is efficient and widely available to produce or buy, and they are jacks of all trades, so melee, ranged and mixed builds are all viable without heavy punishment. Gear is cheap to produce or buy but has solid stats for the price. A wide range is available at the start: pistols (light, standard and heavy), machine pistols, SMGs, shotguns (pistol-grip, pump and semi-auto), light and medium assault rifles, battle rifles, light and medium machine guns, DMRs and snipers, grenades, light and medium armor plates, and shields, plus melee weapons (machetes, combat knives, hatchets, light and heavy axes, and breaching axes, hammers and mauls). TSC also has attachments from the start. As machines, droids also have built-in soak points on top of any armor. This soak is temporary: it refills between fights and cannot be refilled once used. Small chassis (line droid, repair droid) have 1 built-in soak and large chassis (vanguard, heavy arms) have 2. Each piece of armor equipment adds 2 armor soak for now, so a vanguard with plating and a shield has 4.
 - Droids are repaired for credits at a charging station, the faction's recovery room, instead of waiting for injuries to heal over several expeditions like humanoids. A destroyed droid can be recovered by taking its brain chip, so it is very difficult to permanently lose a squadmate. If a droid's head is destroyed by a result from the aftermath deck, it is lost forever.
-- Progression is per droid, as for other factions. The faction's special rule also lets you upgrade per chassis (firmware). Chassis have the same number of tiers as gear rarities, and the faction's perk, skill and accessory cards require a chassis of equal rarity or better. A chassis tier is shared by every droid of that type (one chassis card per type), and each tier adds more health, perk slots and more. Repair and rebuild cost scales with the chassis tier, but not prohibitively. The starting deck is about 30 cards with a hand of 7: autogun, shield, heavy autofire and repair kit cards, role skill cards, five supply cards and four starter faction cards (a laser sight and an uplink module). The line droid's role skill is Focus Fire: your next attack against the same target deals +1 damage.
+- Progression is per droid, as for other factions. The faction's special rule also lets you upgrade per chassis (firmware). Chassis have the same number of tiers as gear rarities, and the faction's perk, skill and accessory cards require a chassis of equal rarity or better. A chassis tier is shared by every droid of that type (one chassis card per type), and each tier adds more health, perk slots and more. Repair and rebuild cost scales with the chassis tier, but not prohibitively. The starting deck is about 30 cards with a hand of 7: autogun, shield, heavy autofire and repair kit cards, role skill cards, seven supply cards (two of them Repair Packs) and four starter faction cards (a laser sight and an uplink module). The line droid's role skill is Focus Fire: your next attack against the same target deals +1 damage.
 
 **TSC starting deck (draft, placeholder numbers)**
 
@@ -104,6 +104,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Patch (x1) | Repair droid skill | Heal 2 HP on one unit | +1 Tech | 1 |
 | Ammo Crate (x3) | Supplies | Refill 2 ammo on one gear | none | 2 |
 | Repair Parts (x2) | Supplies | Restore 3 soak to a unit | none | 2 |
+| Repair Pack (x2) | Supplies | Heal 4 HP on one unit | none | 2 |
 | Sight Alignment (x1) | Laser Sight (attachment) | The next attack with the attached gear deals +1 damage and costs 1 fuel less. Burned as fuel for that gear, it gives the same bonus | +1 Wits | 1 |
 | Paint Target (x1) | Laser Sight (attachment) | Exposed on one unit | +1 Wits | 1 |
 | Data Burst (x1) | Uplink Module (accessory) | Look at the top 3 cards of the results deck and put them back in any order | +1 Tech | 1 |
@@ -146,7 +147,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 | Weld Seam (x1) | Welding torch | Restore 3 soak to a unit | +1 Tech | 1 |
 | Cauterize (x1) | Welding torch | Heal 2 HP on one unit | +1 Tech | 1 |
 | Furnace Apron (x2) | Furnace plating | Restore 2 soak to a unit in the lane | +1 Nerve | 1 |
-| Ration Pack (x3) | Supplies | Heal 2 HP on one unit | none | 2 |
+| Ration Pack (x3) | Supplies | Heal 4 HP on one unit | none | 2 |
 | Rivet Crate (x2) | Supplies | Refill 2 ammo on one gear | none | 2 |
 | Counterweight (x1) | Gravity harness (accessory) | Gain 3 soak | +1 Force | 1 |
 | Heavy Step (x1) | Gravity harness (accessory) | Your next melee attack deals +2 damage, then this unit is Slowed | +1 Force | 1 |
@@ -191,7 +192,7 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 | Shield Wall (x3) | Glass shield | Gain 3 soak | +1 Force | 1 |
 | Interpose (x1) | Glass shield | The next attack aimed at another unit in this lane hits this unit instead | +1 Nerve | 1 |
 | Plate Check (x2) | Ceramic plate | Restore 2 soak to a unit in the lane | +1 Tech | 1 |
-| Field Dressing (x2) | Supplies | Heal 2 HP on one unit | none | 2 |
+| Field Dressing (x2) | Supplies | Heal 4 HP on one unit | none | 2 |
 | Ammo Mag (x2) | Supplies | Refill 2 ammo on one gear | none | 2 |
 | Spare Cuffs (x1) | Supplies | Refill 2 ammo on the cuff launcher | none | 2 |
 
@@ -476,10 +477,10 @@ Five small forces for testing the starter decks. They are not a bestiary. Each s
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
-| Tentacle (x3 parts) | 3 | 0 | One in each lane | Passive: whenever the squid acts in a lane with no tentacle, it spends that action generating a new tentacle there. 1. Lash: 2 damage to a unit in this lane. 2. Grapple: 1 damage and Slowed |
-| Body (pooled HP) | 12 | 0 | Behind the lane HP | Acts after lane 3. Ink Cloud: Exposed on every unit in the lane with the most of your units |
+| Tentacle (x3 parts) | 2 | 0 | One in each lane | Passive: whenever the squid acts in a lane with no tentacle and the lane is not closed, it spends that action generating a new tentacle there (at most 3 per lane). When a tentacle attacks, another tentacle in the same lane attacks for free. 1. Lash: 2 damage to a unit in this lane. 2. Grapple: 1 damage and Slowed |
+| Body (pooled HP) | 12 | 0 | Behind the lane HP | Acts after lane 3. When the squid acts in a closed lane with no tentacle, the body attacks there instead: 2 damage to a unit in that lane. Ink Cloud: Exposed on every unit in the lane with the most of your units |
 
-The squid has lane HP like any enemy (3 / 4 / 3 on the test battlefield). Tentacles screen the lane, then you must defeat the lane HP before you can hit the body from that lane. The squid is defeated when its body reaches 0 HP.
+The squid has lane HP like any enemy (3 / 4 / 3 on the test battlefield). Tentacles screen the lane, then you must defeat the lane HP before you can hit the body from that lane. The squid is defeated when its body reaches 0 HP. Once a lane is closed (its lane HP is broken) the squid can no longer generate tentacles there, but it can still attack in that lane. Because a tentacle's attack gives another tentacle a free attack, leaving tentacles alone while hammering an open lane is costly, so you want to clear lanes.
 
 **5. Deserter patrol** (non-gang humanoids, patrol tier). Tests Subdue and arrests. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
 
@@ -538,6 +539,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Playtest 02 (TSC in a series of fights, half soak and +1 enemy damage): does armor soak refill between fights, do downed members stand back up and at what HP, and how much does a rest room or clinic heal? Enemy damage looks like the main balance lever, the Deserter patrol is far deadlier than the other forces, and the Sump squid dies in 5 or 6 actions, so monster difficulty needs a pass.
 - [ ] Playtest 03 (dungeon runs of 5 to 10 fights, healing supplies, reworked squid): how much does a healing supply heal and how many does a squad bring (2 packs of 2 HP help, 4 or 6 add little)? Full soak with +1 enemy damage looks closest to right for the TSC. The reworked squid is a long fight (about 23 actions at a 12-HP body) that barely hurts the squad, so does the body get an attack, and should the tentacle regrow or lane HP be trimmed?
 - [ ] Playtest 04 (3/4 soak, 4-HP healing supplies, squid that generates tentacles in empty lanes): as written, the squid is nearly unwinnable (about 19% wins) because a lane gets a new tentacle every squid cycle, so it needs a limit (for example, no spawning in lanes whose lane HP is already broken, which makes it a long but winnable fight). Four-HP healing supplies are far stronger than 2-HP ones (10-fight dungeons finish 90% with 2 packs, against 72%). 3/4 soak depends on rounding: rounded up it is almost full soak, rounded down it is much harsher, so soak needs whole numbers.
+- [ ] Playtest 05 (chassis soak, 4-HP healing, revised squid): the new soak values (small chassis 1, large chassis 2, armor 2 per piece) are much harsher than rounded-up 3/4 soak, and the squid is now a real threat. How do tentacles reach 3 per lane (the squid generates one only when a lane is empty, or fills a lane up to 3 whenever it acts)? What damage should the squid body's attack in a closed lane do? Does the free tentacle attack trigger once or chain? How many Repair Packs does the TSC start with (2 for now)? The Pressmen Ration Pack and Concord Field Dressing now heal 4 HP too.
 
 **Next steps**
 

@@ -10,6 +10,6 @@ Halt,2,Marshal skill,skill,Stun one unit,1,0,,Nerve,1,1
 Shield Wall,3,Glass shield,armor,Gain 3 soak,0,0,,Force,1,1
 Interpose,1,Glass shield,armor,The next attack aimed at another unit in this lane hits this unit instead,0,0,,Nerve,1,1
 Plate Check,2,Ceramic plate,armor,Restore 2 soak to a unit in the lane,0,0,,Tech,1,1
-Field Dressing,2,Supplies,supply,Heal 2 HP on one unit,0,0,,,0,2
+Field Dressing,2,Supplies,supply,Heal 4 HP on one unit,0,0,,,0,2
 Ammo Mag,2,Supplies,supply,Refill 2 ammo on one gear,0,0,,,0,2
 Spare Cuffs,1,Supplies,supply,Refill 2 ammo on the cuff launcher,0,0,,,0,2

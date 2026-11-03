@@ -14,6 +14,7 @@ Field Fix,1,Repair kit,tool,Remove a status from a unit,0,0,Tech,1,1
 Patch,1,Repair droid skill,skill,Heal 2 HP on one unit,0,0,Tech,1,1
 Ammo Crate,3,Supplies,supply,Refill 2 ammo on one gear,0,0,,0,2
 Repair Parts,2,Supplies,supply,Restore 3 soak to a unit,0,0,,0,2
+Repair Pack,2,Supplies,supply,Heal 4 HP on one unit,0,0,,0,2
 Sight Alignment,1,Laser Sight,attachment,The next attack with the attached gear deals +1 damage and costs 1 fuel less (same bonus when burned as fuel for that gear),0,0,Wits,1,1
 Paint Target,1,Laser Sight,attachment,Exposed on one unit,0,0,Wits,1,1
 Data Burst,1,Uplink Module,accessory,Look at the top 3 cards of the results deck and put them back in any order,0,0,Tech,1,1

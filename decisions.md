@@ -5,11 +5,11 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 ## Locked rules
 
 **Combat**
-- Sump squid: whenever it acts in a lane with no tentacle it generates a new tentacle there (needs a limit, see open questions).
+- Sump squid: tentacles have 2 HP and cap at 3 per lane. It generates a tentacle when it acts in a lane with no tentacle, but not once that lane is closed (it can still attack there, without new tentacles; the body attacks instead, 2 damage is a placeholder). When a tentacle attacks, another tentacle in the lane attacks for free, so clear lanes rather than hammering an open one.
 - Monsters have one large pooled body HP plus lane HP. Units screen the lane, you defeat the lane HP, and only then can you hit the body from that lane. The monster is defeated when its body reaches 0.
 - 3 fixed lanes; win by overwhelming 2 of 3. Units screen their lane's HP (working rule). Captured lanes let units attack adjacent lanes.
 - Alternating single actions. Setup: first 3 rounds deploy one unit per lane.
-- Fixed damage, no misses. Armor is an absorb pool (soak). Melee triggers a free immediate fight-back.
+- Fixed damage, no misses. Armor is an absorb pool (soak). Working soak numbers: built-in 1 for small chassis, 2 for large chassis; 2 per armor piece (vanguard 4). Melee triggers a free immediate fight-back.
 - Fight length: short 8-10 rounds, medium 14-18, long 24+.
 
 **Cards**
@@ -20,7 +20,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Checks: an exhausted card adds fuel value plus its Check-line bonus on the matching attribute. No player dice.
 
 **Hive and economy**
-- A dungeon has 5 to 10 fights. The squad heals fully when the dungeon ends, and healing supplies (cards that double as fuel) keep it going in between.
+- A dungeon has 5 to 10 fights. The squad heals fully when the dungeon ends, and healing supplies (cards that double as fuel) keep it going in between. Healing supplies heal 4 HP; the TSC starts with two Repair Packs of its own (32-card deck), and the Pressmen Ration Pack and Concord Field Dressing also heal 4.
 - Floors fill from room, encounter, denizens and loot decks. Rooms have up to 3 exits from the results deck.
 - Hierarchy: strata, districts, floors, sections. Gates, sections and footholds are claimed with power (gang influence).
 - Supplies (rations counter plus ammo and healing cards) are the expedition clock.
@@ -61,6 +61,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [ ] Playtest 02 (TSC in a series of fights, half soak and +1 enemy damage): does armor soak refill between fights, do downed members stand back up and at what HP, and how much does a rest room or clinic heal? Enemy damage looks like the main balance lever, the Deserter patrol is far deadlier than the other forces, and the Sump squid dies in 5 or 6 actions, so monster difficulty needs a pass.
 - [ ] Playtest 03 (dungeon runs of 5 to 10 fights, healing supplies, reworked squid): how much does a healing supply heal and how many does a squad bring (2 packs of 2 HP help, 4 or 6 add little)? Full soak with +1 enemy damage looks closest to right for the TSC. The reworked squid is a long fight (about 23 actions at a 12-HP body) that barely hurts the squad, so does the body get an attack, and should the tentacle regrow or lane HP be trimmed?
 - [ ] Playtest 04 (3/4 soak, 4-HP healing supplies, squid that generates tentacles in empty lanes): as written, the squid is nearly unwinnable (about 19% wins) because a lane gets a new tentacle every squid cycle, so it needs a limit (for example, no spawning in lanes whose lane HP is already broken, which makes it a long but winnable fight). Four-HP healing supplies are far stronger than 2-HP ones (10-fight dungeons finish 90% with 2 packs, against 72%). 3/4 soak depends on rounding: rounded up it is almost full soak, rounded down it is much harsher, so soak needs whole numbers.
+- [ ] Playtest 05 (chassis soak 1/2 plus armor 2, 4-HP packs, capped squid): this is much harsher than rounded-up 3/4 soak (10 fights, 2 packs, no squid: 36% finish against 80%), and the squid is now the deadliest force with the Deserter patrol (each loses about a third of the fights it appears in). 10-fight dungeons finish 2%, 16% and 45% with 0, 2 and 4 packs. Open: how tentacles reach 3 per lane (spawn only in an empty lane, or whenever it acts in an open lane under the cap; results are close), body attack damage, whether the free attack chains, how many Repair Packs the TSC starts with, and what finish rate the intro faction should have.
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 
 ## Next steps

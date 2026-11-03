@@ -11,7 +11,7 @@ Rivet Burst,3,Rivet gun,weapon,2 damage to up to two units,0,1,0,Force,1,1
 Weld Seam,1,Welding torch,tool,Restore 3 soak to a unit,0,0,0,Tech,1,1
 Cauterize,1,Welding torch,tool,Heal 2 HP on one unit,0,0,0,Tech,1,1
 Furnace Apron,2,Furnace plating,armor,Restore 2 soak to a unit in the lane,0,0,0,Nerve,1,1
-Ration Pack,3,Supplies,supply,Heal 2 HP on one unit,0,0,0,,0,2
+Ration Pack,3,Supplies,supply,Heal 4 HP on one unit,0,0,0,,0,2
 Rivet Crate,2,Supplies,supply,Refill 2 ammo on one gear,0,0,0,,0,2
 Counterweight,1,Gravity harness,accessory,Gain 3 soak,0,0,0,Force,1,1
 Heavy Step,1,Gravity harness,accessory,Your next melee attack deals +2 damage then this unit is Slowed,0,0,0,Force,1,1
