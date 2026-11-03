@@ -1,5 +1,7 @@
 # Playtest 07: Pressmen Union and Concord Marshals starter decks
 
+> **Correction.** The Pressmen numbers below are too low: the bot deployed the fourth unit very late. See playtest 08 for corrected Pressmen results (100% of 5-room and 98% of 10-room dungeons).
+
 **Purpose (designer).** Gangs will not fight each other early, and by the time they do the player will have upgraded a lot. This test only shows how each starter deck feels on power at the start, against the five generic test forces.
 
 **Setup.** The same rules as playtests 05 and 06: lane HP 3/4/3, armor soak 3 per piece, +1 enemy damage against every force, 4-HP healing, squid tentacles spawn only in an empty lane (free attack once, body attack 2), armor refills between fights, downed units stand back up at 1 HP. 300 runs per row. The decks are read from `data/pressmen_starting_deck.csv` and `data/concord_starting_deck.csv` (30 cards each, no extra packs). Simulator: `tools/faction_sim.py` (reuses `tools/series_sim.py`), tables from `tools/faction_report.py`.

@@ -33,7 +33,7 @@ GEARMAP = {
 FUEL_COST = {'Sweeping Swing': 1, 'Stun Pulse': 1, 'Halt': 1}
 DEPLOY = {
     'pressmen': ['Hammerhand', 'Ironback', 'Rivet Gunner', 'Furnace Medic'],
-    'concord': ['Warden', 'Sentinel', 'Marshal'],
+    'concord': ['Warden', 'Sentinel', 'Marshal', 'Breacher'],
 }
 FIGHTBACK = {'Scavver Chief': 2, 'Furnace Hand': 2}  # enemy's most basic melee ability; default 1
 
@@ -49,6 +49,17 @@ def load_deck(fac):
 
 
 DECKS = {f: load_deck(f) for f in ('pressmen', 'concord')}
+# Concord v2 (playtest 08 test variant, not yet in the design doc): concussive guns with more damage, a lethal
+# Breacher shotgun, a fourth unit. Cards: name -> count; fuel values stay 1 (supplies 2).
+DECKS['concord2'] = {
+    'Flechette Volley': 4, 'Cuff Shot': 3, 'Stun Pulse': 2, 'Breach Blast': 2, 'Tag Target': 3, 'Revise Warrant': 1,
+    'Close In': 2, 'Halt': 2, 'Shield Wall': 3, 'Interpose': 1, 'Plate Check': 2,
+    'Field Dressing': 2, 'Ammo Mag': 2, 'Spare Cuffs': 1,
+}
+assert sum(DECKS['concord2'].values()) == 30
+S.FV['Breach Blast'] = 1
+GEARMAP['concord2'] = dict(GEARMAP['concord'], **{'Breach Blast': 'shotgun'})
+AMMO_GEAR = {'rivet', 'cuff', 'shotgun'}
 
 
 def make_squad(cfg):
@@ -60,6 +71,13 @@ def make_squad(cfg):
             ('Rivet Gunner', 7, ap, {'rivet', 'brawler', 'fplate'}),
             ('Furnace Medic', 7, ap, {'torch', 'fplate'}),
         ]
+    elif cfg.get('v2'):
+        spec = [
+            ('Marshal', 6, ap, {'optics', 'mskill', 'cplate'}),
+            ('Sentinel', 7, 2 * ap, {'gshield', 'stunner', 'cplate'}),
+            ('Warden', 6, ap, {'carbine', 'cuff', 'cplate'}),
+            ('Breacher', 7, ap, {'shotgun', 'cplate'}),
+        ]
     else:
         spec = [
             ('Marshal', 6, ap, {'optics', 'mskill', 'cplate'}),
@@ -69,7 +87,7 @@ def make_squad(cfg):
     squad = []
     for name, hp, arm, gear in spec:
         u = Unit(name, 'P', hp, 0, arm, gear)
-        u.ammo = 4 if (gear & {'rivet', 'cuff'}) else 0
+        u.ammo = 4 if (gear & AMMO_GEAR) else 0
         u.wind, u.hstep, u.slowed = None, 0, False
         squad.append(u)
     return squad
@@ -79,7 +97,12 @@ class FGame(Game):
     def __init__(s, seed, squad, force, cfg, log=False):
         super().__init__(seed, squad, force, cfg, log)
         s.fac = cfg['faction']
-        s.pdeck = [c for c, n in DECKS[s.fac].items() for _ in range(n)]
+        s.v2 = bool(cfg.get('v2')) and s.fac == 'concord'
+        s.deckname = 'concord2' if s.v2 else s.fac
+        s.sc = collections.Counter()   # stun counters by unit id
+        s.captured = 0
+        s.warrant_body = s.v2 and s.monster
+        s.pdeck = [c for c, n in DECKS[s.deckname].items() for _ in range(n)]
         s.r.shuffle(s.pdeck)
         s.pdisc, s.hand = [], []
         s.grudge = False
@@ -114,7 +137,23 @@ class FGame(Game):
                         s.auth += 1; s.warrant_result = 'arrested'
                 elif u is s.warrant:
                     s.auth -= 1; s.warrant_result = 'killed'
+        if s.v2 and u.side == 'E' and u.live:
+            s.check_capture(u)
         return res
+
+    def check_capture(s, u):
+        """Stun counters at least twice current HP: the unit is taken out (arrested if humanoid)."""
+        if u.live and s.sc[u.id] > 0 and s.sc[u.id] >= 2 * u.hp:
+            u.dead = True
+            if u.kind == '':
+                s.arrests += 1; s.captured += 1
+                s.log(f"      {u.name} is taken out and captured")
+                if u is s.warrant:
+                    s.auth += 1; s.warrant_result = 'arrested'
+            else:
+                s.log(f"      {u.name} is knocked out")
+            return True
+        return False
 
     def bonus(s, actor, tgt):
         b = 0
@@ -173,12 +212,63 @@ class FGame(Game):
                     if melee and a.live:
                         s.fightback(a, tgt)
             else:
-                d = dmg + s.bonus(a, None)
+                d = dmg + s.bonus(a, None) + (1 if (s.warrant_body and s.laneHP['E'][tgt] == 0) else 0)
                 s.log(f"    {a.name} (lane {a.lane+1}):")
                 s.lane_hit(tgt, d)
             s.clear_bonus(a)
         finally:
             s._melee = s._subdue = False
+
+    def c_attack(s, a, kind, tgt, dmg):
+        """Concussive damage: ignores soak, becomes stun counters instead of HP loss (lane HP and the body take it as damage)."""
+        if kind == 'unit':
+            if tgt.name == 'Sump Sniper' and s.cover[tgt.lane]:
+                g = [x for x in s.units('E', tgt.lane) if x.id == s.cover[tgt.lane]]
+                s.cover[tgt.lane] = None
+                if g:
+                    tgt = g[0]; s.log("    a Sump Guard takes the shot instead")
+            d = dmg + s.bonus(a, tgt) + (1 if tgt.exposed else 0)
+            tgt.exposed = False
+            s.sc[tgt.id] += d
+            s.log(f"    {a.name} (lane {a.lane+1}) stuns {tgt.name} for {d} counters -> {s.sc[tgt.id]} (HP {tgt.hp})")
+            s.check_capture(tgt)
+        else:
+            d = dmg + s.bonus(a, None)
+            if s.warrant_body and s.laneHP['E'][tgt] == 0:
+                d += 1
+            s.log(f"    {a.name} (lane {a.lane+1}):")
+            s.lane_hit(tgt, d)
+        s.clear_bonus(a)
+
+    def conc_value(s, a, t, dmg):
+        d = dmg + s.bonus(a, t) + (1 if t.exposed else 0)
+        cnt = s.sc[t.id]
+        v = 0.8 * d
+        if cnt + d >= 2 * t.hp:
+            v += 3 + (2 if t is s.warrant else 0)
+        elif cnt + d >= t.hp > cnt:
+            v += 1.5
+        if 'Chief' in t.name or 'Captain' in t.name or 'Sniper' in t.name:
+            v += 1.5
+        return v
+
+    def conc_targets(s, a, dmg):
+        out = []
+        for L in s.target_lanes(a):
+            for t in s.units('E', L):
+                out.append((s.conc_value(a, t, dmg), 'unit', t))
+        for v, k, t in s.targets(a, dmg, False):
+            if k == 'lane':
+                out.append((v, k, t))
+        return out
+
+    def enemy_action(s):
+        if s.v2:
+            for L in range(3):
+                for u in s.units('E', L):
+                    if s.sc[u.id] >= u.hp > 0:
+                        u.stunned = True; u.pending = None
+        super().enemy_action()
 
     # ---------- wind-ups
     def start_windup(s, a, spec):
@@ -252,14 +342,14 @@ class FGame(Game):
                     opts.append(dict(v=100, kind='deploy', unit=u, lane=L, fuel=0))
                 else:
                     mates = s.units('P', L)
-                    v = 0.4 + (1.0 if mates else 0) + (0.5 if any(m.name == 'Hammerhand' for m in mates) else 0) \
+                    v = 2.4 + (1.0 if mates else 0) + (0.5 if any(m.name in ('Hammerhand', 'Marshal') for m in mates) else 0) \
                         + 0.3 * len(s.units('E', L))
                     opts.append(dict(v=v, kind='deploy', unit=u, lane=L, fuel=0))
         if setup:
             return opts, {}
         hand_names = sorted(set(s.hand))
         cardbest = {c: 0.0 for c in hand_names}
-        gm = GEARMAP[s.fac]
+        gm = GEARMAP[s.deckname]
 
         def add(v, run, card=None, fuel=0, actor=None):
             if card:
@@ -296,6 +386,33 @@ class FGame(Game):
             for a in actors:
                 lane_en = s.units('E', a.lane)
                 # ---- attacks
+                if s.v2 and c in ('Flechette Volley', 'Cuff Shot', 'Stun Pulse', 'Breach Blast'):
+                    if c == 'Flechette Volley':
+                        for v, k, t in s.targets(a, 3, False):
+                            v = warrant_adj(v, k, t, 3, a, False) + (0.3 if k == 'unit' and t.exposed else 0)
+                            add(v, lambda a=a, k=k, t=t: s.p_attack(a, k, t, 3, extra_exposed=1), c, fuel, a)
+                    elif c == 'Breach Blast' and a.ammo >= 1:
+                        for v, k, t in s.targets(a, 4, False):
+                            v = warrant_adj(v, k, t, 4, a, False)
+                            def run(a=a, k=k, t=t):
+                                a.ammo -= 1; s.p_attack(a, k, t, 4)
+                            add(v, run, c, fuel, a)
+                    elif c == 'Cuff Shot' and a.ammo >= 1:
+                        for v, k, t in s.conc_targets(a, 4):
+                            def run(a=a, k=k, t=t):
+                                a.ammo -= 1; s.c_attack(a, k, t, 4)
+                            add(v, run, c, fuel, a)
+                    elif c == 'Stun Pulse':
+                        if lane_en:
+                            v = sum(s.conc_value(a, e, 2) for e in lane_en)
+                            def run(a=a, en=list(lane_en)):
+                                for e in en:
+                                    if e.live:
+                                        s.c_attack(a, 'unit', e, 2)
+                            add(v, run, c, fuel, a)
+                        elif s.hittable_lane(a.lane):
+                            add(1.0, lambda a=a: s.c_attack(a, 'lane', a.lane, 2), c, fuel, a)
+                    continue
                 if c == 'Flechette Volley':
                     for v, k, t in s.targets(a, 2, False):
                         v = warrant_adj(v, k, t, 2, a, False) + (0.3 if k == 'unit' and t.exposed else 0)
@@ -432,7 +549,7 @@ class FGame(Game):
                             s.log(f"    {a.name} plays Cauterize: {t.name} +2 HP")
                         add(min(2, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, fuel, a)
                 elif c in ('Rivet Crate', 'Ammo Mag', 'Spare Cuffs'):
-                    pool = [u for u in s.punits if u.live and u.lane is not None and (u.gear & {'rivet', 'cuff'}) and u.ammo < 4]
+                    pool = [u for u in s.punits if u.live and u.lane is not None and (u.gear & AMMO_GEAR) and u.ammo < 4]
                     if c == 'Rivet Crate':
                         pool = [u for u in pool if 'rivet' in u.gear]
                     if c == 'Spare Cuffs':
@@ -474,6 +591,8 @@ def run_series(seed, n, cfg, mix):
 
 def narrated(fac, force, seed, cfg=None):
     cfg = dict(name='x', faction=fac, enemy_bonus=1, armor_refill=True, armor_per_piece=3, **(cfg or {}))
+    if len(sys.argv) > 5:
+        cfg.update(eval(sys.argv[5]))
     S.SPAWN_MODE = 'empty_only'
     squad = make_squad(cfg)
     g = FGame(seed, squad, force, cfg, log=True)

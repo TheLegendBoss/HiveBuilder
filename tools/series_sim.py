@@ -296,6 +296,8 @@ class Game:
                         v = 0.6 + 0.35 * dmg + (0.5 * len(s.units('P', L)) if dmg else 0)
                     else:
                         v = 1.5 if not s.units('P', L) else 0.3
+                    if s.cfg.get('early_deploy'):
+                        v = max(v, 2.6)
                     opts.append(dict(v=v, kind='deploy', unit=u, lane=L, fuel=0))
         if setup:
             return opts, {}
