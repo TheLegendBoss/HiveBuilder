@@ -92,3 +92,20 @@ cards played under 0.05 per fight: Revise Warrant, Close In, Interpose
 - Pressmen are now too easy. What should change: HP, fewer Ration Packs, less soak regeneration, or harder fight-backs?
 - Should stun counters wear off, and should a Stunned unit lose its action every turn (as modeled) or just the next one?
 - Should concussive damage work on lane HP, and what should it do to the squid body (modeled as ordinary damage)?
+
+## Update: stun counters wear off 1 per round
+
+The designer chose armor 4 and accepted the gun numbers, and ruled that stun counters wear off by 1 per round (after the enemy acts, so a unit hit for its full HP in counters still loses that round's action). Another stun rule is not simulated: stun counters should also raise the fuel an enemy needs to use its abilities, and the scripted test forces use no fuel.
+
+Concord v2, 26 HP, 300 dungeons per row:
+
+| Counters | Armor per piece | Total armor soak | 5 rooms | 10 rooms |
+| --- | --- | --- | --- | --- |
+| Stay all fight | 4 | 20 | 79% | 61% |
+| Wear off 1 per round | 4 | 20 | 62% | 30% |
+| Wear off 1 per round | 5 | 25 | 88% | 70% |
+| Wear off 1 per round | 6 | 30 | 95% | 91% |
+
+With wear-off, captures per fight fall by about half (1.1 to 0.4–0.7), so Concord takes more damage and armor 5 is what lands on the 85 to 90% target at 5 rooms (70% at 10 rooms, a little easy). Single fights at armor 4 with wear-off: Scavver pack 100%, Slag hauler 100%, Sump sniper 100%, Deserter patrol 98%, squid 95%.
+
+Note on the Pressmen question: both Pressmen (4 crew) and Concord (now 4) have one more unit than there are lanes. The setup rounds deploy one unit per lane, so the fourth deploys with a normal action afterwards. Playtest 07's bot deployed the Medic too late, and that was the only thing corrected. No design changed.

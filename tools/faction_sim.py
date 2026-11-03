@@ -269,6 +269,10 @@ class FGame(Game):
                     if s.sc[u.id] >= u.hp > 0:
                         u.stunned = True; u.pending = None
         super().enemy_action()
+        if s.cfg.get('decay', 0):
+            for k in list(s.sc):
+                if s.sc[k] > 0:
+                    s.sc[k] = max(0, s.sc[k] - s.cfg['decay'])
 
     # ---------- wind-ups
     def start_windup(s, a, spec):
