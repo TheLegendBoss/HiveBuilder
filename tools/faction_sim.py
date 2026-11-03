@@ -90,6 +90,10 @@ def make_squad(cfg):
             ('Sentinel', 7, 2 * ap, {'gshield', 'stunner', 'cplate'}),
             ('Warden', 6, ap, {'carbine', 'cuff', 'cplate'}),
         ]
+    if cfg.get('hp_list'):
+        spec = [(n, h, a, g) for (n, _h, a, g), h in zip(spec, cfg['hp_list'])]
+    if cfg.get('armor_list'):
+        spec = [(n, h, a, g) for (n, h, _a, g), a in zip(spec, cfg['armor_list'])]
     squad = []
     for name, hp, arm, gear in spec:
         u = Unit(name, 'P', hp, 0, arm, gear)

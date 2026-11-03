@@ -163,3 +163,29 @@ Findings:
 1. Flat 4+ removal puts Concord at armor 4 at 74% and 44% (the roll 3+ with a 6 bonus gave 66% and 33%).
 2. A modal concussive mode needs to be strong to matter: at 5 it lifts Concord to 89% and 71%, but it then beats the separate Cuff Shot (4 concussive, 1 ammo), which makes the specialized card pointless.
 3. The suggested Pressmen change (+2 armor soak each) makes them far easier, not harder (100% and 100%), because armor soak is worth far more than HP. Armor at 2 per piece goes the other way (39% and 5%), so armor is a very sensitive lever for Pressmen. Cutting healing and HP is the gentler way: Ration Pack x1, HP 6, armor 3 gets 95% and 81%; dropping Ration Pack to none gets 83% and 46%; dropping Cauterize and Weld Seam as well as cutting to one Ration Pack gets 92% and 68%.
+
+## Update 4: modal 3/5 Volley, more Concord soak, and HP-heavy Pressmen
+
+Requests from the designer: test the 3 lethal or 5 concussive modal Volley, and ask whether to add more Concord soak. For the Pressmen, the earlier suggestion was meant to raise HP, with mostly HP rather than soak: I read it as squad totals of 35 HP (9/9/9/8) and 5 soak. Stun removal is a roll of 4+ for 1 counter, and Concord keeps Cuff Shot unless stated. 300 dungeons per row. Target: 85 to 90% at 5 rooms and 60% at 10.
+
+| Squad | HP | Armor soak | 5 rooms | 10 rooms |
+| --- | --- | --- | --- | --- |
+| Concord, modal 3/5 Volley, armor 3 per piece | 26 | 15 | 64% | 33% |
+| Concord, modal 3/5 Volley, armor 4 per piece | 26 | 20 | 89% | 71% |
+| Concord, modal 3/5 Volley, armor 5 per piece | 26 | 25 | 97% | 92% |
+| Concord, modal 3/5 Volley, armor 4, Cuff Shot replaced by 3 more Volleys | 26 | 20 | 95% | 86% |
+| Pressmen, HP 35, soak 5 (1/3/1/0), 3 Ration Packs | 35 | 5 | 40% | 2% |
+| Pressmen, HP 35, soak 5, 1 Ration Pack | 35 | 5 | 10% | 0% |
+| Pressmen, HP 35, soak 7 (1/3/2/1), 3 Ration Packs | 35 | 7 | 71% | 13% |
+| Pressmen, HP 35, soak 8 (2/3/2/1), 3 Ration Packs | 35 | 8 | 84% | 38% |
+| Pressmen, HP 35, soak 8, 2 Ration Packs | 35 | 8 | 69% | 15% |
+| Pressmen, HP 35, soak 10 (2/4/2/2), 3 Ration Packs | 35 | 10 | 97% | 71% |
+| Pressmen, HP 35, soak 10, 2 Ration Packs | 35 | 10 | 85% | 41% |
+| Pressmen, HP 35, soak 10, 1 Ration Pack | 35 | 10 | 74% | 16% |
+| Pressmen, HP 35, soak 15 (3/6/3/3), 3 Ration Packs | 35 | 15 | 100% | 99% |
+
+Findings:
+
+1. With the modal 3/5 Volley, armor 4 is already on target for Concord (89% and 71%). More soak is not needed, and armor 5 is too easy (97% and 92%). Without the modal card, armor 5 would be needed.
+2. The modal 3/5 Volley overlaps the Cuff Shot: swapping the three Cuff Shots for three more Volleys makes Concord easier (95% and 86%), so the Cuff Shot only keeps its place if it offers something the modal card does not (ammo makes it limited, not better).
+3. Pressmen soak is the sensitive lever. Reading "35 HP and 5 soak" as squad totals, 5 soak is much too hard (40% and 2%). About 10 soak with 35 HP and 3 Ration Packs lands near the target (97% and 71%), and with 2 Ration Packs is at 85% and 41%.
