@@ -49,3 +49,15 @@ Baseline single fights
 ## Decision
 
 The designer chose Ration Packs healing 5 (as a Mess-branch gang passive), and kept Solidarity as it is: it makes the faction tactical, and a bigger squad gets more pairing chances. The cost of more bodies is the deploy actions they use instead of attacking (true of every gang except the two horde factions). Expected result of the choice: about 92% at 5 rooms, 78% at 8 rooms and 66% at 10 rooms.
+
+## Side by side: all three starters under the current rules
+
+TSC (5 droids, armor soak 3 per piece, chassis soak 1/2, 2 Repair Packs of 4 HP, extra units deployed right after setup), Pressmen (40 HP, 10 soak, 2 Ration Packs healing 5) and Concord (4 units, armor 4, modal 3/5 Volley, splash Cuff Shot, stun removal on a 4+). 300 dungeons per row, +1 enemy damage.
+
+| Faction | HP | Soak | Single-fight wins (Scavver / Slag / Sniper / Squid / Deserter) | 5 rooms | 8 rooms | 10 rooms |
+| --- | --- | --- | --- | --- | --- | --- |
+| TSC | 27 | 25 | 100 / 100 / 100 / 99 / 100% | 82% | 69% | 64% |
+| Pressmen | 40 | 10 | 100 / 100 / 100 / 100 / 100% | 92% | 78% | 66% |
+| Concord | 26 | 20 | 100 / 100 / 100 / 97 / 100% | 89% | 76% | 71% |
+
+All three sit on the 85 to 90% / 60% targets within a few points, but the intro faction (TSC) is the hardest at 5 rooms.
