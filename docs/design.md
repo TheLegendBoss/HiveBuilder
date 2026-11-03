@@ -482,7 +482,7 @@ Five small forces for testing the starter decks. They are not a bestiary. Each s
 
 The squid has lane HP like any enemy (3 / 4 / 3 on the test battlefield). Tentacles screen the lane, then you must defeat the lane HP before you can hit the body from that lane. The squid is defeated when its body reaches 0 HP. Once a lane is closed (its lane HP is broken) the squid can no longer generate tentacles there, but it can still attack in that lane. Because a tentacle's attack gives another tentacle a free attack, leaving tentacles alone while hammering an open lane is costly, so you want to clear lanes.
 
-**5. Deserter patrol** (non-gang humanoids, patrol tier). Tests Subdue and arrests. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
+**5. Deserter patrol** (non-gang humanoids, patrol tier). Tests concussive damage and capture. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
