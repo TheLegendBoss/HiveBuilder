@@ -426,6 +426,26 @@ class FGame(Game):
                             def run(a=a, k=k, t=t):
                                 a.ammo -= 1; s.p_attack(a, k, t, 4)
                             add(v, run, c, fuel, a)
+                    elif c == 'Cuff Shot' and a.ammo >= 1 and s.cfg.get('cuff_splash'):
+                        mode = s.cfg['cuff_splash']
+                        main, other = (4, 2) if mode == 'A' else (3, 3)
+                        for L in s.target_lanes(a):
+                            us = s.units('E', L)
+                            for t in us:
+                                others = [o for o in us if o is not t]
+                                v = s.conc_value(a, t, main) + sum(s.conc_value(a, o, other) for o in others)
+                                def run(a=a, t=t, others=others, main=main, other=other):
+                                    a.ammo -= 1
+                                    s.c_attack(a, 'unit', t, main)
+                                    for o in others:
+                                        if o.live:
+                                            s.c_attack(a, 'unit', o, other)
+                                add(v, run, c, fuel, a)
+                        for v, k, t in s.conc_targets(a, 4):
+                            if k == 'lane':
+                                def run(a=a, t=t):
+                                    a.ammo -= 1; s.c_attack(a, 'lane', t, 4)
+                                add(v, run, c, fuel, a)
                     elif c == 'Cuff Shot' and a.ammo >= 1:
                         for v, k, t in s.conc_targets(a, 4):
                             def run(a=a, k=k, t=t):

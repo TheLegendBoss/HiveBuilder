@@ -189,3 +189,28 @@ Findings:
 1. With the modal 3/5 Volley, armor 4 is already on target for Concord (89% and 71%). More soak is not needed, and armor 5 is too easy (97% and 92%). Without the modal card, armor 5 would be needed.
 2. The modal 3/5 Volley overlaps the Cuff Shot: swapping the three Cuff Shots for three more Volleys makes Concord easier (95% and 86%), so the Cuff Shot only keeps its place if it offers something the modal card does not (ammo makes it limited, not better).
 3. Pressmen soak is the sensitive lever. Reading "35 HP and 5 soak" as squad totals, 5 soak is much too hard (40% and 2%). About 10 soak with 35 HP and 3 Ration Packs lands near the target (97% and 71%), and with 2 Ration Packs is at 85% and 41%.
+
+## Update 5: 40-HP Pressmen and a splash Cuff Shot
+
+Requests from the designer: give the Cuff Shot a splash stun on multiple creatures so it stays specialized beside the modal Volley, and test the Pressmen at 40 HP and 10 soak with 2 Ration Packs (with healing and rests to be improved later by a gang passive, which is not simulated). Pressmen: HP 10 each, soak 2/4/2/2. Concord: armor 4, modal 3 lethal or 5 concussive Volley, stun removal on a roll of 4+. 300 dungeons per row. Target: 85 to 90% at 5 rooms and 60% at 10.
+
+| Squad | HP | Armor soak | 5 rooms | 10 rooms |
+| --- | --- | --- | --- | --- |
+| Pressmen, HP 40, soak 10, 3 Ration Packs | 40 | 10 | 95% | 74% |
+| **Pressmen, HP 40, soak 10, 2 Ration Packs** | 40 | 10 | 92% | 54% |
+| Pressmen, HP 40, soak 10, 1 Ration Pack | 40 | 10 | 74% | 20% |
+| Pressmen, HP 40, soak 8, 2 Ration Packs | 40 | 8 | 75% | 23% |
+| Pressmen, HP 40, soak 12, 2 Ration Packs | 40 | 12 | 98% | 84% |
+| Concord, Cuff Shot single target (4 concussive) | 26 | 20 | 89% | 71% |
+| Concord, Cuff Shot A: 4 to one unit and 2 to the other unit in the lane | 26 | 20 | 89% | 71% |
+| Concord, Cuff Shot B: 3 to each of up to two units in the lane | 26 | 20 | 81% | 56% |
+| Concord, Cuff Shot A, armor 3 per piece | 26 | 15 | 64% | 34% |
+
+Single fights, Pressmen at HP 40, soak 10 and 2 Ration Packs: 100% against every force. The Deserter patrol leaves the squad on about 27 of 40 HP and the Slag hauler on about 29.
+
+Single fights, Concord with splash A: 100% against the Scavver pack, Slag hauler, Sump sniper team and Deserter patrol, and 97% against the squid. Captures rise to 1.5 to 2.0 per fight (against about 0.9 before), and the squid fight shortens from about 32 to about 27 actions.
+
+Findings:
+
+1. HP 40, soak 10 and 2 Ration Packs lands at 92% and 54%, close to the target (a little easy at 5 rooms, a little hard at 10). Between 2 and 3 Ration Packs would hit 60% at 10 rooms.
+2. The splash Cuff Shot (A) does not change Concord's dungeon finish rate, because the squid is the main cause of losses and splash does nothing to speed it up. It captures more people per fight, so it is clearly a specialized card. Splash B (3 to each) is a nerf (81% and 56%) because it does less to the main target.
