@@ -223,7 +223,7 @@ The hive is a stack of strata (lower hive, middle hive, spire). Strata contain d
 
 The first pass uses the eight room types above. Held for a later pass: Patrol, Lair or boss, Vault, Bounty (a giver and the actual target), Collapse and Power node.
 
-- **Supplies are the clock (rations, healing supplies and ammo).** Going deeper costs supplies, dark rooms add danger, and retreating toward the entrance costs more. You choose how much to bring, so you can go heavily kitted for a long expedition or travel light for a short one. Rations are a counter that ticks as you move between rooms. Ammo and healing supplies are cards that double as fuel and take up inventory space.
+- **Supplies are the clock (rations, healing supplies and ammo).** Going deeper costs supplies, dark rooms add danger, and retreating toward the entrance costs more. You choose how much to bring, so you can go heavily kitted for a long expedition or travel light for a short one. Rations are a counter that ticks as you move between rooms. Ammo and healing supplies are cards that double as fuel and take up inventory space. A dungeon has 5 to 10 fights, the squad heals fully when the dungeon ends, and healing supplies are what keeps it going in between.
 - **Loadout is set between rooms.** You cannot re-slot gear during a fight or encounter, so the map drives your prep. You can see the type of adjacent rooms, but not rooms beyond them.
 - **Rival presence.** Rival gangs appear on floors they have expanded to, as visible territory markers (banners, tags, barricades) on the map and as cards shuffled into that floor's Hive Deck. You can see the threat but not exactly when it hits.
 
@@ -366,7 +366,7 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 - Defeating a lane's HP captures it, which lets that side's units in the lane attack the adjacent lanes (see Targeting).
 - Lane capacity depends on the faction.
 - Humanoid units, yours and the enemy's, each have their own HP.
-- Monsters and bosses have one pooled body HP, and their parts (such as tentacles) fill the lanes. Clearing the parts in a lane lets you hit the body. Clearing two lanes defeats the monster outright. Monsters can still win by overwhelming two of your lanes.
+- Monsters and bosses have one large pooled body HP, plus lane HP like any other side. Their parts (such as tentacles) are units that screen the lane. In a lane you clear the units, then defeat the lane HP, and only then can you hit the body from that lane. The monster is defeated when its body reaches 0 HP. Monsters can still win by overwhelming two of your lanes.
 
 **Actions and turns**
 
@@ -477,9 +477,9 @@ Five small forces for testing the starter decks. They are not a bestiary. Each s
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
 | Tentacle (x3 parts) | 3 | 0 | One in each lane | Passive: Regrow. Once per lane, the squid may spend an action to redeploy a cleared tentacle. 1. Lash: 2 damage to a unit in this lane. 2. Grapple: 1 damage and Slowed |
-| Body (pooled HP) | 10 | 0 | Behind the tentacles | Acts after lane 3. Ink Cloud: Exposed on every unit in the lane with the most of your units |
+| Body (pooled HP) | 12 | 0 | Behind the lane HP | Acts after lane 3. Ink Cloud: Exposed on every unit in the lane with the most of your units |
 
-When a lane has no tentacle, attacks in that lane hit the body. Clearing the tentacles from two lanes defeats the squid.
+The squid has lane HP like any enemy (3 / 4 / 3 on the test battlefield). Tentacles screen the lane, then you must defeat the lane HP before you can hit the body from that lane. The squid is defeated when its body reaches 0 HP.
 
 **5. Deserter patrol** (non-gang humanoids, patrol tier). Tests Subdue and arrests. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
 
@@ -535,7 +535,8 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? How does Warrant Mark work against monsters, where parts fill lanes? Is Revise Warrant too strong, and are the Subdue cards too weak against units with a lot of HP?
 - [ ] Rules gaps found in playtest 01 (TSC vs the Scavver pack, see `playtests/` in the repo): lane capacity (assumed 2 per side), what each side does in the setup rounds (assumed deploy only, no attacks), whether downed units screen their lane HP (assumed no), whether the soak "gain" effects can exceed an armor's maximum (assumed no), how much built-in and armor soak a droid has, and whether a stunned scripted unit loses its turn (assumed yes). Balance: the patrol is far too easy, with soak very large and grunt HP of 3 against 3-damage Burst Fire.
-- [ ] Playtest 02 (TSC in a series of fights, half soak and +1 enemy damage): how many fights happen between healing opportunities, does armor soak refill between fights, do downed members stand back up and at what HP, and how much does a rest room or clinic heal? Enemy damage looks like the main balance lever, the Deserter patrol is far deadlier than the other forces, and the Sump squid dies in 5 or 6 actions, so monster difficulty needs a pass.
+- [ ] Playtest 02 (TSC in a series of fights, half soak and +1 enemy damage): does armor soak refill between fights, do downed members stand back up and at what HP, and how much does a rest room or clinic heal? Enemy damage looks like the main balance lever, the Deserter patrol is far deadlier than the other forces, and the Sump squid dies in 5 or 6 actions, so monster difficulty needs a pass.
+- [ ] Playtest 03 (dungeon runs of 5 to 10 fights, healing supplies, reworked squid): how much does a healing supply heal and how many does a squad bring (2 packs of 2 HP help, 4 or 6 add little)? Full soak with +1 enemy damage looks closest to right for the TSC. The reworked squid is a long fight (about 23 actions at a 12-HP body) that barely hurts the squad, so does the body get an attack, and should the tentacle regrow or lane HP be trimmed?
 
 **Next steps**
 

@@ -19,18 +19,19 @@ DECK = {
     'Jury-Rig': 1, 'Field Fix': 1, 'Patch': 1, 'Ammo Crate': 3, 'Repair Parts': 2,
     'Sight Alignment': 1, 'Paint Target': 1, 'Data Burst': 1, 'Sync': 1,
 }
-FV = {'Ammo Crate': 2, 'Repair Parts': 2}
+FV = {'Ammo Crate': 2, 'Repair Parts': 2, 'Repair Pack': 2}
 GEAR = {
     'Burst Fire': 'autogun', 'Suppressing Fire': 'autogun', 'Brace': 'plating',
     'Focus Fire': 'lineskill', 'Shield Up': 'shield', 'Counter': 'shield', 'Bulwark': 'vanguard',
     'Sustained Fire': 'heavy', 'Pin Down': 'heavy', 'Overdrive': 'heavyskill',
     'Jury-Rig': 'repairkit', 'Field Fix': 'repairkit', 'Patch': 'repairskill',
-    'Ammo Crate': None, 'Repair Parts': None, 'Sight Alignment': 'laser', 'Paint Target': 'laser',
+    'Ammo Crate': None, 'Repair Parts': None, 'Repair Pack': None, 'Sight Alignment': 'laser', 'Paint Target': 'laser',
     'Data Burst': 'uplink', 'Sync': 'uplink',
 }
 FUEL_COST = {'Suppressing Fire': 1}
 
 BASE = dict(name='baseline', soak_scale=1.0, enemy_bonus=0)
+BODY_HP = 12
 HARSH = dict(name='harsh (half soak, +1 enemy damage)', soak_scale=0.5, enemy_bonus=1)
 
 
@@ -82,7 +83,7 @@ def make_force(name):
         return [guard(), Unit('Deserter Captain', 'E', 6, pattern=['sidearm', 'rally_order']), guard()], [guard()], None
     if name == 'Sump squid':
         t = lambda: Unit('Tentacle', 'E', 3, pattern=['lash', 'grapple'], kind='part')
-        body = Unit('Squid Body', 'E', 10, pattern=['ink'], kind='body')
+        body = Unit('Squid Body', 'E', BODY_HP, pattern=['ink'], kind='body')
         return [t(), t(), t()], [], body
     raise KeyError(name)
 
@@ -109,7 +110,10 @@ class Game:
             if cfg.get('armor_refill', True):
                 u.armor = u.armor_max
             u.pending = None
-        s.pdeck = [c for c, n in DECK.items() for _ in range(n)]
+        deck = dict(DECK)
+        if cfg.get('heal_cards'):
+            deck['Repair Pack'] = cfg['heal_cards']
+        s.pdeck = [c for c, n in deck.items() for _ in range(n)]
         s.r.shuffle(s.pdeck)
         s.pdisc, s.hand = [], []
         s.estart, s.edeck, s.body = make_force(force)
@@ -131,22 +135,20 @@ class Game:
 
     def lane_open(s, L):
         """enemy lane captured (or, for the squid, cleared of tentacles)."""
-        if s.monster:
-            return not s.units('E', L)
         return s.laneHP['E'][L] == 0
 
     def hittable_lane(s, L):
         if s.units('E', L):
             return False
-        if s.monster:
-            return s.body.live
-        return s.laneHP['E'][L] > 0
+        if s.laneHP['E'][L] > 0:
+            return True
+        return s.monster and s.body.live
 
     def lane_pool(s, L):
-        return s.body.hp if s.monster else s.laneHP['E'][L]
+        return s.laneHP['E'][L] if s.laneHP['E'][L] > 0 else s.body.hp
 
     def lane_hit(s, L, d):
-        if s.monster:
+        if s.laneHP['E'][L] == 0 and s.monster:
             s.body.hp = max(0, s.body.hp - d)
             if s.body.hp == 0:
                 s.body.dead = True
@@ -217,17 +219,18 @@ class Game:
                     d = dmg + s.bonus(actor, t) + (1 if t.exposed else 0)
                     real = min(d, t.total())
                     v = real + (3 if real >= t.total() else 0) + (1.5 if 'Chief' in t.name or 'Captain' in t.name or 'Sniper' in t.name else 0)
-                    if s.monster and real >= t.total() and len(en) == 1 and s.open_count() == 1:
-                        v += 6
                     res.append((v, 'unit', t))
             elif s.hittable_lane(L):
                 d = dmg + s.bonus(actor, None)
                 pool = s.lane_pool(L)
                 real = min(d, pool)
-                v = real * (1.0 if s.monster else 1.3)
-                if not s.monster and real >= pool:
+                on_body = s.monster and s.laneHP['E'][L] == 0
+                v = real * (1.0 if on_body else 1.3)
+                if on_body and real >= pool:
+                    v += 8
+                elif not on_body and real >= pool:
                     v += 3
-                    if s.open_count() == 1:
+                    if not s.monster and s.open_count() == 1:
                         v += 6
                 res.append((v, 'lane', L))
         return res
@@ -369,6 +372,12 @@ class Game:
                             t.hp = min(t.maxhp, t.hp + 2); t.downed = False
                             s.log(f"    {a.name} plays Patch: {t.name} +2 HP")
                         add(min(2, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, fuel, a)
+                elif c == 'Repair Pack':
+                    for t in [u for u in s.punits if u.lane is not None and u.hp < u.maxhp]:
+                        def run(a=a, t=t):
+                            t.hp = min(t.maxhp, t.hp + 2); t.downed = False
+                            s.log(f"    Repair Pack: {t.name} +2 HP")
+                        add(min(2, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, 0, a)
                 elif c == 'Ammo Crate':
                     hv = [u for u in s.punits if 'heavy' in u.gear and u.lane is not None and u.live]
                     if hv and hv[0].ammo < 4:
@@ -613,7 +622,7 @@ class Game:
 
     def result(s):
         if s.monster:
-            if s.round > 3 and (s.open_count() >= 2 or not s.body.live):
+            if s.round > 3 and not s.body.live:
                 return 'win'
         elif sum(1 for x in s.laneHP['E'] if x == 0) >= 2:
             return 'win'
