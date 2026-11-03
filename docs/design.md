@@ -74,7 +74,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 - **Members left at home** do downtime: healing, training and scheming.
 - **Example roles (Concord Marshals):** Marshal (command and tagging), Sentinel (shield and hold), Warden (carbine and cuffs), Medic (triage, a later recruit).
 - **Squad sizes** follow the faction, from a tight elite team to a large gang with expendable members.
-- **Hand size** is derived from faction, team size and skills.
+- **Hand size** is set per faction (each faction has its own baseline; the three starters all use 7 for now), and team size, perks and skills can move it from there.
 - **Recruiting** comes from both your faction's home district (reliable) and the hive's desperate (cheap, random, risky).
 
 **Tenebrae Security Combine, TSC (working design)**
@@ -253,19 +253,19 @@ The Hive Deck decides what you meet, and the Crew Deck decides how you handle it
 
 **One shared squad hand**
 
-The whole squad draws from and plays out of a single hand. Baseline hand size is 7, and faction, team size and skills can raise or lower it. It caps how much fuel you can spend on one action. At the start of each of your actions you draw back up to hand size, so burned cards are replaced right away.
+The whole squad draws from and plays out of a single hand. Each faction sets its own baseline hand size (the three starters use 7 for now), and team size, perks and skills can raise or lower it from there. It caps how much fuel you can spend on one action. At the start of each of your actions you draw back up to hand size, so burned cards are replaced right away.
 
 **Play it or burn it**
 
 - **Play:** use the card's own effect. A card's effect can be played by any member with the matching gear equipped. Two sledgehammers means *Big Swing* can be played from either.
 - **Burn:** discard any card from hand as fuel to activate a piece of slotted gear's basic action. *Swing* costs 1 card, *Heavy Swing* costs 2. Any card can be burned, even a strong one, such as an attack card burned for a cybernetic eye you do not need to aim this turn.
-- **Fuel value:** every card is worth 1 fuel by default. Some cards, such as supplies, carry a printed higher value.
+- **Fuel value:** every card is worth 1 fuel by default. Some cards, such as supplies, carry a printed higher value, and rarer cards can be worth 2 fuel, which makes burning a good card a real sacrifice. Which rarities carry 2 is still to be set.
 
 **Activations**
 
 - In combat you take one action at a time, then pass: play a card, activate gear, deploy a squad member, or discard and draw. Fuel for an activation is paid as part of that action (see Combat).
 - Instead of a once-per-turn limit, gear has timing. Most gear fires instantly, and some has a wind-up or recovery measured in rounds.
-- Perks bend the rules. For example, *Guns Akimbo* lets one action activate both guns for the fuel cost of one.
+- Perks bend the rules. For example, *Guns Akimbo* lets one action activate both guns for the fuel cost of one, as two separate attacks, one per gun. It needs two weapon slots, so how hands and weapon slots work is an open question (see the checklist).
 
 **Where cards go**
 
@@ -312,7 +312,7 @@ Gear is the unit of action and the source of the deck. Slots limit what is live,
 - Each member's base slots are weapon, armor, tool, implant and perk, with role and perk extras on top.
 - Each faction starts with basic versions of its gear plus one faction signature piece.
 - Higher tiers improve gear through riders, better damage and better activation costs. Damage is allowed to escalate so end-game gear feels meaningful.
-- Riders and attachment slots can be randomized between gear of the same tier. For example, a low-end blue might have 2 attachment slots and a rider that adds fire damage, while a high-end blue might have 3 slots and an armor-piercing rider.
+- Riders and attachment slots can be randomized between gear of the same tier. For example, a low-end blue might have 2 attachment slots and a rider that adds fire damage, while a high-end blue might have 3 slots and an armor-piercing rider. Attachments come in three kinds: some add a card of their own that sits outside the gear's card budget, some add a card that counts against the budget (taking the place of one of the gear's cards), and some add no card and only bend a rule on the gear, such as +1 damage or a cheaper fuel cost.
 
 ## Tests, economy and progression
 
@@ -373,7 +373,7 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 
 - Sides alternate single actions. On your action you do one thing, then pass: play a card, activate gear (fuel is paid as part of the action), deploy a squad member from the unit deck, or discard and draw.
 - At the start of each of your actions you draw back up to your maximum hand size (baseline 7). When your action deck runs out, you reshuffle the discard pile into it.
-- Discard and draw: discard up to a set number of cards (set by skills and faction). You refill at the start of your next action.
+- Discard and draw: discard up to 2 cards. Skills and upgrades can raise that limit. You refill at the start of your next action.
 - A round is one action from each side. Delays and statuses count in rounds.
 - Setup: in the first three rounds, each side must deploy a squad member into every lane. After that, every deployment is an action you did not spend attacking, and you do not have to deploy everyone.
 - Ambushes and traps can give the enemy the first actions, so you start with empty, exposed lanes.
@@ -523,14 +523,15 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [x] Captured lanes: can the enemy still deploy into a lane that has been captured, and does a captured lane's HP ever recover? Decided: the enemy can still deploy into a captured lane, and a captured lane's HP never recovers.
 - [ ] Downed members: do their gear and cards stay in play while they are downed? (Decided: a downed member does not screen their lane and cannot act, healing can stand them back up mid-fight, and after a fight they rise at 1 HP.)
 - [x] Is a round one action from each side? Decided: yes.
-- [ ] *Guns Akimbo*: does one action fire both guns (two attacks), or more?
-- [ ] How do factions and skills change the baseline hand size of 7, and how many cards can discard and draw cycle?
+- [x] *Guns Akimbo*: Decided: one action fires both guns as two separate attacks. It needs two weapon slots, which opens the question in the next item about hands and weapon slots.
+- [x] Hand size and discard and draw: Decided: each faction has its own baseline hand size, and discard and draw discards up to 2 cards, which skills and upgrades can raise. The per-faction baselines and the upgrades that raise the limit are set as each faction and the skill tree are designed.
 - [ ] Disposable gear: how plentiful is it at each tier, and which buildings produce it each expedition?
 - [ ] Is the inventory cap per member or one shared squad bag? Supplies: does a fight also tick the clock, and how does reloading gear with an ammo counter work (an action in a fight, between rooms, or both)?
 - [ ] Rarity: how rare are orange, red and gold, how do red (named or unique) and gold (archeotech or lostech) play differently, and does loot tier scale with hive depth?
 - [ ] Packs: how do pack tiers change the rarity ramp, is 5 vs 15 only a size difference, what do packs cost, what does a single-item pack contain, do specialty packs use a fixed ramp, and how does price scale with how narrow the scope is?
-- [ ] Attachments: how many cards can they add, and do they count against a gear's card budget?
-- [ ] Do higher-rarity cards carry more than 1 fuel, or only supplies?
+- [x] Attachments: Decided: there are three kinds. Some add a card outside the gear's card budget, some add a card that counts against the budget, and some add no card and only bend a rule on the gear.
+- [ ] Do higher-rarity cards carry more than 1 fuel? Decided: yes, rarer cards can be worth 2 fuel. Still open: which rarities carry 2, and whether any carry more.
+- [ ] Hands and weapon slots: members have two weapon slots, and some gear (two-handed weapons) takes both. Do shields and tools use the same two slots, what lets a perk like *Guns Akimbo* or an implant add slots, and which weapon classes are two-handed?
 - [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 - [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.

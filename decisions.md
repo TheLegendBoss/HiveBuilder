@@ -15,8 +15,8 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Fight length: short 8-10 rounds, medium 14-18, long 24+.
 
 **Cards**
-- Every card is an effect and fuel. Burn = discard from hand to pay for gear actions.
-- One shared squad hand, baseline 7, drawn back to max at the start of each action.
+- Every card is an effect and fuel (1 by default; supplies carry more, and rarer cards can be worth 2 fuel). Burn = discard from hand to pay for gear actions.
+- One shared squad hand, drawn back to max at the start of each action. Each faction sets its own baseline hand size (the three starters use 7 for now). Discard and draw discards up to 2 cards; skills and upgrades can raise that.
 - One activation per gear. Gear adds actions plus signature cards (template: 2 core + 1 utility).
 - Fates: Discard, Exhaust, Pitch (permanent), Consumed (disposable gear).
 - Checks: an exhausted card adds fuel value plus its Check-line bonus on the matching attribute. No player dice.
@@ -52,14 +52,15 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [x] Captured lanes: Decided: the enemy can still deploy into a captured lane, and a captured lane's HP never recovers.
 - [ ] Downed members: do their gear and cards stay in play while they are downed? (Decided: a downed member does not screen or act, healing can stand them up mid-fight, and after a fight they rise at 1 HP.)
 - [x] Is a round one action from each side? Decided: yes.
-- [ ] *Guns Akimbo*: does one action fire both guns (two attacks), or more?
-- [ ] How do factions and skills change the baseline hand size of 7, and how many cards can discard and draw cycle?
+- [x] *Guns Akimbo*: Decided: one action fires both guns as two separate attacks (needs two weapon slots).
+- [x] Hand size and discard and draw: Decided: per-faction baseline hand size; discard up to 2, raised by skills and upgrades.
 - [ ] Disposable gear: how plentiful is it at each tier, and which buildings produce it each expedition?
 - [ ] Is the inventory cap per member or one shared squad bag? Supplies: does a fight also tick the clock, and how does reloading gear with an ammo counter work (an action in a fight, between rooms, or both)?
 - [ ] Rarity: how rare are orange, red and gold, how do red (named or unique) and gold (archeotech or lostech) play differently, and does loot tier scale with hive depth?
 - [ ] Packs: how do pack tiers change the rarity ramp, is 5 vs 15 only a size difference, what do packs cost, what does a single-item pack contain, do specialty packs use a fixed ramp, and how does price scale with how narrow the scope is?
-- [ ] Attachments: how many cards can they add, and do they count against a gear's card budget?
-- [ ] Do higher-rarity cards carry more than 1 fuel, or only supplies?
+- [x] Attachments: Decided: three kinds (a card outside the gear's budget, a card that counts against it, or no card and just a rule bend).
+- [ ] Do higher-rarity cards carry more than 1 fuel? Decided: yes, rarer cards can be worth 2 fuel. Still open: which rarities carry 2, and whether any carry more.
+- [ ] Hands and weapon slots: members have two weapon slots, and some gear (two-handed weapons) takes both. Do shields and tools use the same two slots, what lets a perk like Guns Akimbo or an implant add slots, and which weapon classes are two-handed?
 - [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
 - [ ] Pressmen Solidarity: does Union Grudge stack for each downed Pressman or stay at +1, how is the 1 soak per round limited by maximum soak, and what is the exact ration hunger rate? Heavy weapons keep a 1-round wind-up, so is that the right size of drawback?
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? How does Warrant Mark work against monsters, where parts fill lanes? Is Revise Warrant too strong, and are the Subdue cards too weak against units with a lot of HP?
