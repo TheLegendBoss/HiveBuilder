@@ -66,12 +66,13 @@ def make_squad(cfg):
     if cfg.get('chassis_soak'):
         # built-in soak: small chassis 1, large chassis 2. Armor soak: 2 per armor piece.
         sm, lg = cfg['chassis_soak']
+        ap = cfg.get('armor_per_piece', 2)
         return [
-            Unit('Line A', 'P', 5, sm, 2, {'autogun', 'plating', 'lineskill', 'laser'}),
-            Unit('Line B', 'P', 5, sm, 2, {'autogun', 'plating', 'lineskill', 'uplink'}),
-            Unit('Vanguard', 'P', 6, lg, 4, {'shield', 'vanguard', 'plating'}),
-            Unit('Heavy', 'P', 6, lg, 2, {'heavy', 'heavyskill', 'plating'}),
-            Unit('Repair', 'P', 5, sm, 2, {'repairkit', 'repairskill', 'plating'}),
+            Unit('Line A', 'P', 5, sm, ap, {'autogun', 'plating', 'lineskill', 'laser'}),
+            Unit('Line B', 'P', 5, sm, ap, {'autogun', 'plating', 'lineskill', 'uplink'}),
+            Unit('Vanguard', 'P', 6, lg, 2 * ap, {'shield', 'vanguard', 'plating'}),
+            Unit('Heavy', 'P', 6, lg, ap, {'heavy', 'heavyskill', 'plating'}),
+            Unit('Repair', 'P', 5, sm, ap, {'repairkit', 'repairskill', 'plating'}),
         ]
     def soak(x):
         f = math.floor if cfg.get('round') == 'floor' else math.ceil
@@ -487,7 +488,10 @@ class Game:
 
     # ---------- enemy
     def dmg(s, base):
-        return base + s.cfg['enemy_bonus']
+        b = s.cfg['enemy_bonus']
+        if isinstance(b, dict):
+            b = b.get(s.force_name, 0)
+        return base + b
 
     def enemy_hit_target(s, u):
         lane = u.lane
