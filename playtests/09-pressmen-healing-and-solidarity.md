@@ -45,3 +45,7 @@ Baseline single fights
 - Is the healing passive a stronger supply heal (about 5 per pack), a stronger rest (about 8 HP per rest room), or both (84% at 8 rooms, 69% at 10)?
 - Since Solidarity carries so much of the faction, should that load be spread (for example a smaller soak regeneration with a larger melee bonus)? And what should happen when a Pressman is alone in a lane or downed?
 - Should the Pressmen later be allowed to start with a different squad size, given that the pairing rule needs at least four crew?
+
+## Decision
+
+The designer chose Ration Packs healing 5 (as a Mess-branch gang passive), and kept Solidarity as it is: it makes the faction tactical, and a bigger squad gets more pairing chances. The cost of more bodies is the deploy actions they use instead of attacking (true of every gang except the two horde factions). Expected result of the choice: about 92% at 5 rooms, 78% at 8 rooms and 66% at 10 rooms.
