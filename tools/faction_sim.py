@@ -44,11 +44,17 @@ def load_deck(fac):
     for r in csv.DictReader(open(os.path.join(DATA, fn))):
         deck[r['name']] = int(r['count'])
         S.FV[r['name']] = int(r['fuel_value'])
-    assert sum(deck.values()) == 30, (fac, sum(deck.values()))
+    assert sum(deck.values()) in (29, 30), (fac, sum(deck.values()))
     return deck
 
 
 DECKS = {f: load_deck(f) for f in ('pressmen', 'concord')}
+# Concord v1 (the deck as it stood in playtests 07 and 08 before the concussive rework), kept for reproducibility.
+DECKS['concord'] = {
+    'Flechette Volley': 4, 'Pinning Shot': 1, 'Cuff Shot': 4, 'Stun Pulse': 2, 'Tag Target': 3, 'Revise Warrant': 1,
+    'Close In': 2, 'Halt': 2, 'Shield Wall': 3, 'Interpose': 1, 'Plate Check': 2,
+    'Field Dressing': 2, 'Ammo Mag': 2, 'Spare Cuffs': 1,
+}
 # Concord v2 (playtest 08 test variant, not yet in the design doc): concussive guns with more damage, a lethal
 # Breacher shotgun, a fourth unit. Cards: name -> count; fuel values stay 1 (supplies 2).
 DECKS['concord2'] = {
@@ -173,10 +179,10 @@ class FGame(Game):
     def bonus(s, actor, tgt):
         b = 0
         if s.fac == 'pressmen':
-            if s.grudge:
+            if s.grudge and not s.cfg.get('no_grudge'):
                 b += 1
             if s._melee:
-                if any(x is not actor and x.live and x.lane == actor.lane for x in s.punits):
+                if not s.cfg.get('no_shoulder') and any(x is not actor and x.live and x.lane == actor.lane for x in s.punits):
                     b += 1
                 if actor.hstep:
                     b += 2
@@ -331,7 +337,7 @@ class FGame(Game):
 
     def player_action(s):
         if s.round > 3:
-            if s.fac == 'pressmen':
+            if s.fac == 'pressmen' and not s.cfg.get('no_shoulder'):
                 for u in s.punits:
                     if u.live and u.lane is not None and u.armor < u.armor_max and \
                             any(x is not u and x.live and x.lane == u.lane for x in s.punits):
@@ -635,6 +641,8 @@ def run_series(seed, n, cfg, mix):
         for u in squad:
             if u.downed:
                 u.downed = False; u.hp = 1
+        if cfg.get('rest') and (i + 1) % cfg.get('rest_every', 5) == 0:
+            S.clinic(squad, cfg['rest'])
     return n, rec
 
 
