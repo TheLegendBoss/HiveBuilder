@@ -32,6 +32,10 @@ FUEL_COST = {'Suppressing Fire': 1}
 
 BASE = dict(name='baseline', soak_scale=1.0, enemy_bonus=0)
 BODY_HP = 12
+TENT_HP = 3
+SPAWN_HP = None          # HP of spawned tentacles (None = TENT_HP)
+SPAWN_SICK = False       # spawned tentacle loses its first action
+SPAWN_ONLY_UNCAPTURED = False  # squid does not spawn in lanes whose lane HP is already broken
 HARSH = dict(name='harsh (half soak, +1 enemy damage)', soak_scale=0.5, enemy_bonus=1)
 
 
@@ -56,7 +60,8 @@ class Unit:
 
 def make_squad(cfg):
     def soak(x):
-        return int(math.ceil(x * cfg['soak_scale']))
+        f = math.floor if cfg.get('round') == 'floor' else math.ceil
+        return int(f(x * cfg['soak_scale']))
     mk = lambda n, hp, arm, gear: Unit(n, 'P', hp, soak(2), soak(arm), gear)
     return [
         mk('Line A', 5, 3, {'autogun', 'plating', 'lineskill', 'laser'}),
@@ -82,7 +87,7 @@ def make_force(name):
         guard = lambda: Unit('Deserter Guard', 'E', 4, builtin=2, pattern=['carbine', 'baton'])
         return [guard(), Unit('Deserter Captain', 'E', 6, pattern=['sidearm', 'rally_order']), guard()], [guard()], None
     if name == 'Sump squid':
-        t = lambda: Unit('Tentacle', 'E', 3, pattern=['lash', 'grapple'], kind='part')
+        t = lambda: Unit('Tentacle', 'E', TENT_HP, pattern=['lash', 'grapple'], kind='part')
         body = Unit('Squid Body', 'E', BODY_HP, pattern=['ink'], kind='body')
         return [t(), t(), t()], [], body
     raise KeyError(name)
@@ -374,10 +379,11 @@ class Game:
                         add(min(2, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, fuel, a)
                 elif c == 'Repair Pack':
                     for t in [u for u in s.punits if u.lane is not None and u.hp < u.maxhp]:
-                        def run(a=a, t=t):
-                            t.hp = min(t.maxhp, t.hp + 2); t.downed = False
-                            s.log(f"    Repair Pack: {t.name} +2 HP")
-                        add(min(2, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, 0, a)
+                        amt = s.cfg.get('heal_amount', 2)
+                        def run(a=a, t=t, amt=amt):
+                            t.hp = min(t.maxhp, t.hp + amt); t.downed = False
+                            s.log(f"    Repair Pack: {t.name} +{amt} HP")
+                        add(min(amt, t.maxhp - t.hp) * 1.2 + (3 if t.downed else 0), run, c, 0, a)
                 elif c == 'Ammo Crate':
                     hv = [u for u in s.punits if 'heavy' in u.gear and u.lane is not None and u.live]
                     if hv and hv[0].ammo < 4:
@@ -583,17 +589,19 @@ class Game:
         for L in range(3):
             if not s.units('E', L):
                 if s.monster:
-                    if L not in s.regrown:
-                        s.regrown.add(L)
-                        t = Unit('Tentacle', 'E', 3, pattern=['lash', 'grapple'], kind='part')
-                        t.lane = L; s.lanes['E'][L].append(t)
-                        s.log(f"    the squid regrows a tentacle in lane {L+1}")
-                        return
+                    continue
                 elif s.edeck:
                     u = s.edeck.pop(0); u.lane = L; s.lanes['E'][L].append(u)
                     s.log(f"    deploys {u.name} to empty lane {L+1}")
                     return
-        units = [u for L in range(3) for u in s.units('E', L)]
+        units = []
+        for L in range(3):
+            us = s.units('E', L)
+            if us:
+                units += us
+            elif s.monster and (not SPAWN_ONLY_UNCAPTURED or s.laneHP['E'][L] > 0):
+                sp = Unit('spawn', 'E', 1, kind='spawner'); sp.lane = L
+                units.append(sp)
         if s.monster and s.body.live:
             units.append(s.body)
         if not units:
@@ -606,6 +614,13 @@ class Game:
                 u.stunned = False; u.pending = None
                 s.eptr = (s.eptr + k + 1) % n
                 s.log(f"    {u.name} is stunned and loses its action")
+                return
+            if u.kind == 'spawner':
+                s.eptr = (s.eptr + k + 1) % n
+                t = Unit('Tentacle', 'E', SPAWN_HP or TENT_HP, pattern=['lash', 'grapple'], kind='part')
+                t.stunned = SPAWN_SICK
+                t.lane = u.lane; s.lanes['E'][u.lane].append(t)
+                s.log(f"    the squid acts in empty lane {u.lane+1} and generates a new tentacle")
                 return
             if u.kind == 'body':
                 s.eptr = (s.eptr + k + 1) % n

@@ -13,9 +13,9 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 19 designs, 30 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 30 cards. |
 | `data/concord_starting_deck.csv` | The Concord Marshals starter deck: 14 designs, 30 cards. |
-| `playtests/` | Paper-fight reports: `01-tsc-vs-scavver-pack.md` (one fight) and `02-tsc-series.md` (5, 10 and 15 fights in a row) and `03-dungeon-healing-and-squid.md` (5 to 10 fight dungeons with healing supplies). |
+| `playtests/` | Paper-fight reports: `01-tsc-vs-scavver-pack.md` (one fight) and `02-tsc-series.md` (5, 10 and 15 fights in a row) and `03-dungeon-healing-and-squid.md` (5 to 10 fight dungeons with healing supplies) and `04-soak-healing-and-squid-spawn.md` (3/4 soak, 4-HP healing, tentacle spawning). |
 | `tools/paper_fight_sim.py` | First simulator: TSC starter deck vs the Scavver pack. Run `python3 tools/paper_fight_sim.py log 1` or `stats 3000`. |
-| `tools/series_sim.py` | Multi-fight simulator with all five test enemy forces. Run `python3 tools/series_sim.py single`, `series` or `log "Sump squid" 3`. Helper scripts `series_extras.py`, `series_grid.py` and `dungeon_grid.py` build the extra tables. |
+| `tools/series_sim.py` | Multi-fight simulator with all five test enemy forces. Run `python3 tools/series_sim.py single`, `series` or `log "Sump squid" 3`. Helper scripts `series_extras.py`, `series_grid.py`, `dungeon_grid.py`, `dungeon_grid2.py`, `squid_variants.py` and `soak_rounding.py` build the extra tables. |
 
 ## The short version
 

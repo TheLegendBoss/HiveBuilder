@@ -5,6 +5,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 ## Locked rules
 
 **Combat**
+- Sump squid: whenever it acts in a lane with no tentacle it generates a new tentacle there (needs a limit, see open questions).
 - Monsters have one large pooled body HP plus lane HP. Units screen the lane, you defeat the lane HP, and only then can you hit the body from that lane. The monster is defeated when its body reaches 0.
 - 3 fixed lanes; win by overwhelming 2 of 3. Units screen their lane's HP (working rule). Captured lanes let units attack adjacent lanes.
 - Alternating single actions. Setup: first 3 rounds deploy one unit per lane.
@@ -59,6 +60,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [ ] Rules gaps found in playtest 01 (TSC vs the Scavver pack, see `playtests/` in the repo): lane capacity (assumed 2 per side), what each side does in the setup rounds (assumed deploy only, no attacks), whether downed units screen their lane HP (assumed no), whether the soak "gain" effects can exceed an armor's maximum (assumed no), how much built-in and armor soak a droid has, and whether a stunned scripted unit loses its turn (assumed yes). Balance: the patrol is far too easy, with soak very large and grunt HP of 3 against 3-damage Burst Fire.
 - [ ] Playtest 02 (TSC in a series of fights, half soak and +1 enemy damage): does armor soak refill between fights, do downed members stand back up and at what HP, and how much does a rest room or clinic heal? Enemy damage looks like the main balance lever, the Deserter patrol is far deadlier than the other forces, and the Sump squid dies in 5 or 6 actions, so monster difficulty needs a pass.
 - [ ] Playtest 03 (dungeon runs of 5 to 10 fights, healing supplies, reworked squid): how much does a healing supply heal and how many does a squad bring (2 packs of 2 HP help, 4 or 6 add little)? Full soak with +1 enemy damage looks closest to right for the TSC. The reworked squid is a long fight (about 23 actions at a 12-HP body) that barely hurts the squad, so does the body get an attack, and should the tentacle regrow or lane HP be trimmed?
+- [ ] Playtest 04 (3/4 soak, 4-HP healing supplies, squid that generates tentacles in empty lanes): as written, the squid is nearly unwinnable (about 19% wins) because a lane gets a new tentacle every squid cycle, so it needs a limit (for example, no spawning in lanes whose lane HP is already broken, which makes it a long but winnable fight). Four-HP healing supplies are far stronger than 2-HP ones (10-fight dungeons finish 90% with 2 packs, against 72%). 3/4 soak depends on rounding: rounded up it is almost full soak, rounded down it is much harsher, so soak needs whole numbers.
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 
 ## Next steps
