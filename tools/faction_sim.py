@@ -95,6 +95,10 @@ def make_squad(cfg):
         u = Unit(name, 'P', hp, 0, arm, gear)
         u.ammo = 4 if (gear & AMMO_GEAR) else 0
         u.wind, u.hstep, u.slowed = None, 0, False
+        if cfg.get('hp_set'):
+            u.maxhp = u.hp = cfg['hp_set']
+        if cfg.get('armor_add'):
+            u.armor += cfg['armor_add']; u.armor_max += cfg['armor_add']
         squad.append(u)
     return squad
 
@@ -108,7 +112,8 @@ class FGame(Game):
         s.sc = collections.Counter()   # stun counters by unit id
         s.captured = 0
         s.warrant_body = s.v2 and s.monster
-        s.pdeck = [c for c, n in DECKS[s.deckname].items() for _ in range(n)]
+        _deck = dict(DECKS[s.deckname]); _deck.update(cfg.get('deck_over', {}))
+        s.pdeck = [c for c, n in _deck.items() for _ in range(n)]
         s.r.shuffle(s.pdeck)
         s.pdisc, s.hand = [], []
         s.grudge = False
@@ -283,7 +288,9 @@ class FGame(Game):
             for k in sorted(s.sc):
                 if s.sc[k] > 0:
                     r = s.r.randint(1, 6)
-                    s.sc[k] = max(0, s.sc[k] - (2 if r == 6 else 1 if r >= 3 else 0))
+                    thr = s.cfg.get('roll_min', 3)
+                    six = s.cfg.get('roll_six', True)
+                    s.sc[k] = max(0, s.sc[k] - (2 if (six and r == 6) else 1 if r >= thr else 0))
 
     # ---------- wind-ups
     def start_windup(s, a, spec):

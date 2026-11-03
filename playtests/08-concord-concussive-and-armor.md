@@ -135,3 +135,31 @@ Findings:
 2. A modal Volley (3 lethal or 2 concussive) changes almost nothing (65% and 31%), since the 2-damage concussive mode is weaker than the Cuff Shot.
 3. Pressmen with 3 crew at armor 3 are now too hard (50% and 16%). Armor 4 per piece gets 81% and 55%, which is close to the target. The squad no longer needs HP to match it: more HP alone helps little.
 4. **Rules conflict.** The Solidarity rule says four Pressmen across three lanes always leave two sharing a lane. With three crew deployed one per lane in the setup rounds, Shoulder to Shoulder never triggers (and Close Ranks never has a second Pressman to help). The 3-crew numbers above include no Solidarity soak regeneration or melee bonus.
+
+## Update 3: flat stun removal, stronger modal concussive, and Pressmen tuning
+
+Rules chosen by the designer: Concord armor 4 per piece; a stunned enemy removes 1 stun counter on a roll of 4 or more (flat, no bonus on a 6; about 0.5 counters per turn). Modal cards: test a much stronger concussive mode. Pressmen: keep 4 crew, cut Ration Pack to 1, set starting HP to 6 and add 2 soak to their armor. I read "starting 6" as every Pressman at 6 HP (down from 7 or 8) and "2 soak to their armor" as +2 armor soak on each unit; the Ration Pack cut leaves a 28-card deck. 300 dungeons per row. Target: 85 to 90% at 5 rooms and 60% at 10.
+
+| Squad | HP | Armor soak | 5 rooms | 10 rooms |
+| --- | --- | --- | --- | --- |
+| Concord v2, armor 4, separate lethal and concussive cards | 26 | 20 | 74% | 44% |
+| Concord v2 + modal Volley (3 lethal or 3 concussive) | 26 | 20 | 75% | 43% |
+| Concord v2 + modal Volley (3 lethal or 4 concussive) | 26 | 20 | 78% | 49% |
+| Concord v2 + modal Volley (3 lethal or 5 concussive) | 26 | 20 | 89% | 71% |
+| Pressmen now (HP 8/8/7/7, armor 3, 3 Ration Packs) | 30 | 15 | 100% | 98% |
+| Pressmen: Ration Pack x1, HP 6, armor +2 each (the designer's suggestion) | 24 | 23 | 100% | 100% |
+| Pressmen: Ration Pack x1, HP kept, armor +2 each | 30 | 23 | 100% | 99% |
+| Pressmen: Ration Pack x1, HP 6, armor 3 | 24 | 15 | 95% | 81% |
+| Pressmen: Ration Pack x1, HP kept, armor 3 | 30 | 15 | 95% | 88% |
+| Pressmen: Ration Pack x0, HP 6, armor 3 | 24 | 15 | 83% | 46% |
+| Pressmen: Ration Pack x1, HP 5, armor 3 | 20 | 15 | 91% | 71% |
+| Pressmen: Ration Pack x1, HP 6, armor 3, Cauterize and Weld Seam out | 24 | 15 | 92% | 68% |
+| Pressmen: Ration Pack x1, HP 6, armor 2 per piece | 24 | 10 | 39% | 5% |
+
+Concord single fights with flat stun removal at armor 4: Scavver pack 100%, Slag hauler 100%, Sump sniper team 100%, Deserter patrol 99%, squid 94%. Captures per fight are about 0.7 to 1.0.
+
+Findings:
+
+1. Flat 4+ removal puts Concord at armor 4 at 74% and 44% (the roll 3+ with a 6 bonus gave 66% and 33%).
+2. A modal concussive mode needs to be strong to matter: at 5 it lifts Concord to 89% and 71%, but it then beats the separate Cuff Shot (4 concussive, 1 ammo), which makes the specialized card pointless.
+3. The suggested Pressmen change (+2 armor soak each) makes them far easier, not harder (100% and 100%), because armor soak is worth far more than HP. Armor at 2 per piece goes the other way (39% and 5%), so armor is a very sensitive lever for Pressmen. Cutting healing and HP is the gentler way: Ration Pack x1, HP 6, armor 3 gets 95% and 81%; dropping Ration Pack to none gets 83% and 46%; dropping Cauterize and Weld Seam as well as cutting to one Ration Pack gets 92% and 68%.
