@@ -64,7 +64,13 @@ AMMO_GEAR = {'rivet', 'cuff', 'shotgun'}
 
 def make_squad(cfg):
     ap = cfg.get('armor_per_piece', 3)
-    if cfg['faction'] == 'pressmen':
+    if cfg['faction'] == 'pressmen' and cfg.get('crew3'):
+        spec = [
+            ('Hammerhand', 8, ap, {'sledge', 'pskill', 'harness', 'fplate'}),
+            ('Ironback', 8, 2 * ap, {'mantlet', 'chains', 'pskill2', 'fplate'}),
+            ('Rivet Gunner', 7, ap, {'rivet', 'brawler', 'torch', 'fplate'}),
+        ]
+    elif cfg['faction'] == 'pressmen':
         spec = [
             ('Hammerhand', 8, ap, {'sledge', 'pskill', 'harness', 'fplate'}),
             ('Ironback', 8, 2 * ap, {'mantlet', 'chains', 'pskill2', 'fplate'}),
@@ -273,6 +279,11 @@ class FGame(Game):
             for k in list(s.sc):
                 if s.sc[k] > 0:
                     s.sc[k] = max(0, s.sc[k] - s.cfg['decay'])
+        if s.cfg.get('roll'):
+            for k in sorted(s.sc):
+                if s.sc[k] > 0:
+                    r = s.r.randint(1, 6)
+                    s.sc[k] = max(0, s.sc[k] - (2 if r == 6 else 1 if r >= 3 else 0))
 
     # ---------- wind-ups
     def start_windup(s, a, spec):
@@ -395,6 +406,9 @@ class FGame(Game):
                         for v, k, t in s.targets(a, 3, False):
                             v = warrant_adj(v, k, t, 3, a, False) + (0.3 if k == 'unit' and t.exposed else 0)
                             add(v, lambda a=a, k=k, t=t: s.p_attack(a, k, t, 3, extra_exposed=1), c, fuel, a)
+                        if s.cfg.get('modal'):
+                            for v, k, t in s.conc_targets(a, s.cfg['modal']):
+                                add(v, lambda a=a, k=k, t=t: s.c_attack(a, k, t, s.cfg['modal']), c, fuel, a)
                     elif c == 'Breach Blast' and a.ammo >= 1:
                         for v, k, t in s.targets(a, 4, False):
                             v = warrant_adj(v, k, t, 4, a, False)

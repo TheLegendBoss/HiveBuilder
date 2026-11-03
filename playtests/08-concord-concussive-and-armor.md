@@ -109,3 +109,29 @@ Concord v2, 26 HP, 300 dungeons per row:
 With wear-off, captures per fight fall by about half (1.1 to 0.4–0.7), so Concord takes more damage and armor 5 is what lands on the 85 to 90% target at 5 rooms (70% at 10 rooms, a little easy). Single fights at armor 4 with wear-off: Scavver pack 100%, Slag hauler 100%, Sump sniper 100%, Deserter patrol 98%, squid 95%.
 
 Note on the Pressmen question: both Pressmen (4 crew) and Concord (now 4) have one more unit than there are lanes. The setup rounds deploy one unit per lane, so the fourth deploys with a normal action afterwards. Playtest 07's bot deployed the Medic too late, and that was the only thing corrected. No design changed.
+
+## Update 2: stun removal roll, modal Volley and a 3-crew Pressmen squad
+
+Rules chosen by the designer: each turn a stunned enemy rolls to remove stun counters (a d6 in the simulator: 3 to 5 removes 1, a natural 6 removes 2, 1 or 2 removes none; about 0.83 counters per turn). Armor stays at 4 for Concord. If the Pressmen Medic makes them too easy, drop the Pressmen to 3 crew. Modal cards were to be tested.
+
+Dungeon finish rates, 300 dungeons per row (target 85 to 90% at 5 rooms, 60% at 10):
+
+| Squad | HP | Armor soak | 5 rooms | 10 rooms |
+| --- | --- | --- | --- | --- |
+| Concord v2, armor 4, stun roll | 26 | 20 | 66% | 33% |
+| Concord v2, armor 5, stun roll | 26 | 25 | 88% | 76% |
+| Concord v2, armor 6, stun roll | 26 | 30 | 97% | 95% |
+| Concord v2, armor 4, +2 HP each, stun roll | 34 | 20 | 83% | 50% |
+| Concord v2 with modal Volley (3 lethal or 2 concussive), armor 4, stun roll | 26 | 20 | 65% | 31% |
+| Pressmen, 4 crew | 30 | 15 | 100% | 98% |
+| Pressmen, 3 crew (no Medic, the Rivet Gunner takes the torch), armor 3 | 23 | 12 | 50% | 16% |
+| Pressmen, 3 crew, armor 4 per piece | 23 | 16 | 81% | 55% |
+| Pressmen, 3 crew, +2 HP each, armor 4 per piece | 29 | 16 | 91% | 74% |
+| Pressmen, 3 crew, +2 HP each, armor 3 | 29 | 12 | 67% | 28% |
+
+Findings:
+
+1. The stun roll is about as harsh as wearing off 1 per round. It does not remove the need for more defense: Concord at armor 4 finishes 66% and 33%. Armor 5 gets 88% and 76%, and 4 armor with +2 HP each lands in between (83% and 50%).
+2. A modal Volley (3 lethal or 2 concussive) changes almost nothing (65% and 31%), since the 2-damage concussive mode is weaker than the Cuff Shot.
+3. Pressmen with 3 crew at armor 3 are now too hard (50% and 16%). Armor 4 per piece gets 81% and 55%, which is close to the target. The squad no longer needs HP to match it: more HP alone helps little.
+4. **Rules conflict.** The Solidarity rule says four Pressmen across three lanes always leave two sharing a lane. With three crew deployed one per lane in the setup rounds, Shoulder to Shoulder never triggers (and Close Ranks never has a second Pressman to help). The 3-crew numbers above include no Solidarity soak regeneration or melee bonus.
