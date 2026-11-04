@@ -82,7 +82,7 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 - Inspired by the robot units of a corporate gang. They are disposable drones, not hostile artificial intelligence, just above average and very forgiving.
 - Modular bipedal chassis in roles such as line droid, vanguard (shield), heavy arms, rocket unit, marksman, winged assault unit and repair droid. The starting squad is five droids: two line droids, a vanguard, a heavy-arms droid and a repair droid. New chassis come from packs. The rocket unit's rocket hits every enemy in the lane and uses a small ammo counter. The marksman's sniper rifle has reach, so it can target an adjacent lane before you capture one. The winged assault unit makes one free basic attack when it is deployed.
 - Every chassis has balanced stats, just above average with no weak stat. There is no stress track, and the aftermath deck is made of damage reports that are mostly repairable, apart from a rare head destroyed result that is permanent. Their gear is efficient and widely available to produce or buy, and they are jacks of all trades, so melee, ranged and mixed builds are all viable without heavy punishment. Gear is cheap to produce or buy but has solid stats for the price. A wide range is available at the start: pistols (light, standard and heavy), machine pistols, SMGs, shotguns (pistol-grip, pump and semi-auto), light and medium assault rifles, battle rifles, light and medium machine guns, DMRs and snipers, grenades, light and medium armor plates, and shields, plus melee weapons (machetes, combat knives, hatchets, light and heavy axes, and breaching axes, hammers and mauls). TSC also has attachments from the start. As machines, droids also have built-in soak points on top of any armor. This soak is temporary: it refills between fights and cannot be refilled once used. Small chassis (line droid, repair droid) have 1 built-in soak and large chassis (vanguard, heavy arms) have 2. Each piece of armor equipment adds 3 armor soak for now (set in playtest 06), so a vanguard with plating and a shield has 6.
-- Droids are repaired for credits at a charging station, the faction's recovery room, instead of waiting for injuries to heal over several expeditions like humanoids. A destroyed droid can be recovered by taking its brain chip, so it is very difficult to permanently lose a squadmate. If a droid's head is destroyed by a result from the aftermath deck, it is lost forever.
+- Droids are repaired for Eagles at a charging station, the faction's recovery room, instead of waiting for injuries to heal over several expeditions like humanoids. A destroyed droid can be recovered by taking its brain chip, so it is very difficult to permanently lose a squadmate. If a droid's head is destroyed by a result from the aftermath deck, it is lost forever.
 - Progression is per droid, as for other factions. The faction's special rule also lets you upgrade per chassis (firmware). Chassis have the same number of tiers as gear rarities, and the faction's perk, skill and accessory cards require a chassis of equal rarity or better. A chassis tier is shared by every droid of that type (one chassis card per type), and each tier adds more health, perk slots and more. Repair and rebuild cost scales with the chassis tier, but not prohibitively. The starting deck is about 30 cards with a hand of 7: autogun, shield, heavy autofire and repair kit cards, role skill cards, seven supply cards (two of them Repair Packs) and four starter faction cards (a laser sight and an uplink module). The line droid's role skill is Focus Fire: your next attack against the same target deals +1 damage.
 
 **TSC starting deck (draft, placeholder numbers)**
@@ -112,13 +112,13 @@ The player picks a faction and leads a squad of its crew. The faction sets the e
 
 **TSC buildings (first pass)**
 
-- **Charging Station.** Repairs droids for credits, and damaged droids can be sent here to recharge during an expedition. It needs a powered room, such as a generator room.
+- **Charging Station.** Repairs droids for Eagles, and damaged droids can be sent here to recharge during an expedition. It needs a powered room, such as a generator room.
 - **Fabricator.** Produces common and uncommon gear and rebuilds chassis at a discount each expedition. It needs an industrial room.
 - Held for later: Comms Relay (gradually reveals a rival gang's attitude and then its path) and Barracks (raises the droid roster size).
 
 **TSC passive tree (working design)**
 
-- Power (gang influence) grants points to spend on the tree. There are four branches of about five nodes each: **Procurement** (economy: cheaper packs and gear, more credits from claimed rooms), **Firmware** (combat: chassis bonuses, cheaper activations on faction gear), **Logistics** (supplies: bigger inventory, more rations, ammo counters that refill more easily) and **Field Service** (recovery: cheaper repairs, faster charging, a better chance that a brain chip survives).
+- Power (gang influence) grants points to spend on the tree. There are four branches of about five nodes each: **Procurement** (economy: cheaper packs and gear, more Eagles from claimed rooms), **Firmware** (combat: chassis bonuses, cheaper activations on faction gear), **Logistics** (supplies: bigger inventory, more rations, ammo counters that refill more easily) and **Field Service** (recovery: cheaper repairs, faster charging, a better chance that a brain chip survives).
 - Each branch ends in a capstone that changes a rule instead of adding a number. For example, a Field Service capstone makes the head-destroyed result less likely, and a Procurement capstone lets you buy from rival markets.
 - Branches are mostly separate. Only a very few nodes need points in two branches.
 
@@ -156,7 +156,7 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 
 **Pressmen buildings (first pass)**
 
-- **The Pit.** Hosts fights for credits and recruits and lets crew train between expeditions. It needs a large open room.
+- **The Pit.** Hosts fights for Eagles and recruits and lets crew train between expeditions. It needs a large open room.
 - **Mess Hall.** Makes rations cheaper and offsets ration hunger. It needs a room with a kitchen or storage.
 - Held for later: Press Floor (produces heavy melee gear, needs an industrial room) and Union Hall (raises the roster size).
 
@@ -171,7 +171,7 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 - **Identity.** A medium-easy faction and the third starter. A squad of four elite members, so at least two share a lane and cards that work between units always have a partner. Fewer cards than the other factions, but each does more, and every weapon starts with one built-in attachment, so the kit is more advanced than the droids'. They are about 1 HP above a baseline unit (working starting HP 6 to 7, 26 across the squad), strong in Wits and Nerve, and better armored than the TSC: 4 armor soak per piece, against the TSC's 3. Their guns hit harder than the droids', but their non-lethal weapons deal stun counters instead of HP loss. Recruits are expensive.
 - **Faction rule, Warrant.** It has three linked parts, and each is one sentence on the board.
   - **Warrant Mark.** At the start of each fight, mark one enemy unit as Warranted (the gang's leader or a named bounty target by default). Your units deal +1 damage to the Warranted unit. Against a monster such as the squid, the mark is on its body: your units deal +1 damage to the body once its lane HP is gone, but a monster can never be captured.
-  - **Concussive damage and capture.** Concord's non-lethal weapons carry the Concussive keyword: they deal stun counters instead of HP loss, and concussive damage ignores soak. A unit with stun counters at least equal to its current HP is Stunned (it loses its action each turn it stays that way). A unit with stun counters at least twice its current HP is taken out and captured. Lethal damage lowers current HP, so lethal and concussive weapons can be mixed. On its turn a stunned enemy rolls to remove counters: on a 4 or more it removes 1. Stun counters also raise the fuel an enemy needs to use its abilities. Capturing the Warranted unit pays its bounty (credits and 1 Authority). Capturing any other unit pays a small bounty. Killing the Warranted unit pays nothing and costs 1 Authority. Working rule: concussive damage against a monster's lane HP and body is ordinary damage, and its parts are knocked out, not captured.
+  - **Concussive damage and capture.** Concord's non-lethal weapons carry the Concussive keyword: they deal stun counters instead of HP loss, and concussive damage ignores soak. A unit with stun counters at least equal to its current HP is Stunned (it loses its action each turn it stays that way). A unit with stun counters at least twice its current HP is taken out and captured. Lethal damage lowers current HP, so lethal and concussive weapons can be mixed. On its turn a stunned enemy rolls to remove counters: on a 4 or more it removes 1. Stun counters also raise the fuel an enemy needs to use its abilities. Capturing the Warranted unit pays its bounty (Eagles and 1 Authority). Capturing any other unit pays a small bounty. Killing the Warranted unit pays nothing and costs 1 Authority. Working rule: concussive damage against a monster's lane HP and body is ordinary damage, and its parts are knocked out, not captured.
   - **Tag and Cuff.** Tag cards make a unit Exposed (+1 damage from its next hit, concussive hits included). Cuff cards are concussive and splash a lesser stun onto the other enemy in the lane. The usual turn is tag first, then cuff.
 - **Cost, Authority.** A campaign track (working range 0 to 10, starting at 3). It rises with arrests and completed bounties and falls when a Warranted unit is killed instead of arrested. Some gates and sections are marked with a writ and open only if Authority is high enough, instead of costing power (gang influence). Authority is separate from power. Low Authority means the hive treats you as just another gang, and high Authority makes home-district recruiting cheaper. All numbers are placeholders.
 - **Starting crew (4).** Marshal (command and tagging), Sentinel (glass shield and sonic stunner), Warden (carbine and cuff launcher) and Breacher (breaching shotgun, lethal). Hand of 7, 30 cards. A Medic is a later recruit.
@@ -198,8 +198,8 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 
 **Concord Marshals buildings (first pass)**
 
-- **Holding Cells.** Holds arrested prisoners. Each can be ransomed for credits, interrogated to reveal a rival gang's attitude and then its path, or recruited at a risk. Without cells, prisoners are handed over on the spot for a small bounty. It needs a secure room such as a vault or cell block.
-- **Bounty Office.** At the start of each expedition, draw a few contracts on named targets from the denizens and rival gangs, and pick one or two to hunt for credits, power and Authority. It needs a claimed room with a comms link.
+- **Holding Cells.** Holds arrested prisoners. Each can be ransomed for Eagles, interrogated to reveal a rival gang's attitude and then its path, or recruited at a risk. Without cells, prisoners are handed over on the spot for a small bounty. It needs a secure room such as a vault or cell block.
+- **Bounty Office.** At the start of each expedition, draw a few contracts on named targets from the denizens and rival gangs, and pick one or two to hunt for Eagles, power and Authority. It needs a claimed room with a comms link.
 - Held for later: Armory (produces specialty restraint gear) and Records Hall (raises the roster size).
 
 **Concord Marshals passive tree (working design)**
@@ -302,7 +302,7 @@ Gear is the unit of action and the source of the deck. Slots limit what is live,
 
 - **Skills** are tied to roles and are locked to that role, such as a heal for Medics or cheaper grenade activation for demolition specialists.
 - **Perks** tend (but are not limited) to be universal cards, assigned to unit cards like gear. Higher-tier or higher-level units can attach more perk cards. Some perks are limited by gang or role.
-- **Unit levels.** Members earn XP by surviving encounters. Promotion happens at home between expeditions. Each tier adds a perk slot and some stat points, and recruiting higher-tier members costs more.
+- **Unit levels.** Members earn XP by surviving encounters. Promotion happens at home between expeditions. Each tier adds a perk slot and some stat points, and recruiting higher-tier members costs more. There are 5 tiers, matching the rarity ladder, and XP also comes from completing dungeons.
 - **Buildings** are cards ripped from packs and placed in claimed rooms, which act as the building slots (see Gates, sections and footholds). They give campaign-level bonuses: an Infirmary improves healing at rest rooms, a Workshop makes grinding cheaper and can produce disposable gear each expedition, an Armory raises the inventory cap, and Barracks raise the roster size. They can also unlock crafting recipes, earn income and grant XP to members left at home. The range is wide open.
 - **The passive tree.** Each gang has a passive upgrade tree with faction-wide passives. It can upgrade non-combat values and improve gang-specific skills, perks and gear. Power (gang influence) grants points that you spend on the tree.
 
@@ -338,19 +338,19 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 
 - Cards come from loot found in the hive and from packs bought at connected markets.
 - Basic faction gear is abundant. Advanced, improved or "enhanced" gear must be pulled from packs or crafted.
-- Loose cards are pitched at markets for credits (placeholder name) or ground up as fodder at the crafting bench. Rarity sets their value, so every spare card has two exits: sell it for packs, or grind it into an upgrade. Credits also come from fights, rooms and claimed districts.
+- Loose cards are pitched at markets for Eagles, the currency or ground up as fodder at the crafting bench. Rarity sets their value, so every spare card has two exits: sell it for packs, or grind it into an upgrade. Eagles also come from fights, rooms and claimed districts.
 
 **Packs**
 
 - Packs come in tiers, similar to the packs in Mass Effect 3 multiplayer, and each pack holds either 5 or 15 cards.
 - Rarity ramps up within a pack. The first slots are the lowest tier, and each slot deeper has a higher chance of a rarer card.
 - All cards can be pulled from packs, whatever their type or tier.
-- Working rule: a higher pack tier lifts both the floor and the ceiling of the ramp, with red and gold only possible in the top tier's last slots. Size (5 or 15) is a separate dial, and price rises faster than size. Pack costs and the exact odds are still to be designed.
+- Working rule: a higher pack tier lifts both the floor and the ceiling of the ramp, with red and gold only possible in the top tier's last slots. Size (5 or 15) is a separate dial, and price rises faster than size. A standard pack of 5 costs roughly one room's income, so a typical dungeon buys a few packs. Exact costs and odds are still to be designed.
 - **Specialty packs** (such as perk packs, gear packs or energy weapon packs) cost more but narrow the pool of cards they pull from. They are not tiered like standard packs. Their reduced scope is the benefit. Scope runs from broad groups such as all gear (fairly common, priced above a basic pack but below a tier 2 pack) down to a single specific weapon (incredibly rare and expensive). Markets, traveling merchants and buildings can sell or generate them.
 
 **Crafting and upgrades**
 
-- Weaker or less rare versions are ground down, along with several other cards, into better versions. Each card has a pitch value set by its rarity, and an upgrade costs a total pitch value of fodder. Copies of the same item count extra, so burning the same weapon is the key to a higher-tier version, and upgrades are expensive. The base copy keeps its riders and attachment slots and moves up a tier, and the other copies are consumed as fodder. Rerolling a copy's rolls is a separate paid service, such as from a Workshop building.
+- Weaker or less rare versions are ground down, along with several other cards, into better versions. Each card has a pitch value set by its rarity (1, 2, 4, 8 and 16 from white up to orange; red and gold are still to be set), and an upgrade costs four times the target tier's pitch value in fodder. Copies of the same item count double, so burning the same weapon is the key to a higher-tier version, and upgrades are expensive. The base copy keeps its riders and attachment slots and moves up a tier, and the other copies are consumed as fodder. Rerolling a copy's rolls is a separate paid service, such as from a Workshop building.
 - Perks and skills advance the same way. Whenever an upgrade gives a card a new rider or action, you choose between two versions of it.
 - Better gear should also be better material, so every upgrade is a real sacrifice.
 - Pack contents, rarity odds and grind ratios are still to be designed.
@@ -397,7 +397,7 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 
 **Unit cards**
 
-- Every squad member has a unit card: HP, a stress track, stats, a role and slots. Stats are Force, Wits, Nerve and Tech (placeholders). In a lane the card also shows status counters and wind-up counters. HP carries over between fights in an expedition, and rest rooms and Medic cards restore it.
+- Every squad member has a unit card: HP, a stress track, stats, a role and slots. Stats are Force, Wits, Nerve and Tech (placeholders). In a lane the card also shows status counters and wind-up counters. HP carries over between fights in an expedition, and rest rooms and Medic cards restore it. Crew left at home heal fully by the next expedition, but lasting or bigger injuries heal on a timer measured in expeditions, which a clinic speeds up.
 - Stats do two jobs. They add a bonus to every test of that type, and some gear and perks have a minimum stat to be slotted.
 - A member who is not equipped gets a basic stub pistol or combat knife (or the equivalent for their gang) from the armory for free. That gives everyone basic actions, so no member is useless.
 - Slots depend on role and perks. A Medic gets an extra slot for gear tagged medic or healing, a demolition specialist gets an extra grenade slot, and so on.
@@ -482,7 +482,7 @@ Five small forces for testing the starter decks. They are not a bestiary. Each s
 
 The squid has lane HP like any enemy (3 / 4 / 3 on the test battlefield). Tentacles screen the lane, then you must defeat the lane HP before you can hit the body from that lane. The squid is defeated when its body reaches 0 HP. Once a lane is closed (its lane HP is broken) the squid can no longer generate tentacles there, but it can still attack in that lane. Because a tentacle's attack gives another tentacle a free attack, leaving tentacles alone while hammering an open lane is costly, so you want to clear lanes.
 
-**5. Deserter patrol** (non-gang humanoids, patrol tier). Tests concussive damage and capture. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 credits and 1 Authority for the Captain, 1 credit for each guard).
+**5. Deserter patrol** (non-gang humanoids, patrol tier). Tests concussive damage and capture. Tags: ruins, upper hive. Reward: 1 loot draw, plus bounties if arrested (3 Eagles and 1 Authority for the Captain, 1 Eagle for each guard).
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
@@ -512,8 +512,8 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 **Open questions**
 
 - [ ] Floor generation: how many open exits count as dense enough to keep generating after the second gate, how big are the four decks, and which attributes, keys and amounts of power (gang influence) open gates?
-- [ ] Crafting numbers: pitch values per rarity, upgrade costs, the name of the currency and how fast credits are earned.
-- [ ] Unit tiers: how many tiers are there, and how much XP does each need? Recovery: how do crew sent to recover during an expedition heal, and how fast? Droids: how do per-droid tiers and chassis tiers combine (both add perk slots), and how much does each chassis tier add? How does brain chip recovery work, and how likely is the head destroyed result?
+- [ ] Crafting numbers: Decided: pitch values are 1, 2, 4, 8 and 16 from white to orange, an upgrade costs four times the target tier's pitch value with same-item copies counting double, the currency is Eagles, and a standard pack of 5 costs about one room's income. Still open: pitch values for red and gold, and how fast Eagles are earned.
+- [ ] Unit tiers: Decided: 5 tiers, with XP from surviving fights and from completing dungeons. Still open: how much XP each tier needs. Recovery: Decided: crew heal fully by the next expedition, and lasting or bigger injuries heal on a timer measured in expeditions, which a clinic speeds up. Still open: the timer lengths. Droids: how do per-droid tiers and chassis tiers combine (both add perk slots), and how much does each chassis tier add? How does brain chip recovery work, and how likely is the head destroyed result?
 - [ ] Power (gang influence): how fast is it earned, how many passive points does it grant, and is it ever lost? Buildings go in claimed rooms, so there is no separate home base.
 - [ ] Armor details: how much does each armor card refill, does armor refill between fights, and what sets the maximum soak? Classes: what do the melee, tool and implant class templates look like, and what do implant slots look like for humanoids (limbs, eyes, brain, torso)?
 - [ ] Battlefield details: what exactly does cover do (extra lane HP, protection for units, or both), and which modifiers exist? Unit HP tiers (grunts 3 to 4, specialists 5 to 6, leaders about 8) are a working estimate.
