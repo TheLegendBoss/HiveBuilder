@@ -18,6 +18,7 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | `tools/paper_fight_sim.py` | First simulator: TSC starter deck vs the Scavver pack. Run `python3 tools/paper_fight_sim.py log 1` or `stats 3000`. |
 | `tools/faction_sim.py` | Pressmen and Concord simulator built on `series_sim.py` (options include Concord v2, stun counters, modal Volley and Cuff Shot splash). Run `python3 tools/faction_sim.py log pressmen "Scavver pack" 3` or `python3 tools/faction_report.py` or `faction_report2.py`. |
 | `tools/series_sim.py` | Multi-fight simulator with all five test enemy forces. Run `python3 tools/series_sim.py single`, `series` or `log "Sump squid" 3`. Helper scripts `series_extras.py`, `series_grid.py`, `dungeon_grid.py`, `dungeon_grid2.py`, `dungeon_grid3.py`, `lever_grid.py`, `lever_grid2.py`, `squid_variants.py`, `soak_rounding.py` and `soak_squid_split.py` build the extra tables. |
+| `tools/pack_odds.py` | Placeholder model for the pack ramp odds. Run `python3 tools/pack_odds.py`. |
 
 ## The short version
 
