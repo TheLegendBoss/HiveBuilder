@@ -5,8 +5,8 @@ Chain Lash,2,Pit chains,weapon,2 damage to one unit and Exposed,0,0,0,Nerve,1,1
 Vent Steam,2,Pressman skill,skill,Your next heavy attack skips its wind-up,0,0,0,Tech,1,1
 Close Ranks,2,Pressman skill,skill,Each Pressman in this lane gains 2 soak,0,0,0,Nerve,1,1
 Shake It Off,2,Brawler skill,skill,Remove a status from a unit,0,0,0,Nerve,1,1
-Brace the Line,2,Mantlet,armor,Gain 3 soak,0,0,0,Force,1,1
-Take the Hit,1,Mantlet,armor,The next attack aimed at another unit in this lane hits this unit instead,0,0,0,Nerve,1,1
+Brace the Line,2,Mantlet,defense,Gain 3 soak,0,0,0,Force,1,1
+Take the Hit,1,Mantlet,defense,The next attack aimed at another unit in this lane hits this unit instead,0,0,0,Nerve,1,1
 Rivet Burst,3,Rivet gun,weapon,2 damage to up to two units,0,1,0,Force,1,1
 Weld Seam,1,Welding torch,tool,Restore 3 soak to a unit,0,0,0,Tech,1,1
 Cauterize,1,Welding torch,tool,Heal 2 HP on one unit,0,0,0,Tech,1,1
