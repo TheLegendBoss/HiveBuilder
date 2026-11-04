@@ -1,9 +1,9 @@
 result,cards,type,effect
-Out Cold,6,short-term,No lasting effect; up by the next expedition
-Lesson Learned,1,short-term,No injury; the member gains bonus XP
-Bruised and Rattled,2,short-term,Starts the next fight with 1 stress
-Concussed,1,short-term,Starts the next fight Stunned
-Grievous Injury,2,lasting,Starts every fight at half HP until treated at a clinic; a Nerve check at the clinic can downgrade it to Out Cold
+Out Cold,12,short-term,No lasting effect; up by the next expedition
+Lesson Learned,2,short-term,No injury; the member gains bonus XP
+Bruised and Rattled,4,short-term,Starts the next fight with 1 stress
+Concussed,2,short-term,Starts the next fight Stunned
+Grievous Injury,4,lasting,Starts every fight at half HP until treated at a clinic; a Nerve check at the clinic can downgrade it to Out Cold
 Head Injury,2,lasting,Draw a results card: low is -1 Wits; high is -1 Nerve
 Eye Injury,1,lasting,-1 to aimed and ranged tests
 Hand Injury,1,lasting,-1 Force

@@ -328,7 +328,7 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 **Randomness (working ideas)**
 
 - The player is never punished by a roll they could not see coming or did not choose. Randomness comes from visible world draws (such as the number of exits a room has), aftermath results, opt-in gambles, and a few weapon damage ranges.
-- **Aftermath deck.** Instead of aftermath dice, downed members draw from an aftermath deck of injury cards. Following the card-for-everything idea, armor, a Medic and perks can change what is in that deck. The starting humanoid deck is the 23-card table below (working numbers). Droids use a separate list that is mostly repairable for Eagles, with a rare head destroyed result.
+- **Aftermath deck.** Instead of aftermath dice, downed members draw from an aftermath deck of injury cards. Following the card-for-everything idea, armor, a Medic and perks can change what is in that deck. The starting humanoid deck is the 35-card table below (working numbers). Droids use a separate list that is mostly repairable for Eagles, with a rare head destroyed result.
 - **Results deck.** One deck covers all randomness. It starts as a standard 52-card deck, with values mapped to Low, Mid and High ranges. Players can track how many cards have been used, so they know whether low or high results are likely coming. The deck reshuffles when it runs out, and a game setting can also reshuffle it at the start of each expedition.
 - **Player rolls and automated rolls.** Whenever the player needs a roll, they pick one card from a hand of 3 results cards. Automated rolls, such as a room's exits, are drawn from the top of the deck.
 - **Floor shape.** Because room exits come from the deck, a deck full of low cards makes rooms spread out into a large, strung-out web, while high cards make densely packed rooms with multiple entries and exits. Dense sections have more rooms, so more encounters, more fights and more damage to your squad, but they can be more rewarding. Smaller, longer floors cost more non-combat resources such as rations, and they are inherently more random because there are fewer rooms and encounters.
@@ -336,11 +336,11 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 
 | Result | Cards | Effect |
 | --- | --- | --- |
-| Out Cold | 6 | No lasting effect, up by the next expedition |
-| Lesson Learned | 1 | No injury, and the member gains bonus XP |
-| Bruised and Rattled | 2 | Starts the next fight with 1 stress |
-| Concussed | 1 | Starts the next fight Stunned |
-| Grievous Injury | 2 | Starts every fight at half HP until treated at a clinic. A Nerve check at the clinic can downgrade it to Out Cold |
+| Out Cold | 12 | No lasting effect, up by the next expedition |
+| Lesson Learned | 2 | No injury, and the member gains bonus XP |
+| Bruised and Rattled | 4 | Starts the next fight with 1 stress |
+| Concussed | 2 | Starts the next fight Stunned |
+| Grievous Injury | 4 | Starts every fight at half HP until treated at a clinic. A Nerve check at the clinic can downgrade it to Out Cold |
 | Head Injury | 2 | Lasting. Draw a results card: low is -1 Wits, high is -1 Nerve |
 | Eye Injury | 1 | Lasting. -1 to aimed and ranged tests |
 | Hand Injury | 1 | Lasting. -1 Force |
