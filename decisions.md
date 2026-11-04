@@ -18,7 +18,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Fight length: short 8-10 rounds, medium 14-18, long 24+.
 
 **Cards**
-- Every card is an effect and fuel (1 by default; supplies carry more, and rarer cards can be worth 2 fuel). Burn = discard from hand to pay for gear actions.
+- Every card is an effect and fuel (1 by default; supplies carry more; fuel value scales with rarity, 1 for white up to 5 for orange, because burning a better card is a bigger sacrifice). Burn = discard from hand to pay for gear actions.
 - One shared squad hand, drawn back to max at the start of each action. Each faction sets its own baseline hand size (the three starters use 7 for now). Discard and draw discards up to 2 cards; skills and upgrades can raise that.
 - One activation per gear. Gear adds actions plus signature cards (template: 2 core + 1 utility).
 - Fates: Discard, Exhaust, Pitch (permanent), Consumed (disposable gear).
@@ -70,7 +70,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [ ] Rarity: Decided: loot tier scales with hive depth, so orange, red and gold need deep floors, but a pack can always hold one with a small chance. Still open: how red and gold play differently, and the exact odds.
 - [x] Packs: decided (tiers change only ramp steepness, one 15-slot ramp, 5-pack is the first 5 slots, four tiers, prices, single-item and tiered specialty packs, x1.75 per step of narrower scope). Only the ramp numbers remain, to be tuned in playtests.
 - [x] Attachments: Decided: three kinds (a card outside the gear's budget, a card that counts against it, or no card and just a rule bend).
-- [ ] Do higher-rarity cards carry more than 1 fuel? Decided: yes, rarer cards can be worth 2 fuel. Still open: which rarities carry 2, and whether any carry more.
+- [ ] Fuel by rarity: Decided: fuel scales with rarity, 1 for white up to 5 for orange. Still open: the fuel value of red and gold.
 - [x] Hands and weapon slots: Decided: shields take a weapon slot, tools go in an accessory slot, two-handed is set by class, and backpacks, implants and chassis can add weapon slots.
 - [ ] Which weapon classes are two-handed? (Set by class, to be worked through together.)
 - [ ] Extra weapon slots: set the rules for each source (backpack or implant third or fourth slot, large droid chassis up to 6, melee droid built-in melee plus two-handed backup slot, cult faction third arm), check them against hand size and fuel, and confirm the accessory slot is the old tool slot and what else goes in it.

@@ -259,7 +259,7 @@ The whole squad draws from and plays out of a single hand. Each faction sets its
 
 - **Play:** use the card's own effect. A card's effect can be played by any member with the matching gear equipped. Two sledgehammers means *Big Swing* can be played from either.
 - **Burn:** discard any card from hand as fuel to activate a piece of slotted gear's basic action. *Swing* costs 1 card, *Heavy Swing* costs 2. Any card can be burned, even a strong one, such as an attack card burned for a cybernetic eye you do not need to aim this turn.
-- **Fuel value:** every card is worth 1 fuel by default. Some cards, such as supplies, carry a printed higher value, and rarer cards can be worth 2 fuel, which makes burning a good card a real sacrifice. Which rarities carry 2 is still to be set.
+- **Fuel value:** every card is worth 1 fuel by default. Some cards, such as supplies, carry a printed higher value, and a card's fuel value scales with its rarity, from 1 for white up to 5 for orange (red and gold are still to be set). Better cards give more fuel when burned because you are giving up a better card.
 
 **Activations**
 
@@ -548,7 +548,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Rarity: Decided: loot tier scales with hive depth, so orange, red and gold need deep floors, but a pack can always hold one with a small chance. Still open: how red and gold play differently, and the exact odds.
 - [x] Packs: Decided: tiers change only how steep the ramp is (no guaranteed floors, with a low chance of a good pull in any slot), there is one long 15-slot ramp with stacking chances, and a 5-card pack is its first 5 slots (cheap filler or fuel). Also decided: four tiers, a Basic 5-card pack costs 1 room's income and a Basic 15-card pack 2.25 rooms, with each tier up costing 1.5 times more. Also decided: single-item packs ramp over one item's rarities and variants, specialty packs are tiered too, and each step narrower multiplies the price by 1.75. Still open: only the ramp numbers, to be tuned in playtests.
 - [x] Attachments: Decided: there are three kinds. Some add a card outside the gear's card budget, some add a card that counts against the budget, and some add no card and only bend a rule on the gear.
-- [ ] Do higher-rarity cards carry more than 1 fuel? Decided: yes, rarer cards can be worth 2 fuel. Still open: which rarities carry 2, and whether any carry more.
+- [ ] Do higher-rarity cards carry more than 1 fuel? Decided: fuel scales with rarity, from 1 for white up to 5 for orange, because burning a better card is a bigger sacrifice. Still open: the fuel value of red and gold.
 - [x] Hands and weapon slots: members have two weapon slots, and some gear (two-handed weapons) takes both. D*ecided: shields take a weapon slot, tools go in an accessory slot, two-handed is set by class, and backpacks, implants and chassis can add weapon slots (the next two items carry the details).*
 - [ ] Which weapon classes are two-handed? (Decided that it is set by class, to be worked through together class by class.)
 - [ ] Extra weapon slots: set the rules for each source (a backpack or implant giving a third or fourth slot, the large droid chassis with up to 6, the melee droid's built-in melee weapons and two-handed backup slot, the cult faction's third arm), and check the extra slots against hand size and fuel. Also confirm that the accessory slot is the old tool slot, and what else goes in it.
