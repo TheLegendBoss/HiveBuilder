@@ -26,6 +26,8 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 
 **Hive and economy**
 - A dungeon has 5 to 10 fights. The squad heals fully when the dungeon ends, and healing supplies (cards that double as fuel) keep it going in between. Healing supplies heal 4 HP; the TSC starts with two Repair Packs of its own (32-card deck), and the Pressmen Ration Pack and Concord Field Dressing also heal 4.
+- Floor generation keeps going after the second gate while 3 or more exits are open. Floors are grouped by position, with sections per floor: Very High 1-3 (easy start), High 2-4, Middle 3-5, Lower 4-6, Ground 5-8 (very hard), Sub 9-15, Deep 5-8, Extremely Deep 4-6 (working names). Gates ask for one requirement type on early floors, a mix in the middle, and two at once far down; gate power cost scales with floor depth.
+- Win condition depends on the gang; the generic one is to hold a set number of districts or claim the Spire. Campaign modes: tutorial (short), Campaign (medium), open-ended play (intended, you set hive size).
 - Floors fill from room, encounter, denizens and loot decks. Rooms have up to 3 exits from the results deck.
 - Hierarchy: strata, districts, floors, sections. Gates, sections and footholds are claimed with power (gang influence).
 - Supplies (rations counter plus ammo and healing cards) are the expedition clock.
@@ -43,7 +45,8 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 
 ## Open questions
 
-- [ ] Floor generation: how many open exits count as dense enough to keep generating after the second gate, how big are the four decks, and which attributes, keys and amounts of power (gang influence) open gates?
+- [ ] Floor generation: Decided: keeps generating while 3 or more exits are open; gates ask for one type early, a mix in the middle and two far down; power cost scales with depth. Still open: how big the four decks are, which attributes and keys open gates, the power amounts, and rooms per section.
+- [ ] Floor groupings: settle their names (working names), match them to the strata (lower hive, middle hive, spire), and set difficulty for Sub, Deep and Extremely Deep.
 - [ ] Crafting numbers: Decided: pitch 1, 2, 4, 8, 16; upgrade cost 4x the target tier's pitch value with same-item copies counting double; currency Eagles; a standard 5-pack costs about one room's income. Still open: pitch values for red and gold, and how fast Eagles are earned.
 - [ ] Unit tiers: Decided: 5 tiers, XP from fights and from completing dungeons. Still open: how much XP each tier needs. Recovery: Decided: crew heal fully by the next expedition, and lasting or bigger injuries heal on a timer of expeditions (a clinic speeds it up). Still open: the timer lengths. Droids: how do per-droid tiers and chassis tiers combine (both add perk slots), and how much does each chassis tier add? How does brain chip recovery work, and how likely is the head destroyed result?
 - [ ] Power (gang influence): how fast is it earned, how many passive points does it grant, and is it ever lost? Buildings go in claimed rooms, so there is no separate home base.
@@ -66,7 +69,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - [x] Hands and weapon slots: Decided: shields take a weapon slot, tools go in an accessory slot, two-handed is set by class, and backpacks, implants and chassis can add weapon slots.
 - [ ] Which weapon classes are two-handed? (Set by class, to be worked through together.)
 - [ ] Extra weapon slots: set the rules for each source (backpack or implant third or fourth slot, large droid chassis up to 6, melee droid built-in melee plus two-handed backup slot, cult faction third arm), check them against hand size and fuel, and confirm the accessory slot is the old tool slot and what else goes in it.
-- [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
+- [ ] Win condition and campaign length: Decided: the win condition depends on the gang (generic: hold a set number of districts or claim the Spire); modes are tutorial, Campaign and open-ended play. Still open: each gang's own win condition, how many districts count, and whether rivals can take back a claimed section.
 - [ ] Pressmen Solidarity: does Union Grudge stack for each downed Pressman or stay at +1, how is the 1 soak per round limited by maximum soak, and what is the exact ration hunger rate? Heavy weapons keep a 1-round wind-up, so is that the right size of drawback?
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? How does Warrant Mark work against monsters, where parts fill lanes? Is Revise Warrant too strong, and are the Subdue cards too weak against units with a lot of HP?
 - [x] Rules gaps found in playtest 01: decided (no cap on units per lane, setup is deploy only, downed units do not screen, soak gains cannot exceed an armor's maximum). A stunned scripted unit losing its turn stays a working rule.

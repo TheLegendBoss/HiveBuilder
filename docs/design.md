@@ -29,7 +29,7 @@ The game is a campaign, but the hive is generated fresh each time, so no two cam
 - **Persistent claims.** Districts you control stay yours. Their cards stay in the Hive Deck and shape later floors.
 - **Permadeath.** Fallen crew are gone for good. A memorial wall or scar on the squad's record marks them. Replacements recruited from desperate survivors tend to be weaker.
 - **Team wipe.** The expedition ends, but your district claims stay. You rebuild the squad from the remnants.
-- **Goal.** Expand control over the hive and claim it for your faction, for example by holding enough districts, or the top stratum, against rival gangs. *(Exact win condition is open.)*
+- **Goal.** Expand control over the hive and claim it for your faction, for example by holding enough districts, or the top stratum, against rival gangs. *The win condition depends on the gang; the generic one is to hold a set number of districts or to claim the Spire. A campaign has three modes: a short tutorial (about 10 to 15 hours), a medium Campaign (about 20 to 30 hours), and open-ended play, which is the intended mode, where you set the size of the hive at setup (think of the career mode in MechWarrior 5).*
 - **Rivals.** Rival gangs also claim districts, but only on floors they have started or expanded to. A gang engine builds up each AI gang's forces and gear and decides how it sends out squads, which you can meet out in the hive.
 
 **Gang engine (working design)**
@@ -209,7 +209,7 @@ The starting deck has no negative cards. Injuries from the aftermath deck add th
 
 ## The hive and floor map
 
-The hive is a stack of strata (lower hive, middle hive, spire). Strata contain districts, districts contain a few floors, and each floor is split into two to four sections by its gates. Each floor is built room by room, Darkest Dungeon style. Every room has up to 3 exits, set by a dice roll the player can see, and each exit leads to another room. Rooms spawn onto a grid, so a floor can become a grid-like layout or a long winding hallway, and a newly spawned room may or may not connect to a neighboring room that is already there. Generation continues until at least two gate cards have been created. When the second gate appears, generation keeps going if the layout still has several open exits (a dense floor) and stops if it does not (a sparse one), so the results deck's density drives floor size. Every room has at least one exit, so generation never stalls before the gates appear. Gates, which are stairs, elevators and other multifloor access rooms, open the way to other floors. Each faction enters at its own entrance point, which sets where its first floors are.
+The hive is a stack of strata (lower hive, middle hive, spire). Strata contain districts, districts contain a few floors, and each floor is split into sections by its gates, with the number set by where the floor sits in the hive (see the floor groupings below). Each floor is built room by room, Darkest Dungeon style. Every room has up to 3 exits, set by a dice roll the player can see, and each exit leads to another room. Rooms spawn onto a grid, so a floor can become a grid-like layout or a long winding hallway, and a newly spawned room may or may not connect to a neighboring room that is already there. Generation continues until at least two gate cards have been created. When the second gate appears, generation keeps going if the layout still has three or more open exits (a dense floor) and stops if it does not (a sparse one), so the results deck's density drives floor size. Every room has at least one exit, so generation never stalls before the gates appear. Gates, which are stairs, elevators and other multifloor access rooms, open the way to other floors. Each faction enters at its own entrance point, which sets where its first floors are. Floors are grouped by where they sit in the hive, which sets both difficulty and size (working names, sections per floor in brackets): Very High (easy start, 1 to 3), High (medium-easy start, 2 to 4), Middle (standard, 3 to 5), Lower (hard, 4 to 6), Ground (very hard, 5 to 8), Sub (9 to 15), Deep (5 to 8) and Extremely Deep (4 to 6).
 
 | Room | What happens |
 | --- | --- |
@@ -238,7 +238,7 @@ The first pass uses the eight room types above. Held for a later pass: Patrol, L
 
 **Gates, sections and footholds**
 
-- Gates lead to other floors or to other parts of the same floor. Some need attributes, keys or power (gang influence) to open.
+- Gates lead to other floors or to other parts of the same floor. Some need attributes, keys or power (gang influence) to open. Early and easy floors have gates that ask for just one of these, mid floors mix one-type and two-type gates, and far floors ask for two at once, such as a key plus power. The power cost of a gate scales with floor depth.
 - A section is the set of rooms between gates. Once all of a section's gates have been found or opened, you can spend power (gang influence) to establish a foothold (a forward base, called whatever your gang calls it). All rooms in that section are then claimed, gates included.
 - Claimed rooms can be occupied and repurposed with a building card. Some rooms have passive bonuses you may not want to replace, some rooms enhance a building's output, and some buildings need a specific room (a power plant needs a generator room). Rest rooms such as taverns and safe rooms are found in the hive. Once their section is claimed, they can be turned into income or into a place to send crew members to recover during an expedition, very Darkest Dungeon.
 
@@ -338,7 +338,7 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 
 - Cards come from loot found in the hive and from packs bought at connected markets.
 - Basic faction gear is abundant. Advanced, improved or "enhanced" gear must be pulled from packs or crafted.
-- Loose cards are pitched at markets for Eagles, the currency or ground up as fodder at the crafting bench. Rarity sets their value, so every spare card has two exits: sell it for packs, or grind it into an upgrade. Eagles also come from fights, rooms and claimed districts.
+- Loose cards are pitched at markets for Eagles (the currency) or ground up as fodder at the crafting bench. Rarity sets their value, so every spare card has two exits: sell it for packs, or grind it into an upgrade. Eagles also come from fights, rooms and claimed districts.
 
 **Packs**
 
@@ -511,7 +511,8 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 
 **Open questions**
 
-- [ ] Floor generation: how many open exits count as dense enough to keep generating after the second gate, how big are the four decks, and which attributes, keys and amounts of power (gang influence) open gates?
+- [ ] Floor generation: Decided: generation keeps going after the second gate while three or more exits are open, gates ask for one type early, a mix in the middle and two types far down, and the power cost scales with depth. Still open: how big the four decks are, which attributes and keys open gates, the power amounts, and the rooms per section.
+- [ ] Floor groupings: settle their names (the current ones are working names), match them to the strata (lower hive, middle hive, spire), and set difficulty for Sub, Deep and Extremely Deep, which are not yet described.
 - [ ] Crafting numbers: Decided: pitch values are 1, 2, 4, 8 and 16 from white to orange, an upgrade costs four times the target tier's pitch value with same-item copies counting double, the currency is Eagles, and a standard pack of 5 costs about one room's income. Still open: pitch values for red and gold, and how fast Eagles are earned.
 - [ ] Unit tiers: Decided: 5 tiers, with XP from surviving fights and from completing dungeons. Still open: how much XP each tier needs. Recovery: Decided: crew heal fully by the next expedition, and lasting or bigger injuries heal on a timer measured in expeditions, which a clinic speeds up. Still open: the timer lengths. Droids: how do per-droid tiers and chassis tiers combine (both add perk slots), and how much does each chassis tier add? How does brain chip recovery work, and how likely is the head destroyed result?
 - [ ] Power (gang influence): how fast is it earned, how many passive points does it grant, and is it ever lost? Buildings go in claimed rooms, so there is no separate home base.
@@ -534,7 +535,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [x] Hands and weapon slots: members have two weapon slots, and some gear (two-handed weapons) takes both. D*ecided: shields take a weapon slot, tools go in an accessory slot, two-handed is set by class, and backpacks, implants and chassis can add weapon slots (the next two items carry the details).*
 - [ ] Which weapon classes are two-handed? (Decided that it is set by class, to be worked through together class by class.)
 - [ ] Extra weapon slots: set the rules for each source (a backpack or implant giving a third or fourth slot, the large droid chassis with up to 6, the melee droid's built-in melee weapons and two-handed backup slot, the cult faction's third arm), and check the extra slots against hand size and fuel. Also confirm that the accessory slot is the old tool slot, and what else goes in it.
-- [ ] Exact win condition for claiming the hive, and how long a campaign is. What counts toward winning (districts claimed, or a specific district like the Spire), and can rivals take back a claimed section?
+- [ ] Win condition and campaign length: Decided: the win condition depends on the gang, and the generic one is to hold a set number of districts or claim the Spire. Length comes in three modes: tutorial (short), Campaign (medium) and open-ended play (the intended mode). Still open: each gang's own win condition, how many districts count, and whether rivals can take back a claimed section.
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta.
 - [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? Is Revise Warrant too strong, and is capture too hard against units with a lot of HP? (Warrant Mark against monsters is decided: it marks the body for +1 damage, with no capture.)
