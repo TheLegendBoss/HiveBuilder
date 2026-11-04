@@ -3,13 +3,13 @@ Out Cold,12,short-term,No lasting effect; up by the next expedition
 Lesson Learned,2,short-term,No injury; the member gains bonus XP
 Bruised and Rattled,4,short-term,Starts the next fight with 1 stress
 Concussed,2,short-term,Starts the next fight Stunned
-Grievous Injury,4,lasting,Starts every fight at half HP until treated at a clinic; a Nerve check at the clinic can downgrade it to Out Cold
+Grievous Injury,4,lasting,Starts every fight at half HP until fixed with an implant
 Head Injury,2,lasting,Draw a results card: low is -1 Wits; high is -1 Nerve
 Eye Injury,1,lasting,-1 to aimed and ranged tests
 Hand Injury,1,lasting,-1 Force
-Shattered Arm,1,lasting,Loses a weapon slot until healed
+Shattered Arm,1,lasting,Loses a weapon slot until fixed with an implant
 Hobbled,1,lasting,Starts every fight Slowed
 Spinal Injury,1,lasting,Draw a results card: low is -1 Force; high is -1 Tech
-Enfeebled,2,lasting,-1 max HP; permanent unless treated
+Enfeebled,2,lasting,-1 max HP until fixed with an implant
 Critical Injury,1,severe,Dies unless treated at a clinic before the next expedition (costs Eagles)
 Memorable Death,1,severe,Dead; no clinic save
