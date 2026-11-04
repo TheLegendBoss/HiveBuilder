@@ -1,0 +1,15 @@
+result,cards,type,effect
+Out Cold,6,short-term,No lasting effect; up by the next expedition
+Lesson Learned,1,short-term,No injury; the member gains bonus XP
+Bruised and Rattled,2,short-term,Starts the next fight with 1 stress
+Concussed,1,short-term,Starts the next fight Stunned
+Grievous Injury,2,lasting,Starts every fight at half HP until treated at a clinic; a Nerve check at the clinic can downgrade it to Out Cold
+Head Injury,2,lasting,Draw a results card: low is -1 Wits; high is -1 Nerve
+Eye Injury,1,lasting,-1 to aimed and ranged tests
+Hand Injury,1,lasting,-1 Force
+Shattered Arm,1,lasting,Loses a weapon slot until healed
+Hobbled,1,lasting,Starts every fight Slowed
+Spinal Injury,1,lasting,Draw a results card: low is -1 Force; high is -1 Tech
+Enfeebled,2,lasting,-1 max HP; permanent unless treated
+Critical Injury,1,severe,Dies unless treated at a clinic before the next expedition (costs Eagles)
+Memorable Death,1,severe,Dead; no clinic save

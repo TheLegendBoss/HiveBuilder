@@ -328,11 +328,28 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 **Randomness (working ideas)**
 
 - The player is never punished by a roll they could not see coming or did not choose. Randomness comes from visible world draws (such as the number of exits a room has), aftermath results, opt-in gambles, and a few weapon damage ranges.
-- **Aftermath deck.** Instead of aftermath dice, downed members draw from an aftermath deck of injury cards. Following the card-for-everything idea, armor, a Medic and perks can change what is in that deck.
+- **Aftermath deck.** Instead of aftermath dice, downed members draw from an aftermath deck of injury cards. Following the card-for-everything idea, armor, a Medic and perks can change what is in that deck. The starting humanoid deck is the 23-card table below (working numbers). Droids use a separate list that is mostly repairable for Eagles, with a rare head destroyed result.
 - **Results deck.** One deck covers all randomness. It starts as a standard 52-card deck, with values mapped to Low, Mid and High ranges. Players can track how many cards have been used, so they know whether low or high results are likely coming. The deck reshuffles when it runs out, and a game setting can also reshuffle it at the start of each expedition.
 - **Player rolls and automated rolls.** Whenever the player needs a roll, they pick one card from a hand of 3 results cards. Automated rolls, such as a room's exits, are drawn from the top of the deck.
 - **Floor shape.** Because room exits come from the deck, a deck full of low cards makes rooms spread out into a large, strung-out web, while high cards make densely packed rooms with multiple entries and exits. Dense sections have more rooms, so more encounters, more fights and more damage to your squad, but they can be more rewarding. Smaller, longer floors cost more non-combat resources such as rations, and they are inherently more random because there are fewer rooms and encounters.
 - **Upgrades and variants.** Results cards can gain persistent riders, such as a 3 that restores an exhausted card if it is used on a check and fails. Suits can shift a card's value, such as a spade counting one higher and a diamond one lower. Other deck styles unlock as rare drops, like the decks in Balatro, for example a no-face-cards deck whose lowest value is 3.
+
+| Result | Cards | Effect |
+| --- | --- | --- |
+| Out Cold | 6 | No lasting effect, up by the next expedition |
+| Lesson Learned | 1 | No injury, and the member gains bonus XP |
+| Bruised and Rattled | 2 | Starts the next fight with 1 stress |
+| Concussed | 1 | Starts the next fight Stunned |
+| Grievous Injury | 2 | Starts every fight at half HP until treated at a clinic. A Nerve check at the clinic can downgrade it to Out Cold |
+| Head Injury | 2 | Lasting. Draw a results card: low is -1 Wits, high is -1 Nerve |
+| Eye Injury | 1 | Lasting. -1 to aimed and ranged tests |
+| Hand Injury | 1 | Lasting. -1 Force |
+| Shattered Arm | 1 | Lasting. Loses a weapon slot until healed |
+| Hobbled | 1 | Lasting. Starts every fight Slowed |
+| Spinal Injury | 1 | Lasting. Draw a results card: low is -1 Force, high is -1 Tech |
+| Enfeebled | 2 | Lasting. -1 max HP, permanent unless treated |
+| Critical Injury | 1 | Dies unless treated at a clinic before the next expedition. Treatment costs Eagles |
+| Memorable Death | 1 | Dead, with no clinic save |
 
 **Markets, packs and loot**
 
@@ -518,7 +535,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Power (gang influence): how fast is it earned, how many passive points does it grant, and is it ever lost? Buildings go in claimed rooms, so there is no separate home base.
 - [ ] Armor details: how much does each armor card refill, does armor refill between fights, and what sets the maximum soak? Classes: what do the melee, tool and implant class templates look like, and what do implant slots look like for humanoids (limbs, eyes, brain, torso)?
 - [ ] Battlefield details: what exactly does cover do (extra lane HP, protection for units, or both), and which modifiers exist? Unit HP tiers (grunts 3 to 4, specialists 5 to 6, leaders about 8) are a working estimate.
-- [ ] Conditions: the full list beyond the starting four, Decided: some clog cards carry a damage-on-discard drawback (a burn card costs 1 damage, a stress card costs nothing). Still open: the drawbacks for acid and confusion. Stress: Decided: it comes from both the world (dark rooms, ambushes, long expeditions, crew being downed) and the opt-in gambles you choose to take. Randomness: Decided: the results deck reshuffles when it runs out, and a game setting can also reshuffle it at the start of each expedition. Still open: how the hand of 3 and the top-of-deck draws share cards, which suits do what, how do attribute checks use results cards, and what does the aftermath deck contain?
+- [ ] Conditions: the full list beyond the starting four, Decided: some clog cards carry a damage-on-discard drawback (a burn card costs 1 damage, a stress card costs nothing). Still open: the drawbacks for acid and confusion. Stress: Decided: it comes from both the world (dark rooms, ambushes, long expeditions, crew being downed) and the opt-in gambles you choose to take. Randomness: Decided: the results deck reshuffles when it runs out, and a game setting can also reshuffle it at the start of each expedition. Still open: how the hand of 3 and the top-of-deck draws share cards, which suits do what, how do attribute checks use results cards, and the droid aftermath list (the humanoid deck is decided, see Randomness)?
 - [ ] Spawn rules: tokens are stat lines and attacks only (working rule). Do monsters have a lane cap? Enemy forces: is a gang's roster fixed or a recipe with random gear draws, and how do threat tiers scale with depth? Gang engine: what the paths build for each other faction, and what difficulty changes beyond speed and efficiency?
 - [x] Do units screen their lane's HP (clear the units, then hit the HP)? Decided: yes.
 - [x] Captured lanes: can the enemy still deploy into a lane that has been captured, and does a captured lane's HP ever recover? Decided: the enemy can still deploy into a captured lane, and a captured lane's HP never recovers.
