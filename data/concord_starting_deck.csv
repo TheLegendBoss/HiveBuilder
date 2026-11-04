@@ -1,7 +1,7 @@
 name,count,source,source_type,play_effect,play_cost_fuel,ammo_cost,keywords,check_attribute,check_bonus,fuel_value
 Flechette Volley,4,Flechette carbine,weapon,"Modal. Lethal: 3 damage to one unit, +1 if it is Exposed. Or concussive: 5 stun counters on one unit",0,0,Concussive (mode),Wits,1,1
 Breach Blast,2,Breaching shotgun,weapon,4 damage to one unit,0,1,,Force,1,1
-Cuff Shot,3,Cuff launcher,weapon,Concussive. 4 stun counters on one unit and 2 on the other enemy in its lane,0,1,Concussive,Wits,1,1
+Cuff Shot,3,Bolas launcher,weapon,Concussive. 4 stun counters on one unit and 2 on the other enemy in its lane,0,1,Concussive,Wits,1,1
 Stun Pulse,2,Sonic stunner,weapon,Concussive. 2 stun counters on every enemy in the lane,1,0,Concussive,Tech,1,1
 Tag Target,3,Tag optics,attachment,Exposed on one unit,0,0,,Wits,1,1
 Revise Warrant,1,Marshal skill,skill,Move the Warranted mark to another enemy unit,0,0,,Wits,2,1
@@ -12,4 +12,4 @@ Interpose,1,Glass shield,armor,The next attack aimed at another unit in this lan
 Plate Check,2,Ceramic plate,armor,Restore 2 soak to a unit in the lane,0,0,,Tech,1,1
 Field Dressing,2,Supplies,supply,Heal 4 HP on one unit,0,0,,,0,2
 Ammo Mag,2,Supplies,supply,Refill 2 ammo on one gear,0,0,,,0,2
-Spare Cuffs,1,Supplies,supply,Refill 2 ammo on the cuff launcher,0,0,,,0,2
+Spare Cuffs,1,Supplies,supply,Refill 2 ammo on the bolas launcher,0,0,,,0,2
