@@ -452,28 +452,28 @@ Five small forces for testing the starter decks. They are not a bestiary. Each s
 - **How scripted forces act (working rule).** The force takes one action per enemy action, cycling through its lanes in order (lane 1, 2, 3) with the unit there, and each unit steps through its printed actions in order and repeats. A unit with no legal action is skipped. Wind-ups are telegraphed as usual.
 - **Unit table columns.** HP, soak (an absorb pool that does not refill), where it starts, and printed actions in order.
 
-**1. Scavver pack** (non-gang humanoids, patrol tier). Tests area cards. Tags: ruins, scrap. Reward: 1 loot draw and 2 credits.
+**1. Scavver pack** (non-gang humanoids, patrol tier). Tests area cards. Tags: ruins, scrap. Reward: 1 loot draw and 2 Eagles.
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
 | Scavver (x4) | 3 | 0 | Lanes 1 and 3, two wait in the deck | 1. Pot Shot: 2 damage to a unit in this lane (ranged). 2. Shiv: 1 damage (melee) |
 | Scavver Chief (x1) | 5 | 0 | Lane 2 | 1. Rally: deploy a Scavver from the deck into this lane. 2. Bludgeon: 2 damage (melee) |
 
-**2. Slag hauler** (non-gang humanoids, squad tier). Tests big single hits and armor. Tags: industrial, foundry. Reward: 2 loot draws and 4 credits.
+**2. Slag hauler** (non-gang humanoids, squad tier). Tests big single hits and armor. Tags: industrial, foundry. Reward: 2 loot draws and 4 Eagles.
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
 | Slag Hauler (x1) | 8 | 4 | Lane 2 | 1. Shove: 1 damage (melee) and Slowed. 2. Heavy Swing: 4 damage (melee), wind-up 1 |
 | Furnace Hand (x2) | 4 | 0 | Lanes 1 and 3 | 1. Hammer: 2 damage (melee). 2. Brace: gain 2 soak |
 
-**3. Sump sniper team** (non-gang humanoids, squad tier). Tests redirects and soak. Tags: sump, ruins. Reward: 2 loot draws and 4 credits.
+**3. Sump sniper team** (non-gang humanoids, squad tier). Tests redirects and soak. Tags: sump, ruins. Reward: 2 loot draws and 4 Eagles.
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |
 | Sump Sniper (x2) | 4 | 0 | Lane 2, one waits in the deck | 1. Mark: Exposed on the unit with the lowest HP in this lane. 2. Long Shot: 3 damage to an Exposed unit in this lane (the lowest HP unit if none), wind-up 1 |
 | Sump Guard (x3) | 3 | 0 | Lanes 1 and 3, one waits in the deck | 1. Stock Bash: 1 damage (melee). 2. Cover: the next attack aimed at a Sump Sniper in this lane hits this unit instead |
 
-**4. Sump squid** (monster, squad tier). Tests the part and body rules and Warrant Mark against monsters. Tags: sump, flooded. Reward: 2 loot draws and 3 credits.
+**4. Sump squid** (monster, squad tier). Tests the part and body rules and Warrant Mark against monsters. Tags: sump, flooded. Reward: 2 loot draws and 3 Eagles.
 
 | Unit | HP | Soak | Starts | Actions |
 | --- | --- | --- | --- | --- |

@@ -32,7 +32,7 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Rarity ladder: white, green, blue, purple, orange; red (named) and gold (archeotech) above.
 
 **Factions**
-- TSC (Tenebrae Security Combine): droids, forgiving recovery through brain chips and credit repair; credit hunger is the cost.
+- TSC (Tenebrae Security Combine): droids, forgiving recovery through brain chips and Eagle repair; Eagle hunger is the cost.
 - Pressmen Union: heavy-gravity-world smelter labor (not vat-grown), enters at the foundry strata. Faction rule is Solidarity: Shoulder to Shoulder (sharing a lane with another Pressman gives +1 soak per round and +1 melee damage) and Union Grudge (when a Pressman is downed, the others deal +1 damage for the rest of the fight, no stacking). Cost is ration hunger (working rate 1.5x). Heavy weapons keep a 1-round wind-up. Starting crew of 4.
 - Concord Marshals: our own upper-hive court-and-collections service (not a street police force), enters from above, squad of 3 elite members. Faction rule is Warrant: Warrant Mark (one marked enemy, +1 damage from your units), Subdue (a unit taken to 0 by a Subdue attack is arrested, not killed) and Tag and Cuff (Exposed, then Stun on cuff). Cost is Authority, a campaign track that rises with arrests and bounties and falls when a Warranted unit is killed; writ gates open on Authority instead of power. Buildings: Holding Cells and Bounty Office.
 - More bodies cost deploy actions that could have been attacks (except for the two horde factions), so bigger squads trade tempo for synergies like Solidarity.
