@@ -1,0 +1,9 @@
+room_type,cards,note
+Fight,8,An enemy force from the denizens deck
+Scavenge,4,A pull from the loot deck
+Gamble,2,An opt-in risk for a reward
+Hazard,2,Blocks entry unless an attribute requirement is met
+Market,1,Trade and buy packs
+Rest,1,Restores exhausted cards
+Clinic,1,Restores HP across the squad
+Gate,2,A way up and a way down for the section
