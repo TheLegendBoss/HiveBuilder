@@ -3,13 +3,13 @@ System Shutdown,12,short-term,free reboot,No lasting effect; back online by the 
 Firmware Patch,2,short-term,free reboot,No damage; the droid gains bonus XP
 Glitching,4,short-term,free reboot,Starts the next fight with 1 stress
 Rebooting,2,short-term,free reboot,Starts the next fight Stunned
-Frame Damage,4,lasting,major (proposed),Starts every fight at half HP until repaired
-Processor Damage,2,lasting,minor (proposed),Draw a results card: low is -1 Wits; high is -1 Nerve until repaired
-Optics Damaged,1,lasting,minor (proposed),-1 to aimed and ranged tests until repaired
-Manipulator Damaged,1,lasting,minor (proposed),-1 Force until repaired
-Arm Destroyed,1,lasting,major (proposed),Loses a weapon slot until repaired
-Actuator Fault,1,lasting,minor (proposed),Starts every fight Slowed until repaired
-Spine Fault,1,lasting,major (proposed),Draw a results card: low is -1 Force; high is -1 Tech until repaired
-Power Cell Drain,2,lasting,minor (proposed),-1 max HP until repaired
+Frame Damage,4,lasting,major,Starts every fight at half HP until repaired
+Processor Damage,2,lasting,minor,Draw a results card: low is -1 Wits; high is -1 Nerve until repaired
+Optics Damaged,1,lasting,minor,-1 to aimed and ranged tests until repaired
+Manipulator Damaged,1,lasting,minor,-1 Force until repaired
+Arm Destroyed,1,lasting,major,Loses a weapon slot until repaired
+Actuator Fault,1,lasting,minor,Starts every fight Slowed until repaired
+Spine Fault,1,lasting,major,Draw a results card: low is -1 Force; high is -1 Tech until repaired
+Power Cell Drain,2,lasting,minor,-1 max HP until repaired
 Core Breach,1,severe,major,Offline until rebuilt at a charging station before the next expedition (costs Eagles); brain chip recoverable
 Head Destroyed,1,severe,none,Lost forever; no brain chip recovery
