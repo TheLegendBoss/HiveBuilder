@@ -1,0 +1,9 @@
+name,type,effect
+Vigorous,S,+1 Force
+Focused,S,+1 Wits
+Courageous,S,+1 Nerve
+Steady Hands,S,+1 Tech
+Hardened,S,+1 maximum armor soak
+Fearless,T,Immune to Suppressed
+Lucky,R,Once per fight; redraw one results card this unit draws
+Hardy,R,Eats no rations

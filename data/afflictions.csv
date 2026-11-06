@@ -1,0 +1,24 @@
+group,name,type,effect,consumable_cure
+short-term,Tremors,S,-1 Tech,n/a
+short-term,Rattled Nerves,S,-1 Nerve,n/a
+short-term,Paranoia,C,Adds 1 clog card (worth 1 fuel; no effect),n/a
+short-term,Dread,C,Adds 1 clog card,n/a
+short-term,Jitters,T,Starts each fight Exposed,n/a
+short-term,Sluggish,T,Starts each fight Slowed for 1 round,n/a
+short-term,Skittish,R,Cannot be deployed to the middle lane,n/a
+short-term,Selfish,R,Medic and support cards cannot target this unit,n/a
+lasting,Hopeless,S,-1 Nerve and -1 Wits,yes
+lasting,Fearful,S,-2 Nerve,no
+lasting,Haunted,S,-1 Force and -1 Tech,yes
+lasting,Paranoid,C,Adds 1 clog card,yes
+lasting,Irrational,C,Adds 1 Outburst clog card that deals 1 damage to this unit when discarded,no
+lasting,Compulsive,C,Adds 1 clog card worth 0 fuel,no
+lasting,Hallucinating,C,Adds 3 clog cards,no
+lasting,Cowardly,T,Starts every fight Suppressed for 2 rounds,no
+lasting,Brooding,T,Starts every fight Exposed,no
+lasting,Frozen,T,Starts every fight Stunned,no
+lasting,Glutton,R,Eats a double ration each expedition,yes
+lasting,Lone Wolf,R,Cannot share a lane with another squad member,yes
+lasting,Trigger-Happy,R,The first gun action each fight costs +1 fuel,yes
+severe,Broken,S and C,-2 Nerve; -1 Wits; adds 2 clog cards. Only the new building can cure it,no
+severe,Walks into the Dark,-,The unit dies,n/a

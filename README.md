@@ -13,8 +13,10 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 20 designs, 32 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 29 cards. |
 | `data/concord_starting_deck.csv` | The Concord Marshals starter deck: 14 designs, 30 cards. |
-| `data/aftermath_deck_humanoid.csv` | The humanoid aftermath deck: 14 results, 35 cards. |
+| `data/aftermath_deck_humanoid.csv` | The humanoid aftermath deck: 14 results, 35 cards, with the matching affliction face group for each. |
 | `data/aftermath_deck_droid.csv` | The droid aftermath deck: 14 results, 35 cards. |
+| `data/afflictions.csv` | Working draft of the affliction faces on the humanoid aftermath cards: 8 short-term, 13 lasting, 1 severe, plus the death face. |
+| `data/virtues.csv` | Working draft of the 8 virtues. |
 | `data/starter_room_deck.csv` | The starter room deck: 8 room types, 21 cards. |
 | `playtests/` | Paper-fight reports: `01-tsc-vs-scavver-pack.md` (one fight) and `02-tsc-series.md` (5, 10 and 15 fights in a row) and `03-dungeon-healing-and-squid.md` (5 to 10 fight dungeons with healing supplies) and `04-soak-healing-and-squid-spawn.md` (3/4 soak, 4-HP healing, tentacle spawning) and `05-chassis-soak-and-revised-squid.md` (chassis soak 1/2 plus armor 2, capped tentacles with a free attack) and `06-difficulty-levers.md` (hitting the 85-90% / 60% finish targets, armor soak 3 per piece) and `07-pressmen-and-concord.md` (Pressmen and Concord starter decks against the test forces) and `08-concord-concussive-and-armor.md` (Concord with a fourth unit, concussive guns and stun counters, Pressmen at 40 HP, plus a Pressmen correction) and `09-pressmen-healing-and-solidarity.md` (healing passive proxies and the value of Solidarity). |
 | `tools/paper_fight_sim.py` | First simulator: TSC starter deck vs the Scavver pack. Run `python3 tools/paper_fight_sim.py log 1` or `stats 3000`. |

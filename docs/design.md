@@ -351,6 +351,61 @@ Non-combat challenges run on the same cards as fights, using attribute requireme
 | Critical Injury | 1 | Dies unless treated at a clinic before the next expedition. Treatment costs Eagles |
 | Memorable Death | 1 | Dead, with no clinic save |
 
+**Affliction faces and virtues** *(working draft)*
+
+The humanoid aftermath cards are double-faced. A downed unit reads the injury face, and a unit that breaks from stress reads the affliction face. Faces are matched by severity group, and which card carries which face is random. Short-term afflictions last until a rest room or the end of the expedition. Types: S is a stat penalty, C is clog cards, T is a start-of-fight status and R is a rule twist. Of the 12 Out Cold faces, 6 are Shaken (the flee draw only) and 6 are Steeled (the flee draw, with a virtue on a jack, queen or king). When a virtue comes up, the face prints one virtue, a second is drawn at random, and the player picks one of the two.
+
+Short-term afflictions (8), on the Lesson Learned, Bruised and Rattled and Concussed cards:
+
+| Affliction | Type | Effect |
+| --- | --- | --- |
+| Tremors | S | -1 Tech |
+| Rattled Nerves | S | -1 Nerve |
+| Paranoia | C | Adds 1 clog card (worth 1 fuel, no effect) |
+| Dread | C | Adds 1 clog card |
+| Jitters | T | Starts each fight Exposed |
+| Sluggish | T | Starts each fight Slowed for 1 round |
+| Skittish | R | Cannot be deployed to the middle lane |
+| Selfish | R | Medic and support cards cannot target this unit |
+
+Lasting afflictions (13), on the lasting injury cards. All can be cured at the new building. The consumable cures only the ones marked Yes:
+
+| Affliction | Type | Effect | Consumable cure |
+| --- | --- | --- | --- |
+| Hopeless | S | -1 Nerve and -1 Wits | Yes |
+| Fearful | S | -2 Nerve | No |
+| Haunted | S | -1 Force and -1 Tech | Yes |
+| Paranoid | C | Adds 1 clog card | Yes |
+| Irrational | C | Adds 1 Outburst clog card that deals 1 damage to this unit when discarded | No |
+| Compulsive | C | Adds 1 clog card worth 0 fuel | No |
+| Hallucinating | C | Adds 3 clog cards | No |
+| Cowardly | T | Starts every fight Suppressed for 2 rounds | No |
+| Brooding | T | Starts every fight Exposed | No |
+| Frozen | T | Starts every fight Stunned | No |
+| Glutton | R | Eats a double ration each expedition | Yes |
+| Lone Wolf | R | Cannot share a lane with another squad member | Yes |
+| Trigger-Happy | R | The first gun action each fight costs +1 fuel | Yes |
+
+Severe faces:
+
+| Card | Face | Effect |
+| --- | --- | --- |
+| Critical Injury | Broken (S and C) | -2 Nerve, -1 Wits and 2 clog cards. Only the new building can cure it |
+| Memorable Death | Walks into the Dark | The unit dies |
+
+Virtues (8), lasting the rest of the expedition:
+
+| Virtue | Type | Effect |
+| --- | --- | --- |
+| Vigorous | S | +1 Force |
+| Focused | S | +1 Wits |
+| Courageous | S | +1 Nerve |
+| Steady Hands | S | +1 Tech |
+| Hardened | S | +1 maximum armor soak |
+| Fearless | T | Immune to Suppressed |
+| Lucky | R | Once per fight, redraw one results card this unit draws |
+| Hardy | R | Eats no rations |
+
 **Markets, packs and loot**
 
 - Cards come from loot found in the hive and from packs bought at connected markets.
@@ -571,7 +626,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Win condition and campaign length: Decided: the win condition depends on the gang, and the generic one is to hold a set number of districts or claim the Spire. Length comes in three modes: tutorial (short), Campaign (medium) and open-ended play (the intended mode). Still open: each gang's own win condition, how many districts count, and whether rivals can take back a claimed section.
 - [ ] Our own faction names, to replace the placeholders (the droid faction is now the Tenebrae Security Combine), including weapon names that borrow from other settings, such as autogun and melta. Held for a later pass, since only the three starter factions are being built now.
 - [ ] Prototype plan (working): Decided: a video game for computer, maybe mobile later, with minimal art for now and all three starter factions. The first build is a sandbox on a single floor with unlimited sections, to test feel at a steady pace. Difficulty rises with distance from the start so deeper floors are simulated, driven by a depth dial (a start tier and a ramp rate). The ramp is in steps: every N sections the effective tier goes up by one until it reaches tier 8, where it stays, and tier 8 sections have the endless section rules built in (no end, escalating rewards, free retreat at a checkpoint after each cleared section). Still open: sections per step, engine and platform, and the rule gaps it needs (how the hand of 3 and top-of-deck draws share cards, Gamble rooms and hazard thresholds, a tier 1 spawn table, control room bosses, and a loot pool from white to purple). The full hive map comes later as a milestone that stacks floors on top of the sandbox.
-- [ ] Conditions list (working): Decided: Suppressed is added (every action costs +1 fuel while it lasts) and Suppressing Fire now applies Suppressed instead of Slowed. Webbed is written up as a working rule (skip actions until the unit breaks free by burning a set amount of fuel), but it is not built until a faction uses it. Statuses clear when the fight ends, and only stress and aftermath results carry over. A unit that fills its stress track panics and skips its next action, then reads the affliction face of a drawn aftermath card and draws a results card to see whether it flees: ace to 5 flees and 6 and up holds. A unit that flees is out of the lane for the rest of the fight, takes no injury, and is back next fight with its stress reset. Afflictions are short-term or lasting depending on which one it is. Hidden/Revealed is not adopted for now. Also decided: Burning adds burn clog cards while active (Stunned, Exposed, Slowed and Suppressed are counters only, and a future corroded status could add clog cards too). Short-term afflictions clear at a rest room. Lasting ones need a new building (a chapel or shrine, name to come) or a consumable that cures one chosen milder lasting affliction and is used up. Afflictions come from the humanoid aftermath deck, which becomes double-faced (injury on one face, affliction on the other), paired by severity. Droids have no stress track, so the droid deck stays single-faced and the Glitching cards need a new effect. The burning counter is only a timer, and the burn cards deal the damage when discarded. Also decided: afflictions can be stat penalties, clog cards, a start-of-fight status or rule twists. Six Out Cold faces have no affliction and only the flee draw, and six have no affliction and a virtue on a jack, queen or king of the flee draw, lasting the rest of the expedition. Critical Injury's face is a severe affliction cured only at the new building, and Memorable Death's face kills the unit. The source prints how many burn cards Burning adds. Also decided: Glitching becomes Suppressed for the next fight, and every stress break draws a results card to see whether the unit flees (ace to 5 flees, 6 and up holds). Also decided: stress resets whether the unit flees or holds, and Glitching's Suppressed lasts 2 rounds. Still open: the afflictions list, the virtues list, and the full list of conditions with durations.
+- [ ] Conditions list (working): Decided: Suppressed is added (every action costs +1 fuel while it lasts) and Suppressing Fire now applies Suppressed instead of Slowed. Webbed is written up as a working rule (skip actions until the unit breaks free by burning a set amount of fuel), but it is not built until a faction uses it. Statuses clear when the fight ends, and only stress and aftermath results carry over. A unit that fills its stress track panics and skips its next action, then reads the affliction face of a drawn aftermath card and draws a results card to see whether it flees: ace to 5 flees and 6 and up holds. A unit that flees is out of the lane for the rest of the fight, takes no injury, and is back next fight with its stress reset. Afflictions are short-term or lasting depending on which one it is. Hidden/Revealed is not adopted for now. Also decided: Burning adds burn clog cards while active (Stunned, Exposed, Slowed and Suppressed are counters only, and a future corroded status could add clog cards too). Short-term afflictions clear at a rest room. Lasting ones need a new building (a chapel or shrine, name to come) or a consumable that cures one chosen milder lasting affliction and is used up. Afflictions come from the humanoid aftermath deck, which becomes double-faced (injury on one face, affliction on the other), paired by severity. Droids have no stress track, so the droid deck stays single-faced and the Glitching cards need a new effect. The burning counter is only a timer, and the burn cards deal the damage when discarded. Also decided: afflictions can be stat penalties, clog cards, a start-of-fight status or rule twists. Six Out Cold faces have no affliction and only the flee draw, and six have no affliction and a virtue on a jack, queen or king of the flee draw, lasting the rest of the expedition. Critical Injury's face is a severe affliction cured only at the new building, and Memorable Death's face kills the unit. The source prints how many burn cards Burning adds. Also decided: Glitching becomes Suppressed for the next fight, and every stress break draws a results card to see whether the unit flees (ace to 5 flees, 6 and up holds). Also decided: stress resets whether the unit flees or holds, and Glitching's Suppressed lasts 2 rounds. Also decided: the first draft of the afflictions list (8 short-term, 13 lasting, 1 severe) and the virtues list (8) is in the doc below the aftermath table, and a virtue is picked from the one printed on the face plus one drawn at random. Still open: a balance pass on those lists, and the full list of conditions with durations.
 - [x] Pressmen Solidarity: does Union Grudge Decided: Union Grudge does not stack, the 1 soak per round is capped by maximum soak, the ration hunger rate starts at 1.5x, and the 1-round wind-up on heavy weapons stays.
 - [ ] Concord Marshals: how much do arrests pay and how does Authority scale (range, starting value, writ gate thresholds)? How many prisoners can cells hold? Which enemies can be arrested, and how do bosses and leaders resist? Is Revise Warrant too strong, and is capture too hard against units with a lot of HP? (Warrant Mark against monsters is decided: it marks the body for +1 damage, with no capture.)
 - [x] Rules gaps found in playtest 01 (TSC vs the Scavver pack, see `playtests/` in the repo): lane capacity (assumed 2 per side), what each side does in the setup rounds (assumed deploy only, no attacks), whether downed units screen their lane HP (assumed no), whether the soak "gain" effects can exceed an armor's maximum (assumed no), how much built-in and armor soak a droid has, and whether a stunned scripted unit loses its turn (assumed yes). Balance: the patrol is far too easy, with soak very large and grunt HP of 3 against 3-damage Burst Fire. Decided: there is no cap on units per lane, the setup rounds are deploy only, downed units do not screen their lane, and soak gains cannot exceed an armor's maximum. A stunned scripted unit losing its turn stays as a working rule. The balance notes were answered by the later soak and difficulty decisions.
