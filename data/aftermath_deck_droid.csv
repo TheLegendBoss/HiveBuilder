@@ -1,7 +1,7 @@
 result,cards,type,repair,effect
 System Shutdown,12,short-term,free reboot,No lasting effect; back online by the next expedition
 Firmware Patch,2,short-term,free reboot,No damage; the droid gains bonus XP
-Glitching,4,short-term,free reboot,Starts the next fight Suppressed
+Glitching,4,short-term,free reboot,Starts the next fight Suppressed for 2 rounds
 Rebooting,2,short-term,free reboot,Starts the next fight Stunned
 Frame Damage,4,lasting,major,Starts every fight at half HP until repaired
 Processor Damage,2,lasting,minor,Draw a results card: low is -1 Wits; high is -1 Nerve until repaired
