@@ -1,0 +1,31 @@
+id,base_item,class,white_version
+1,Scrap cleaver,"Melee, light","Quick: 1 fuel, 2 damage. Normal: 2 fuel, 3 damage"
+2,Arc blade,"Melee, medium","Quick: 1 fuel, 2 damage. Arc: 2 fuel, 3 damage and Stunned if it is the only target"
+3,Power maul,"Melee, heavy","Crushing Blow: 2 fuel, 4 damage and Exposed, wind-up 1"
+4,Hive revolver,Sidearm,"Shot: 1 fuel, 2 damage (ranged), ammo 6"
+5,Hand cannon,"Sidearm, heavy","Shot: 1 fuel, 3 damage (ranged), ammo 4"
+6,Pump shotgun,Close,"Blast: 1 fuel, 1 to 3 damage. Slug: 2 fuel, 3 damage"
+7,Riot gun,"Close, heavy","Blast: 1 fuel, 2 to 4 damage, ammo 4"
+8,Surplus autogun,Line,"Burst: 1 fuel, 2 damage. Autofire: 2 fuel, 2 to 4 damage"
+9,Lasrifle,Line,"Shot: 1 fuel, 2 damage. Burst: 2 fuel, 3 damage to two units"
+10,Hunting rifle,Precision,"Aimed Shot: 2 fuel, 4 damage (ranged), wind-up 1"
+11,Long-las,"Precision, heavy","Aimed Shot: 2 fuel, 4 damage that ignores 2 soak, wind-up 1, ammo 3"
+12,Heavy stubber,Support,"Suppress: 2 fuel, 1 damage to every enemy in the lane and Suppressed, ammo 6"
+13,Grenade belt,Explosive,"Throw: 1 fuel, 2 damage to every enemy in the lane, ammo 4"
+14,Grenade launcher,"Explosive, heavy","Lob: 2 fuel, 3 damage to every enemy in the lane, ammo 3"
+15,Riot shield,Defense,Max soak 3. Block: cancel the fight-back from the next melee attack
+16,Ablative shield,Defense,Max soak 3. Interpose: take the next hit aimed at an ally in this lane
+17,Patched plating,Armor,Max soak 3. Brace: refill 1
+18,Composite vest,Armor,Max soak 3. Plate Check: refill 2
+19,Hive carapace,"Armor, heavy","Max soak 3. Reinforce: refill 2, and your actions cost +1 fuel on the first turn of a fight"
+20,Field medkit,Tool,"Patch Up: 1 fuel, restore 2 HP to a unit in this lane"
+21,Red-dot sight,Attachment,The next attack with the attached gear deals +1 damage and costs 1 less fuel
+22,Adrenal injector,Accessory,Once per fight: remove Suppressed or Slowed from this unit
+23,Gambler's coin,Accessory,Once per expedition: redraw one Gamble push card
+24,Hive rations,Supply,A ration pack that restores rations for the counter
+25,Mixed ammo,Supply,Refill 2 ammo on one gear
+26,Healing supplies,Supply,Heal 4 HP
+27,Frag grenade,Disposable,"Throw: 3 damage to every enemy in the lane, one use"
+28,Smoke canister,Disposable,"Ranged attacks into or out of the lane cost +1 fuel for 2 rounds, one use"
+29,Combat stim,Disposable,"Restore 2 HP and remove one status, one use"
+30,Breaching charge,Disposable,"4 damage to the enemy lane HP, one use"
