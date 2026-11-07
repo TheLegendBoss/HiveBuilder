@@ -1,0 +1,6 @@
+rarity,core_damage,action_cost,ammo,attachment_slots,riders,test_rating
+white,+0,base,base,0,0,base
+green,+1,base,+1,1,0,+0
+blue,+1,base,+2,2 to 3,1,+1
+purple,+2,one action costs 1 less,+3,3,1,+1
+orange,+3,one action costs 1 less,+4,3 to 4,2,+2
