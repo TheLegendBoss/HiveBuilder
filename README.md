@@ -55,6 +55,8 @@ The main menu opens first. Sandbox Mode leads to a placeholder setup screen wher
 
 `npm run dist:win` builds a single portable Windows app, `release/HiveDeck-<version>-portable.exe` (Electron wrapper in `electron/main.cjs`; it works on Linux, macOS or Windows machines). Double-click to run, no install. F11 toggles fullscreen. The exe is not code signed, so Windows SmartScreen may warn on first run: choose More info, then Run anyway. `npm run electron` runs the same shell from source.
 
+**Without building locally:** the GitHub Actions workflow `Windows build` builds the exe on a Windows runner. Run it from the repo's Actions tab (Run workflow) and download the exe from the run's Artifacts, or push a version tag (for example `git tag v0.0.2 && git push origin v0.0.2`) and it also publishes the exe on the Releases page.
+
 ## Workflow
 
 The living design doc is edited in Claude. After a design session, re-export it to `docs/design.md` and update `decisions.md` and any `data/` files that changed.
