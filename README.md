@@ -51,6 +51,10 @@ npm run build
 
 The main menu opens first. Sandbox Mode leads to a placeholder setup screen where you pick a faction (it changes the accent color). Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
 
+## Windows app
+
+`npm run dist:win` builds a single portable Windows app, `release/HiveDeck-<version>-portable.exe` (Electron wrapper in `electron/main.cjs`; it works on Linux, macOS or Windows machines). Double-click to run, no install. F11 toggles fullscreen. The exe is not code signed, so Windows SmartScreen may warn on first run: choose More info, then Run anyway. `npm run electron` runs the same shell from source.
+
 ## Workflow
 
 The living design doc is edited in Claude. After a design session, re-export it to `docs/design.md` and update `decisions.md` and any `data/` files that changed.
