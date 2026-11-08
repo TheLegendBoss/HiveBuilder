@@ -2,7 +2,7 @@
 
 A grim-dark deckbuilding campaign game. You lead a gang through a procedurally generated hive city and claim it district by district. Your crew, gear, perks and skills all feed one shared squad deck, and every card can be played for its effect or burned as fuel.
 
-**Status:** design phase. Everything is placeholder numbers and placeholder names.
+**Status:** design phase, with the first build started. Milestone M0 (Phaser 4 scaffold and main menu) is in `src/`. Everything is placeholder numbers and placeholder names.
 
 ## Repo layout
 
@@ -10,6 +10,8 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | --- | --- |
 | `docs/design.md` | The full design document, exported from the living doc. Source of truth for rules. |
 | `docs/ui-guide.md` | UI and visual design rules (palette, type, cards, screens, components, motion). Also proposed as the hive-deck-ui skill. |
+| `docs/build-spec.md` | One-page sandbox build spec: scope, milestones M0 to M7, and the checks each one must pass. |
+| `src/` | The game (TypeScript, Phaser 4, Vite). `src/sim/` will hold the rules with no phaser imports, `src/data/` the content and the palette, `src/ui/` the UI kit, `src/scenes/` one scene per screen. |
 | `decisions.md` | Short list of locked rules, plus the open-questions checklist. |
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 20 designs, 32 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 29 cards. |
@@ -36,6 +38,18 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 - **No player dice:** randomness comes from a 52-card results deck.
 - **Campaign:** a generated hive of floors built from room, encounter, denizen and loot decks. Supplies are the expedition clock; power is gang influence.
 - **Factions:** the TSC (droids) is the intro faction. The Pressmen Union (heavy brute gang) and the Concord Marshals (elite law squad) are the second and third starters.
+
+## Running the game
+
+```
+npm install
+npm run dev        # opens at http://127.0.0.1:5173
+npm run typecheck
+npm test
+npm run build
+```
+
+The main menu opens first. Sandbox Mode leads to a placeholder setup screen where you pick a faction (it changes the accent color). Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
 
 ## Workflow
 
