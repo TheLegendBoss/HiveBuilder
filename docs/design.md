@@ -749,6 +749,49 @@ Scarcity and lasting damage carry the bleak tone. These are early ideas, not loc
 - **Hive stability.** Cave-ins, toxic leaks and power failures raise or lower a stability meter. Low stability adds dangerous cards to the Hive Deck.
 - **Permadeath and memorials.** Fallen crew stay dead, and the squad carries the record.
 
+## Build status
+
+The prototype now plays through one full expedition floor: milestones M1 to M3 and the loot, Eagles, Gamble and Market slice are built, with 77 automated tests passing. Code is in the [HiveBuilder repo](https://github.com/TheLegendBoss/HiveBuilder) (Phaser 4, TypeScript, Electron for Windows).
+
+| Milestone | What it covers | State |
+| --- | --- | --- |
+| M1 Sim core | Results deck, hand and fuel, lane duel, TSC cards, Scavver AI, parity tests against the paper sims | Built |
+| M2 Combat screen | Playable fight in Sandbox Mode with selection flow, intent badges, blood bars and the vox log | Built |
+| M3 Expedition | Generated floors one section at a time, room cards, gates, rations, retreat, three new enemy forces (Straggler band, Toll gang, Rat swarm) | Built |
+| Loot slice | Loot deck and 8-slot pack, Eagles purses, four Gamble cards, Market with Basic packs, selling spares | Built |
+| M4 Hub and economy | Claimed rooms, buildings, downtime, XP spending | Not started |
+
+**Working rules invented in the build**
+
+These are placeholders so the loop could run. Each is flagged in the repo's decisions file and needs a yes or a change from DJ.
+
+| Rule | Working value |
+| --- | --- |
+| Rations | 24 at the start, spent on movement only; at 0 each move costs every member 1 HP (never below 1) |
+| Retreat | Free at a section entrance, otherwise the ground is marked as lost |
+| Fight scaling | Tier = 1 + half the section number (max 8); every enemy gets plus HP and plus damage equal to tier minus 1 |
+| After a fight | Squad HP carries over, downed members rise at 1 HP, a lost fight ends the run |
+| Clinic | Heals 3 spread to the lowest HP ratio first |
+| Soak stacking | Enemy buffs cap at 3 built-in soak |
+| Start of run | 10 Eagles, pack of 8 items |
+| Market | Basic pack 10 Eagles for 5 loot draws; a spare sells for 1 Eagle |
+| Consumables | Hive rations +4 rations, Healing supplies heal 4, Combat stim heal 2 |
+| Gamble ladders | A high card climbs a rung, mid holds, low busts; stake paid on commit; cash out any time |
+
+**Measured balance.** With the starter squad the stand-in player wins every tier 1 and 2 fight, 74 to 100% of tier 3 and 25 to 50% of tier 4. A full clear of one section costs about 22 moves, so 24 rations is tight but workable.
+
+**Stubbed or not built yet**
+
+- Hazard rooms (need the Force, Wits, Nerve and Tech unit attributes)
+- Rest rooms (need exhausted cards)
+- Shrine offering (stress stake) and Toll-booth bet (gear stake) Gamble cards
+- Pipe gang and Ash cult forces (need Burning and stress)
+- Gear equipping: items ride in the pack but do nothing yet
+- XP is tallied but not spent
+- Suppressed is applied to units but has no effect on enemies
+- Faction choice is not saved, and the faction accent colours are working values
+- The Windows build workflow has never been run
+
 ## Open questions and next steps
 
 Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are set. The biggest open pieces are how downed members and gear behave mid-fight and the exact win condition for the campaign.
@@ -797,6 +840,8 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [ ] Playtest leftovers: how much a rest room or clinic heals mid-expedition (the clinic building currently restores up to 5, 3 or 1 HP), the fuel penalty that stun counters put on enemies (not simulated), whether concussive damage should affect lane HP and monster bodies (working rule: ordinary damage), the TSC pistol-whip (it should be melee and draw a fight-back; not modeled), the Concord Medic as a later recruit, and Field Service healing parity for the TSC.
 
 **Next steps**
+
+Build order, pick one: M4 hub and economy, gear equipping, or Hazard attributes. The numbered design topics below are still open.
 
 1. The Hive Deck and encounters: floor generation, room cards, enemy forces, and how the deck grows as you explore.
 2. Crafting numbers: pitch values, upgrade costs, pack odds and prices.
