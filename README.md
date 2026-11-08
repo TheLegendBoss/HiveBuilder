@@ -9,6 +9,7 @@ A grim-dark deckbuilding campaign game. You lead a gang through a procedurally g
 | Path | What it is |
 | --- | --- |
 | `docs/design.md` | The full design document, exported from the living doc. Source of truth for rules. |
+| `docs/ui-guide.md` | UI and visual design rules (palette, type, cards, screens, components, motion). Also proposed as the hive-deck-ui skill. |
 | `decisions.md` | Short list of locked rules, plus the open-questions checklist. |
 | `data/tsc_starting_deck.csv` | The Tenebrae Security Combine (TSC) starter deck: 20 designs, 32 cards. |
 | `data/pressmen_starting_deck.csv` | The Pressmen Union starter deck: 16 designs, 29 cards. |
