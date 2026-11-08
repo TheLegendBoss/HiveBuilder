@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { candidates, nextStep, pickActor, pickLane, pickTarget, pickVariant, unplayableReason, type Sel, type Step } from '../core/selection';
+import { session } from '../core/session';
 import { cardDefs } from '../data/cards';
+import type { Force } from '../data/forces';
 import { mix, palette, toCss } from '../data/palette';
+import { settleFight, startFight } from '../data/rooms';
 import { tscVsScavvers } from '../data/scenarios';
 import { fuelAvailable, listActions, perform, suggestBurn } from '../sim/actions';
 import { needsActor } from '../sim/cards';
@@ -53,6 +56,8 @@ const band = (v: number): string => (v <= 5 ? 'LOW' : v <= 9 ? 'MID' : 'HIGH');
 export class Combat extends ScreenScene {
   private sim!: Game;
   private seed = 1;
+  /** set when this fight belongs to the expedition */
+  private force: Force | null = null;
   private sel: Sel | null = null;
   private actions: Action[] = [];
   private step: Step | null = null;
@@ -89,7 +94,15 @@ export class Combat extends ScreenScene {
   }
 
   protected override onCreate(): void {
-    this.sim = createGame(tscVsScavvers, this.seed);
+    const x = session.expedition;
+    if (x?.pending?.kind === 'fight') {
+      const f = startFight(x);
+      this.sim = f.game;
+      this.force = f.force;
+    } else {
+      this.force = null;
+      this.sim = createGame(tscVsScavvers, this.seed);
+    }
     this.sel = null;
     this.burnMode = false;
     this.burn = null;
@@ -396,14 +409,23 @@ export class Combat extends ScreenScene {
     }
   }
 
+  /** Hand the finished (or abandoned) fight back to the expedition and return to its map. */
+  private backToMap(): void {
+    if (session.expedition && this.force) settleFight(session.expedition, this.sim, this.force);
+    this.scene.start(SceneKeys.Expedition);
+  }
+
   private openPause(): void {
+    const exp = this.force !== null;
     this.modal = new Modal(this, this.root, {
-      title: 'Leave the fight?',
-      body: 'Abandoning the fight returns you to the sandbox setup. Nothing is saved.',
-      confirmLabel: 'Abandon',
+      title: exp ? 'Give up the fight?' : 'Leave the fight?',
+      body: exp
+        ? 'Giving up counts as a loss: the squad retreats, the downed are left behind and the expedition ends.'
+        : 'Abandoning the fight returns you to the sandbox setup. Nothing is saved.',
+      confirmLabel: exp ? 'Give up' : 'Abandon',
       cancelLabel: 'Keep fighting',
       signal: this.signal,
-      onConfirm: () => this.scene.start(SceneKeys.SandboxSetup),
+      onConfirm: () => (exp ? this.backToMap() : this.scene.start(SceneKeys.SandboxSetup)),
       onCancel: () => {
         this.modal = null;
       }
@@ -650,7 +672,9 @@ export class Combat extends ScreenScene {
     if (u.stunned) label = 'STUNNED';
     else if (u.pattern.length) {
       const def = g.scenario.enemyActions[u.pattern[u.pi]!]!;
-      label = def.kind === 'rally' ? 'RALLY' : `${def.melee ? 'MELEE' : 'ATK'} ${def.dmg}`;
+      if (def.kind === 'rally') label = 'RALLY';
+      else if (def.kind === 'buff') label = `+${def.soak ?? 1} SOAK`;
+      else label = `${def.melee ? 'MELEE' : 'ATK'} ${def.dmg}${def.suppress ? ' +SUP' : ''}`;
     }
     if (next && !g.result) {
       const plan = enemyPlan(g);
@@ -1062,6 +1086,22 @@ export class Combat extends ScreenScene {
       downed.length ? `Downed: ${downed.join(', ')}.` : 'Nobody downed.',
       won ? 'Reward (not wired yet): 1 loot draw and 2 Eagles.' : 'You pull back. Downed crew are left behind (not wired yet).'
     ].join('\n');
+    if (this.force) {
+      const f = this.force;
+      const lines = [
+        `${g.round} rounds · ${g.stats.played ?? 0} cards played · ${g.stats.burned ?? 0} burned · ${g.stats.cycled ?? 0} cycled.`,
+        downed.length ? `Downed: ${downed.join(', ')}${won ? ' (they get up at 1 HP).' : ' (left behind).'}` : 'Nobody downed.',
+        won ? `Reward: ${f.reward.loot} loot draw and ${f.reward.eagles} Eagles (tallied only).` : 'The expedition ends here.'
+      ];
+      this.modal = new Modal(this, root, {
+        title: won ? 'Victory' : 'Retreat',
+        body: lines.join('\n'),
+        confirmLabel: won ? 'Back to the map' : 'See the summary',
+        signal: this.signal,
+        onConfirm: () => this.backToMap()
+      });
+      return;
+    }
     this.modal = new Modal(this, root, {
       title: won ? 'Victory' : 'Retreat',
       body,

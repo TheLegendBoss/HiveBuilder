@@ -1,5 +1,6 @@
 import {
   adjacent,
+  bodiesInLane,
   checkResult,
   deployUnit,
   endRound,
@@ -11,7 +12,7 @@ import {
   unitById,
   unitTarget
 } from './state';
-import type { Ev, EnemyPlan, Game, Target, Unit } from './types';
+import type { EnemyActionDef, Ev, EnemyPlan, Game, Target, Unit } from './types';
 
 function pickVictim(g: Game, lane: number): { target: Target; redirected: boolean } | null {
   const units = inLane(g, 'P', lane);
@@ -43,6 +44,22 @@ function victimFor(g: Game, u: Unit): { target: Target; redirected: boolean } | 
     if (v) return v;
   }
   return null;
+}
+
+function canBreed(g: Game, u: Unit, def: EnemyActionDef): boolean {
+  if (g.enemyDeck.length === 0) return false;
+  return def.cap !== undefined ? bodiesInLane(g, 'E', u.lane!) < def.cap : laneHasRoom(g, 'E', u.lane!);
+}
+
+/** Who gains the soak from a buff, or null when nobody can use it. */
+function buffTarget(g: Game, u: Unit, def: EnemyActionDef): Unit | null {
+  const room = (x: Unit): boolean => def.soakCap === undefined || x.builtin < def.soakCap;
+  if (def.scope === 'laneTag') {
+    const pool = inLane(g, 'E', u.lane!).filter((x) => x.tags.includes(def.tag ?? '') && room(x));
+    pool.sort((a, b) => a.hp - b.hp || a.builtin - b.builtin || a.arrived - b.arrived);
+    return pool[0] ?? null;
+  }
+  return room(u) ? u : null;
 }
 
 function enemyUnitsInOrder(g: Game): Unit[] {
@@ -83,15 +100,23 @@ export function enemyPlan(g: Game): EnemyPlan {
       const def = g.scenario.enemyActions[id]!;
       const nextPi = (u.pi + j + 1) % u.pattern.length;
       if (def.kind === 'rally') {
-        if (g.enemyDeck.length === 0 || !laneHasRoom(g, 'E', u.lane!)) continue;
+        if (!canBreed(g, u, def)) continue;
         return {
           kind: 'rally', unit: u.id, name: def.name, dmg: 0, melee: false, victim: null, redirected: false,
           lane: u.lane, nextPtr: ptr, nextPi, text: def.text
         };
       }
+      if (def.kind === 'buff') {
+        const ally = buffTarget(g, u, def);
+        if (!ally) continue;
+        return {
+          kind: 'buff', unit: u.id, name: def.name, dmg: 0, melee: false, victim: null, redirected: false,
+          ally: ally.id, soak: def.soak ?? 1, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
+        };
+      }
       const v = victimFor(g, u);
       return {
-        kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee,
+        kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, suppress: def.suppress,
         victim: v?.target ?? null, redirected: v?.redirected ?? false, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
       };
     }
@@ -112,6 +137,12 @@ export function enemyAct(g: Game): Ev[] {
     case 'deploy':
       deployUnit(g, u!, plan.lane!, ev);
       ev.push({ t: 'log', text: `${u!.name} deploys to lane ${plan.lane! + 1}` });
+      for (const a of g.enemyAlso) {
+        if (a.lane !== plan.lane) continue;
+        const extra = unitById(g, a.id);
+        deployUnit(g, extra, a.lane, ev);
+        ev.push({ t: 'log', text: `${extra.name} deploys to lane ${a.lane + 1}` });
+      }
       break;
     case 'stunned':
       u!.stunned = false;
@@ -123,6 +154,13 @@ export function enemyAct(g: Game): Ev[] {
       const next = unitById(g, g.enemyDeck.shift()!);
       deployUnit(g, next, plan.lane!, ev);
       ev.push({ t: 'log', text: `${u!.name} rallies: ${next.name} joins lane ${plan.lane! + 1}` });
+      break;
+    }
+    case 'buff': {
+      const ally = unitById(g, plan.ally!);
+      ally.builtin += plan.soak ?? 1;
+      ev.push({ t: 'soakGain', unit: ally.id, amount: plan.soak ?? 1 });
+      ev.push({ t: 'log', text: ally === u ? `${u!.name}: ${plan.name}, +${plan.soak ?? 1} soak` : `${u!.name}: ${plan.name}, ${ally.name} gains ${plan.soak ?? 1} soak` });
       break;
     }
     case 'attack': {
@@ -140,6 +178,11 @@ export function enemyAct(g: Game): Ev[] {
         }
         ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on ${t.name} for ${plan.dmg}` });
         hitUnit(t, plan.dmg, ev);
+        if (plan.suppress && !t.downed && !t.dead) {
+          t.suppressed = Math.max(t.suppressed, plan.suppress);
+          ev.push({ t: 'status', unit: t.id, status: 'suppressed', on: true });
+          ev.push({ t: 'log', text: `${t.name} is suppressed for ${plan.suppress} rounds` });
+        }
         if (t.counter && !u!.dead) {
           t.counter = false;
           ev.push({ t: 'status', unit: t.id, status: 'counter', on: false });

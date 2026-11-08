@@ -9,7 +9,8 @@ export interface ModalOpts {
   title: string;
   body: string;
   confirmLabel: string;
-  cancelLabel: string;
+  /** leave out for a single-button notice */
+  cancelLabel?: string;
   signal: number;
   onConfirm: () => void;
   onCancel?: () => void;
@@ -36,20 +37,24 @@ export class Modal {
 
     const w = 840;
     const bodyText = monoText(scene, 0, 0, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 });
-    const h = Math.max(360, 138 + bodyText.height + 42 + 78 + 42);
+    const titleProbe = stencilText(scene, 0, 0, o.title, 54, palette.text, { spacing: 0.06 });
+    const bodyDy = Math.max(138, 54 + titleProbe.height + 30);
+    titleProbe.destroy();
+    const h = Math.max(360, bodyDy + bodyText.height + 42 + 78 + 42);
     bodyText.destroy();
     const x = (REF_W - w) / 2;
     const y = (REF_H - h) / 2;
     const panel = makePanel(scene, { x, y, w, h, bolts: true, hazard: true, scan: true, border: o.signal, borderWidth: 3 });
     c.add(panel);
     c.add(stencilText(scene, x + 48, y + 54, o.title, 54, palette.text, { spacing: 0.06 }));
-    c.add(monoText(scene, x + 48, y + 138, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 }));
+    c.add(monoText(scene, x + 48, y + bodyDy, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 }));
 
     const bw = 300;
     const bh = 78;
     const by = y + h - bh - 42;
+    const single = o.cancelLabel === undefined;
     const confirm = new Button(scene, {
-      x: x + w - 48 - bw * 2 - 72,
+      x: single ? x + w - 48 - bw : x + w - 48 - bw * 2 - 72,
       y: by,
       w: bw,
       h: bh,
@@ -58,14 +63,15 @@ export class Modal {
       align: 'center',
       state: 'live',
       signal: o.signal,
+      accent: single,
       onClick: () => this.finish(true)
     });
-    const cancel = new Button(scene, {
+    const cancel = single ? null : new Button(scene, {
       x: x + w - 48 - bw,
       y: by,
       w: bw,
       h: bh,
-      label: o.cancelLabel,
+      label: o.cancelLabel ?? '',
       size: 33,
       align: 'center',
       state: 'live',
@@ -73,16 +79,16 @@ export class Modal {
       signal: o.signal,
       onClick: () => this.finish(false)
     });
-    this.buttons = [confirm, cancel];
-    c.add([confirm, cancel]);
+    this.buttons = cancel ? [confirm, cancel] : [confirm];
+    c.add(this.buttons);
     parent.add(c);
-    this.setFocus(1);
+    this.setFocus(single ? 0 : 1);
 
     this.onKey = (e: KeyboardEvent) => {
       if (this.closed) return;
       switch (e.key) {
         case 'Escape':
-          this.finish(false);
+          if (this.buttons.length > 1) this.finish(false);
           break;
         case 'Enter':
         case ' ':
@@ -91,7 +97,7 @@ export class Modal {
         case 'ArrowLeft':
         case 'ArrowRight':
         case 'Tab':
-          this.setFocus(this.focus === 0 ? 1 : 0);
+          if (this.buttons.length > 1) this.setFocus(this.focus === 0 ? 1 : 0);
           e.preventDefault();
           break;
       }

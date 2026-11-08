@@ -34,7 +34,12 @@ export function makeUnit(g: Game, side: Side, t: UnitTemplate): Unit {
   return u;
 }
 
-export function createGame(scenario: Scenario, seed: number): Game {
+export interface GameOptions {
+  /** squad hit points carried in from the expedition, in squad order; armor, built-in soak and ammo start full */
+  squadHp?: number[];
+}
+
+export function createGame(scenario: Scenario, seed: number, opts: GameOptions = {}): Game {
   const g: Game = {
     scenario,
     rng: seed | 0,
@@ -51,6 +56,7 @@ export function createGame(scenario: Scenario, seed: number): Game {
     discount: 0,
     enemyDeck: [],
     enemyStart: [],
+    enemyAlso: [],
     eptr: 0,
     results: [...RESULT_VALUES],
     result: null,
@@ -59,8 +65,13 @@ export function createGame(scenario: Scenario, seed: number): Game {
     arrivals: 0,
     stats: {}
   };
-  for (const t of scenario.squad) makeUnit(g, 'P', t);
+  scenario.squad.forEach((t, i) => {
+    const u = makeUnit(g, 'P', t);
+    const hp = opts.squadHp?.[i];
+    if (hp !== undefined) u.hp = Math.max(1, Math.min(u.maxHp, hp));
+  });
   g.enemyStart = scenario.enemyStart.map((t) => makeUnit(g, 'E', t).id);
+  g.enemyAlso = (scenario.enemyAlso ?? []).map((a) => ({ id: makeUnit(g, 'E', a.unit).id, lane: a.lane }));
   g.enemyDeck = scenario.enemyDeck.map((t) => makeUnit(g, 'E', t).id);
   for (const d of scenario.deck) {
     for (let i = 0; i < d.count; i++) g.deck.push({ iid: g.nextIid++, name: d.name });

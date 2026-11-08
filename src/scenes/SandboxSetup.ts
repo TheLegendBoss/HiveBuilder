@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { setFaction, session } from '../core/session';
+import { setFaction, session, startExpedition } from '../core/session';
 import { factionBlurbs, setupText } from '../data/menu';
 import { factionAccent, factionNames, factionOrder, mix, palette, type FactionId } from '../data/palette';
 import { Button } from '../ui/Button';
@@ -50,7 +50,14 @@ export class SandboxSetup extends ScreenScene {
       new Button(this, {
         x: CARD.x + 3 * CARD.w + 2 * CARD.gap - 600, y: 912, w: 600, h: 84, label: setupText.start, size: 36,
         state: session.faction === 'tsc' ? 'live' : 'offline', accent: session.faction === 'tsc', signal, key: 'Enter',
-        stamp: setupText.startStamp, onClick: () => this.scene.start(SceneKeys.Combat)
+        stamp: setupText.startStamp, onClick: () => this.startRun()
+      })
+    );
+    root.add(
+      new Button(this, {
+        x: CARD.x + 3 * CARD.w + 2 * CARD.gap - 600 - 30 - 420, y: 912, w: 420, h: 84, label: setupText.quickFight, size: 36,
+        state: session.faction === 'tsc' ? 'live' : 'offline', signal, key: 'F', stamp: setupText.startStamp,
+        onClick: () => this.quickFight()
       })
     );
   }
@@ -79,6 +86,16 @@ export class SandboxSetup extends ScreenScene {
     return c;
   }
 
+  private startRun(): void {
+    startExpedition();
+    this.scene.start(SceneKeys.Expedition);
+  }
+
+  private quickFight(): void {
+    session.expedition = null;
+    this.scene.start(SceneKeys.Combat);
+  }
+
   private choose(id: FactionId): void {
     if (session.faction === id) return;
     setFaction(id);
@@ -101,7 +118,11 @@ export class SandboxSetup extends ScreenScene {
         this.choose(factionOrder[Math.min(factionOrder.length - 1, i + 1)]!);
         break;
       case 'Enter':
-        if (session.faction === 'tsc') this.scene.start(SceneKeys.Combat);
+        if (session.faction === 'tsc') this.startRun();
+        break;
+      case 'f':
+      case 'F':
+        if (session.faction === 'tsc') this.quickFight();
         break;
       case 'Escape':
         this.scene.start(SceneKeys.MainMenu);

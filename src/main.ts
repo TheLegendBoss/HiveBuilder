@@ -7,6 +7,7 @@ import '@fontsource/ibm-plex-mono/latin-700';
 import { palette } from './data/palette';
 import { Boot } from './scenes/Boot';
 import { Combat } from './scenes/Combat';
+import { ExpeditionMap } from './scenes/ExpeditionMap';
 import { MainMenu } from './scenes/MainMenu';
 import { SandboxSetup } from './scenes/SandboxSetup';
 import { Settings } from './scenes/Settings';
@@ -21,7 +22,7 @@ const game = new Phaser.Game({
     height: '100%'
   },
   input: { keyboard: true, mouse: true },
-  scene: [Boot, MainMenu, SandboxSetup, Settings, Combat]
+  scene: [Boot, MainMenu, SandboxSetup, Settings, Combat, ExpeditionMap]
 });
 
 // Handy for debugging in the browser console.

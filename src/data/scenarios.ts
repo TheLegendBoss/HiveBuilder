@@ -1,5 +1,6 @@
 import { tscDeck } from './cards';
 import type { EnemyActionDef, Scenario, UnitTemplate } from '../sim/types';
+import { scaleForce, type Force } from './forces';
 
 const plating = 'Light plating';
 
@@ -42,3 +43,17 @@ export const tscVsScavvers: Scenario = {
 
 /** Same fight with the assumptions the Python paper sim used (2 bodies a lane, discard up to 3). */
 export const tscVsScavversPaper: Scenario = { ...tscVsScavvers, laneCap: 2, cycleLimit: 3 };
+
+/** The TSC crew against one tier-1 force. `step` is the tier step (0 is the CSV as written). */
+export function tscVsForce(force: Force, step = 0): Scenario {
+  const f = scaleForce(force, step);
+  return {
+    ...tscVsScavvers,
+    name: `TSC crew vs ${f.name}`,
+    enemyName: f.name,
+    enemyStart: f.start,
+    enemyAlso: f.also,
+    enemyDeck: f.deck,
+    enemyActions: f.actions
+  };
+}

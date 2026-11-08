@@ -21,7 +21,7 @@ A desktop game in Phaser 4 (TypeScript, Vite) that opens on a main menu and lets
 | M0 | Scaffold and main menu (this build) | `npm run dev` opens the v5 main menu at 1920 by 1080 and 1280 by 720; number keys and mouse work; Sandbox Mode opens a placeholder setup screen; Settings saves volume, fullscreen and text size; Exit asks to confirm; typecheck, tests and build pass |
 | M1 | Data and sim core (built) | CSV decks in `data/` load into typed data; results deck, hand, fuel and a 3-lane duel resolve in a headless test with fixed seeds; matches the paper-fight sims within tolerance |
 | M2 | Combat screen (built) | The v5 combat layout plays one fight against a Tier 1 force with mouse and keyboard, cables, intent badges, blood bars, vox log |
-| M3 | Expedition | Generate a floor section by section; room screens (Fight, Scavenge, Gamble, Hazard, Market, Rest, Clinic, Gate); supplies clock; retreat |
+| M3 | Expedition (built, with stub rooms) | Generate a floor section by section; room screens (Fight, Scavenge, Gamble, Hazard, Market, Rest, Clinic, Gate); supplies clock; retreat |
 | M4 | Hub and economy | Packs, selling, promotion, repairs, Start Expedition; Eagles and power counters |
 | M5 | Sandbox setup and saves | Sandbox Setup screen, depth dial, autosave, manual slots, quickstart preset |
 | M6 | Aftermath and pressure | Injuries, afflictions, stress breaks, virtues, loot rewards |
@@ -36,6 +36,15 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - `src/core/selection.ts`: the pick-an-item, actor, target, variant flow shared by mouse and keyboard.
 - Parity with the paper sim: over 2000 seeds the stand-in player wins every fight in about 10.1 actions after setup (paper sim: 10.0), with almost nobody downed. `src/sim/*.test.ts` cover each card rule.
 - Where the sim chose a rule the paper sim or the design left open, it is listed under "Sandbox build notes" in `decisions.md`.
+
+## M3 as built
+
+- `src/sim/expedition.ts` (no phaser): the seeded section generator and the expedition state. A section starts at an entrance Gate and draws rooms from a freshly shuffled copy of the 21-card room deck. When the squad first enters a room it draws an exit card off the results deck (A to 5 gives 1 door, 6 to 9 gives 2, 10 to K gives 3, counting the door you came in by); each new door spawns the next room card on the grid, or may join an existing room (50%). You see the type of every room next to a room you have entered. The generator never seals a section without a way onward. Moving costs 1 ration, fights cost none, a loss ends the run, and `retreat` is free at the section entrance and marks ground lost anywhere else.
+- `src/data/forces.ts`: Straggler band, Toll gang and Rat swarm from `data/tier1_patrols_new.csv`, with tier scaling. New enemy action kinds in the sim: attack with Suppressed, rally with a per-lane cap (Breed), soak buff to self or a lane friend (Dig In, Take Cover, Hold the Line). Pipe gang (needs Burning) and Ash cult (needs stress) are not in yet.
+- `src/data/rooms.ts`: the room deck from `data/starter_room_deck.csv`, the working expedition numbers, and `startFight` / `settleFight`, which carry the squad's HP into a fight and back.
+- `src/scenes/ExpeditionMap.ts`: the map (fog, current room, doors you can take with 1 to 3 or the arrows), the squad and ration panel, the retreat and gate modals and the end summary. Combat now takes its fight from the expedition when one is running; Quick fight on the setup screen still plays the old single Scavver fight.
+- Stub rooms: Scavenge, Gamble, Hazard, Market and Rest are walked through and marked done (Scavenge adds 1 to a loot tally). Clinic heals. Eagles and loot are only tallied.
+- Tests: `expedition.test.ts` (400 seeds all build a connected grid with a gate) and `forces.test.ts`.
 
 ## M0 scope in detail
 

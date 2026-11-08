@@ -19,10 +19,21 @@ export interface UnitTemplate {
 export interface EnemyActionDef {
   id: string;
   name: string;
-  kind: 'attack' | 'rally';
+  kind: 'attack' | 'rally' | 'buff';
   dmg: number;
   melee: boolean;
   text: string;
+  /** attack: the unit hit becomes Suppressed for this many rounds */
+  suppress?: number;
+  /** rally: most live bodies this side may have in the lane after the deploy (overrides the scenario cap) */
+  cap?: number;
+  /** buff: built-in soak gained */
+  soak?: number;
+  /** buff: self, or the best-fit friend in this lane carrying `tag` */
+  scope?: 'self' | 'laneTag';
+  tag?: string;
+  /** buff: built-in soak never grows past this (working rule, stops runaway stacking) */
+  soakCap?: number;
 }
 
 export interface Unit {
@@ -94,6 +105,8 @@ export interface Scenario {
   enemyStart: UnitTemplate[];
   /** waiting units, drawn from the front */
   enemyDeck: UnitTemplate[];
+  /** extra units that land in a lane in the same setup round as that lane's first unit */
+  enemyAlso?: Array<{ unit: UnitTemplate; lane: number }>;
   enemyActions: Record<string, EnemyActionDef>;
   setupRounds: number;
   /** most live-or-downed bodies per lane per side; null means no cap */
@@ -122,6 +135,7 @@ export interface Game {
   discount: number;
   enemyDeck: number[];
   enemyStart: number[];
+  enemyAlso: Array<{ id: number; lane: number }>;
   /** rotating pointer into the enemy's live units */
   eptr: number;
   results: number[];
@@ -160,7 +174,7 @@ export interface Action {
 }
 
 export interface EnemyPlan {
-  kind: 'deploy' | 'attack' | 'rally' | 'stunned' | 'pass';
+  kind: 'deploy' | 'attack' | 'rally' | 'buff' | 'stunned' | 'pass';
   unit: number | null;
   name: string;
   dmg: number;
@@ -169,6 +183,11 @@ export interface EnemyPlan {
   victim: Target | null;
   /** a Bulwark moved the hit onto another unit */
   redirected: boolean;
+  /** attack: Suppressed rounds put on the unit hit */
+  suppress?: number;
+  /** buff: the friendly unit that gains the soak, and how much */
+  ally?: number | null;
+  soak?: number;
   /** deploy and rally: the lane the new unit lands in */
   lane: number | null;
   /** pointer and pattern index after the action */
