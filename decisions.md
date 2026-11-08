@@ -86,6 +86,13 @@ These are numbers and rules the build had to invent. All are in `src/data/rooms.
 - **Enemy soak buffs** (Hold the Line, Take Cover, Dig In) stop at 3 built-in soak, so a stalling thug cannot become immune. Dig In picks the lowest-HP Straggler in the lane (the Sergeant is not one). Straggler band start: Straggler, Sergeant, Straggler, with 1 waiting. Rat swarm starts with 2 Rats in each outer lane and 2 waiting; Breed stops at 4 bodies in the lane.
 - **Fight force** is drawn blind when the squad first enters a Fight room, uniformly from the three forces.
 - **Suppressed** from Shakedown is wired for the squad: +1 fuel per action for 2 rounds.
+- **Boxed-in rooms:** if the last room entered has no free side and the section has no way onward, an earlier room with a free side grows the extra door instead (the player walks back to it).
+- **Eagles:** the squad starts the sandbox with 10 Eagles so the first Gamble or Market is reachable. Fights pay their CSV Eagles into the purse.
+- **Loot deck:** the 30 base items shuffled once and drawn without replacement, reshuffled when empty. All items are white. A Scavenge room is 1 draw; a fight pays its CSV draws. The pack holds 8.
+- **Map consumables:** Hive rations +4 rations, Healing supplies heal 4 spread over the squad, Combat stim heals 2 (its status removal is not used). A heal that would do nothing is not spent. Other items cannot be used yet: gear cannot be equipped and disposables are combat-only.
+- **Gamble:** built exactly as drafted for the four cards the sandbox can pay. "Supplies" stakes are rations and the Quartermaster's "supply cards" pay rations. Shrine offering (stress stake) and Toll-booth bet (gear card stake) wait for stress and gear equipping. XP is only tallied. A declined gamble stays open to come back to; a committed one is used up.
+- **Market:** a Basic pack is 5 loot draws for 10 Eagles (the doc's price for a 5-card Basic pack, though the real pack is cards) and a spare item sells for 1 Eagle (a white pitch value of 1). Both are placeholders; the market stays open to come back to.
+- **Hazard:** still a walk-through. Hazards test an attribute (Force, Wits, Nerve, Tech) and units have none yet.
 
 ## Open questions
 

@@ -21,6 +21,34 @@ export interface Room {
   force: string | null;
   /** how many doors the exit draw gave this room (known once entered) */
   exits: number | null;
+  /** Gamble rooms: the card drawn on first entry */
+  gamble: number | null;
+}
+
+/** A loot card. `use` marks a consumable that works on the map. */
+export interface LootItem {
+  id: number;
+  name: string;
+  cls: string;
+  text: string;
+  use: { kind: 'rations' | 'heal'; amount: number } | null;
+}
+
+export type StakeKind = 'eagles' | 'rations';
+export type RewardKind = 'eagles' | 'loot' | 'rations' | 'xp';
+
+export interface GambleDef {
+  id: number;
+  name: string;
+  stake: StakeKind;
+  reward: RewardKind;
+  blurb: string;
+}
+
+/** What a gamble card prints at one tier: the stake and the three rungs. */
+export interface Ladder {
+  stake: number;
+  rungs: [number, number, number];
 }
 
 export interface ExpeditionConfig {
@@ -35,22 +63,56 @@ export interface ExpeditionConfig {
   rations: number;
   /** HP a Clinic restores across the squad */
   clinicHeal: number;
+  startEagles: number;
+  /** the loot deck is this pool, shuffled; drawn without replacement */
+  lootPool: LootItem[];
+  /** most items the squad can carry */
+  packSize: number;
+  gambles: GambleDef[];
+  /** ladders[gamble id][tier - 1] */
+  ladders: Record<number, Ladder[]>;
+  /** Market: Eagles for a pack of loot draws, and what a spare item sells for */
+  packPrice: number;
+  packDraws: number;
+  sellValue: number;
 }
 
 export type ExpStatus = 'running' | 'done' | 'retreated' | 'wiped';
 
+export type Band = 'low' | 'mid' | 'high';
+
+export interface GamblePending {
+  kind: 'gamble';
+  room: number;
+  def: GambleDef;
+  ladder: Ladder;
+  /** offer: not committed; live: stake paid, drawing; over: result shown, waiting to close */
+  stage: 'offer' | 'live' | 'over';
+  /** rungs climbed so far, 0 to 3 */
+  rung: number;
+  last: { card: number; band: Band } | null;
+  outcome: string | null;
+  owedLoot: number;
+}
+
 export type Pending =
   | { kind: 'fight'; room: number; force: string; step: number }
-  | { kind: 'gate'; room: number };
+  | { kind: 'gate'; room: number }
+  | { kind: 'loot'; offers: LootItem[]; from: string; back?: Pending }
+  | { kind: 'market'; room: number }
+  | GamblePending;
 
 export interface ExpStats {
   moves: number;
   fights: number;
   rooms: number;
   sections: number;
+  /** Eagles earned over the run (the purse is `Expedition.eagles`) */
   eagles: number;
+  /** loot draws made */
   loot: number;
   starved: number;
+  xp: number;
 }
 
 export interface Expedition {
@@ -59,6 +121,10 @@ export interface Expedition {
   /** current HP per squad slot, never below 1 between fights */
   hp: number[];
   rations: number;
+  /** the purse */
+  eagles: number;
+  pack: LootItem[];
+  lootDeck: LootItem[];
   section: number;
   rooms: Room[];
   at: number;
@@ -95,6 +161,9 @@ export function createExpedition(cfg: ExpeditionConfig): Expedition {
     rng: cfg.seed | 0,
     hp: cfg.squad.map((u) => u.hp),
     rations: cfg.rations,
+    eagles: cfg.startEagles,
+    pack: [],
+    lootDeck: [],
     section: 0,
     rooms: [],
     at: 0,
@@ -104,7 +173,7 @@ export function createExpedition(cfg: ExpeditionConfig): Expedition {
     groundLost: false,
     pending: null,
     log: [],
-    stats: { moves: 0, fights: 0, rooms: 0, sections: 0, eagles: 0, loot: 0, starved: 0 }
+    stats: { moves: 0, fights: 0, rooms: 0, sections: 0, eagles: 0, loot: 0, starved: 0, xp: 0 }
   };
   shuffleInPlace(x.results, x);
   startSection(x);
@@ -124,7 +193,7 @@ function startSection(x: Expedition): void {
   x.deck = [...x.cfg.roomDeck];
   shuffleInPlace(x.deck, x);
   const origin: Room = {
-    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null
+    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null, gamble: null
   };
   x.rooms.push(origin);
   x.at = 0;
@@ -147,7 +216,7 @@ function spawn(x: Expedition, room: Room, dx: number, dy: number): boolean {
   const type = x.deck.pop();
   if (type === undefined) return false;
   const next: Room = {
-    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null
+    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null, gamble: null
   };
   x.rooms.push(next);
   link(room, next);
@@ -180,13 +249,18 @@ function openExits(x: Expedition, room: Room): void {
     if (!spawn(x, room, dx, dy)) break;
     need--;
   }
-  // The roll may have gone nowhere (every door joined an old room or was declined). Still no way onward: build one.
-  if (!x.rooms.some((r) => !r.entered) && !x.rooms.some(isExitGate) && room.links.length < MAX_DOORS) {
-    for (const [dx, dy] of dirs) {
-      if (roomAt(x, room.x + dx, room.y + dy)) continue;
-      if (spawn(x, room, dx, dy)) {
-        forced = true;
-        break;
+  // The roll may have gone nowhere (every door joined an old room or was declined). Still no way onward: build one,
+  // from this room if it has a free side, otherwise from the nearest earlier room that does.
+  if (!x.rooms.some((r) => !r.entered) && !x.rooms.some(isExitGate)) {
+    const hosts = [room, ...x.rooms.filter((r) => r.entered && r.id !== room.id).reverse()];
+    outer: for (const host of hosts) {
+      if (host.links.length >= MAX_DOORS) continue;
+      for (const [dx, dy] of dirs) {
+        if (roomAt(x, host.x + dx, host.y + dy)) continue;
+        if (spawn(x, host, dx, dy)) {
+          forced = true;
+          break outer;
+        }
       }
     }
   }
@@ -279,17 +353,21 @@ function resolveRoom(x: Expedition, room: Room): string {
       return 'Rest room: no exhausted cards to restore yet (stub)';
     case 'Scavenge':
       room.cleared = true;
-      x.stats.loot += 1;
-      return 'Scavenge: counted one loot draw (loot deck stub)';
-    case 'Gamble':
-      room.cleared = true;
-      return 'Gamble: nothing offered yet (stub)';
+      queueLoot(x, 1, 'Scavenge');
+      return 'Scavenge: one loot draw';
+    case 'Gamble': {
+      if (room.gamble === null) room.gamble = x.cfg.gambles[Math.floor(nextRandom(x) * x.cfg.gambles.length)]!.id;
+      const def = x.cfg.gambles.find((g) => g.id === room.gamble)!;
+      const ladder = x.cfg.ladders[def.id]![tierOf(x.section) - 1]!;
+      x.pending = { kind: 'gamble', room: room.id, def, ladder, stage: 'offer', rung: 0, last: null, outcome: null, owedLoot: 0 };
+      return def.name;
+    }
     case 'Hazard':
       room.cleared = true;
       return 'Hazard: no attribute test yet, waved through (stub)';
     case 'Market':
-      room.cleared = true;
-      return 'Market: nothing for sale yet (stub)';
+      x.pending = { kind: 'market', room: room.id };
+      return 'Market';
   }
 }
 
@@ -313,8 +391,195 @@ export function finishFight(x: Expedition, won: boolean, hpAfter: number[], rewa
   const room = x.rooms[p.room]!;
   room.cleared = true;
   x.stats.eagles += reward.eagles;
-  x.stats.loot += reward.loot;
-  say(x, `Fight won: ${reward.eagles} Eagles, ${reward.loot} loot draw`);
+  x.eagles += reward.eagles;
+  say(x, `Fight won: ${reward.eagles} Eagles`);
+  queueLoot(x, reward.loot, 'Fight');
+}
+
+// ---------- loot
+
+function drawLootCard(x: Expedition): LootItem {
+  if (x.lootDeck.length === 0) {
+    x.lootDeck = [...x.cfg.lootPool];
+    shuffleInPlace(x.lootDeck, x);
+  }
+  return x.lootDeck.pop() as LootItem;
+}
+
+/** Draw `n` loot cards into an offer the squad can pick from. */
+export function queueLoot(x: Expedition, n: number, from: string, back?: Pending): void {
+  if (n <= 0) return;
+  const offers = Array.from({ length: n }, () => drawLootCard(x));
+  x.stats.loot += n;
+  x.pending = { kind: 'loot', offers, from, back };
+  say(x, `${from}: ${n} loot draw${n === 1 ? '' : 's'}`);
+}
+
+/** Put one offered item in the pack. */
+export function takeLoot(x: Expedition, index: number): void {
+  const p = x.pending;
+  if (!p || p.kind !== 'loot') throw new Error('no loot offered');
+  if (x.pack.length >= x.cfg.packSize) throw new Error('pack is full');
+  const item = p.offers[index];
+  if (!item) throw new Error('no such offer');
+  p.offers.splice(index, 1);
+  x.pack.push(item);
+  say(x, `Took ${item.name}`);
+  if (p.offers.length === 0) x.pending = p.back ?? null;
+}
+
+/** Walk away from whatever offers are left. */
+export function leaveLoot(x: Expedition): void {
+  if (x.pending?.kind === 'loot') x.pending = x.pending.back ?? null;
+}
+
+export function dropItem(x: Expedition, index: number): LootItem {
+  if (x.status !== 'running') throw new Error('expedition is over');
+  const [item] = x.pack.splice(index, 1);
+  if (!item) throw new Error('no such item');
+  say(x, `Dropped ${item.name}`);
+  return item;
+}
+
+/** Use a consumable from the pack on the map. Returns what it did, or null when it would do nothing (the item is kept). */
+export function useItem(x: Expedition, index: number): string | null {
+  if (x.status !== 'running' || (x.pending && x.pending.kind !== 'loot' && x.pending.kind !== 'market')) throw new Error('cannot use items now');
+  const item = x.pack[index];
+  if (!item?.use) throw new Error('that item has no map use');
+  let text: string;
+  if (item.use.kind === 'rations') {
+    x.rations += item.use.amount;
+    text = `${item.name}: +${item.use.amount} rations`;
+  } else {
+    const n = healSquad(x, item.use.amount);
+    if (n === 0) return null;
+    text = `${item.name}: ${n} HP restored`;
+  }
+  x.pack.splice(index, 1);
+  say(x, text);
+  return text;
+}
+
+// ---------- market
+
+export const canBuyPack = (x: Expedition): boolean => x.eagles >= x.cfg.packPrice;
+
+/** Buy a pack: its loot draws open as an offer, and the market is still there afterward. */
+export function buyPack(x: Expedition): void {
+  const p = x.pending;
+  if (!p || p.kind !== 'market') throw new Error('not at a market');
+  if (!canBuyPack(x)) throw new Error('not enough Eagles');
+  x.eagles -= x.cfg.packPrice;
+  queueLoot(x, x.cfg.packDraws, 'Basic pack', p);
+}
+
+/** Sell a spare item from the pack. */
+export function sellItem(x: Expedition, index: number): number {
+  if (x.pending?.kind !== 'market') throw new Error('not at a market');
+  const item = x.pack[index];
+  if (!item) throw new Error('no such item');
+  x.pack.splice(index, 1);
+  x.eagles += x.cfg.sellValue;
+  say(x, `Sold ${item.name} for ${x.cfg.sellValue}`);
+  return x.cfg.sellValue;
+}
+
+export function leaveMarket(x: Expedition): void {
+  if (x.pending?.kind === 'market') x.pending = null;
+}
+
+// ---------- gambles
+
+export const bandOf = (card: number): Band => (card <= 5 ? 'low' : card <= 9 ? 'mid' : 'high');
+
+function gamblePending(x: Expedition): GamblePending {
+  const p = x.pending;
+  if (!p || p.kind !== 'gamble') throw new Error('no gamble pending');
+  return p;
+}
+
+export function canAffordGamble(x: Expedition, p: GamblePending): boolean {
+  return p.def.stake === 'eagles' ? x.eagles >= p.ladder.stake : x.rations >= p.ladder.stake;
+}
+
+/** Pay the stake and start drawing. */
+export function commitGamble(x: Expedition): void {
+  const p = gamblePending(x);
+  if (p.stage !== 'offer') throw new Error('already committed');
+  if (!canAffordGamble(x, p)) throw new Error('cannot cover the stake');
+  if (p.def.stake === 'eagles') x.eagles -= p.ladder.stake;
+  else x.rations -= p.ladder.stake;
+  p.stage = 'live';
+  say(x, `${p.def.name}: staked ${p.ladder.stake} ${p.def.stake}`);
+}
+
+/** Decline before committing. The room stays open to come back to. */
+export function declineGamble(x: Expedition): void {
+  const p = gamblePending(x);
+  if (p.stage !== 'offer') throw new Error('stake already paid');
+  x.pending = null;
+}
+
+function payout(x: Expedition, p: GamblePending): void {
+  const n = p.ladder.rungs[p.rung - 1]!;
+  switch (p.def.reward) {
+    case 'eagles':
+      x.eagles += n;
+      x.stats.eagles += n;
+      break;
+    case 'rations':
+      x.rations += n;
+      break;
+    case 'xp':
+      x.stats.xp += n;
+      break;
+    case 'loot':
+      p.owedLoot = n;
+      break;
+  }
+  p.outcome = `Paid out: ${n} ${p.def.reward === 'loot' ? 'loot draws' : p.def.reward === 'xp' ? 'XP' : p.def.reward}`;
+  say(x, `${p.def.name}: ${p.outcome}`);
+  p.stage = 'over';
+}
+
+/** Draw the top results card: high climbs a rung, mid holds, low busts. The last rung pays out on its own. */
+export function pushGamble(x: Expedition): void {
+  const p = gamblePending(x);
+  if (p.stage !== 'live') throw new Error('not in play');
+  const card = drawResult(x);
+  const band = bandOf(card);
+  p.last = { card, band };
+  if (band === 'low') {
+    p.stage = 'over';
+    p.outcome = p.rung > 0 ? 'Bust: the stake and the winnings so far are lost' : 'Bust: the stake is lost';
+    p.rung = 0;
+    say(x, `${p.def.name}: drew ${card}, bust`);
+  } else if (band === 'high') {
+    p.rung++;
+    say(x, `${p.def.name}: drew ${card}, up to rung ${p.rung}`);
+    if (p.rung === 3) payout(x, p);
+  } else say(x, `${p.def.name}: drew ${card}, holds`);
+}
+
+/** Stop and take the current rung. At rung 0 this is walking away with the stake gone. */
+export function cashOutGamble(x: Expedition): void {
+  const p = gamblePending(x);
+  if (p.stage !== 'live') throw new Error('not in play');
+  if (p.rung === 0) {
+    p.stage = 'over';
+    p.outcome = 'You walk away. The stake is gone';
+    return;
+  }
+  payout(x, p);
+}
+
+/** Close the result screen. Any loot owed goes into an offer. */
+export function closeGamble(x: Expedition): void {
+  const p = gamblePending(x);
+  if (p.stage !== 'over') throw new Error('gamble still running');
+  x.rooms[p.room]!.cleared = true;
+  x.pending = null;
+  if (p.owedLoot > 0) queueLoot(x, p.owedLoot, p.def.name);
 }
 
 /** Take the gate: on to the next section, or out of the floor from the last one. */

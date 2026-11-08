@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { starterRoomDeck, tscExpedition } from '../data/rooms';
 import {
-  MAX_DOORS, createExpedition, currentRoom, doorsFor, finishFight, healSquad, leaveGate, move, moves, retreat, takeGate, tierOf,
-  type Expedition
+  MAX_DOORS, bandOf, canAffordGamble, cashOutGamble, closeGamble, commitGamble, createExpedition, currentRoom, declineGamble, doorsFor,
+  dropItem, finishFight, healSquad, leaveGate, leaveLoot, move, moves, pushGamble, queueLoot, retreat, takeGate, takeLoot, tierOf,
+  useItem, buyPack, canBuyPack, sellItem, leaveMarket, type Expedition, type GamblePending
 } from './expedition';
 
 /** Path of room ids from here to the nearest room matching `want`, over doors. */
@@ -31,11 +32,22 @@ function pathTo(x: Expedition, want: (id: number) => boolean): number[] | null {
   return null;
 }
 
-/** Step to a room, winning any fight and declining any gate. */
+/** Answer whatever the room asked: win fights, skip loot, decline gambles and gates. */
+function settle(x: Expedition): void {
+  for (let i = 0; i < 4 && (x as Expedition).pending; i++) {
+    const p = (x as Expedition).pending!;
+    if (p.kind === 'fight') finishFight(x, true, x.hp, { eagles: 1, loot: 1 });
+    else if (p.kind === 'loot') leaveLoot(x);
+    else if (p.kind === 'market') leaveMarket(x);
+    else if (p.kind === 'gamble') declineGamble(x);
+    else leaveGate(x);
+  }
+}
+
+/** Step to a room and settle it. */
 function walk(x: Expedition, id: number): void {
   move(x, id);
-  if (x.pending?.kind === 'fight') finishFight(x, true, x.hp, { eagles: 1, loot: 1 });
-  else if (x.pending?.kind === 'gate') leaveGate(x);
+  settle(x);
 }
 
 function exploreAll(x: Expedition): void {
@@ -72,7 +84,7 @@ describe('section generation', () => {
 
   it('always builds a connected grid with a way onward', () => {
     const sizes: number[] = [];
-    for (let seed = 1; seed <= 400; seed++) {
+    for (let seed = 1; seed <= 1500; seed++) {
       const x = createExpedition(tscExpedition(seed));
       exploreAll(x);
       const keys = new Set(x.rooms.map((r) => `${r.x},${r.y}`));
@@ -103,9 +115,12 @@ describe('expedition rules', () => {
     move(x, first.id);
     expect(x.rations).toBe(start - 1);
     if (x.pending?.kind === 'fight') {
+      const purse = x.eagles;
       finishFight(x, true, x.hp, { eagles: 2, loot: 1 });
       expect(x.rations).toBe(start - 1);
       expect(x.stats.eagles).toBe(2);
+      expect(x.eagles).toBe(purse + 2);
+      expect(x.pending?.kind).toBe('loot');
     }
   });
 
@@ -168,7 +183,7 @@ describe('expedition rules', () => {
         for (const id of p) {
           if ((x as Expedition).pending) break;
           move(x, id);
-          if ((x as Expedition).pending?.kind === 'fight') finishFight(x, true, x.hp, { eagles: 1, loot: 1 });
+          while ((x as Expedition).pending && (x as Expedition).pending!.kind !== 'gate') settle(x);
         }
         if (x.rooms[x.at]!.type === 'Gate' && !x.rooms[x.at]!.entrance) break;
       }
@@ -190,5 +205,211 @@ describe('expedition rules', () => {
       retreat(b);
       expect(b.groundLost).toBe(true);
     }
+  });
+});
+
+/** A fresh expedition with a room-free pending slot, for testing loot and gambles directly. */
+const fresh = (seed = 4): Expedition => createExpedition(tscExpedition(seed));
+
+describe('loot', () => {
+  it('deals the whole loot deck before repeating', () => {
+    const x = fresh();
+    const seen = new Set<number>();
+    for (let i = 0; i < 30; i++) {
+      queueLoot(x, 1, 'test');
+      const p = x.pending as { kind: 'loot'; offers: { id: number }[] };
+      seen.add(p.offers[0]!.id);
+      leaveLoot(x);
+    }
+    expect(seen.size).toBe(30);
+  });
+
+  it('caps the pack and lets the player drop to make room', () => {
+    const x = fresh();
+    for (let i = 0; i < 8; i++) {
+      queueLoot(x, 1, 'test');
+      takeLoot(x, 0);
+    }
+    expect(x.pack).toHaveLength(8);
+    queueLoot(x, 2, 'test');
+    expect(() => takeLoot(x, 0)).toThrow(/full/);
+    dropItem(x, 0);
+    takeLoot(x, 0);
+    expect(x.pack).toHaveLength(8);
+    expect(x.pending?.kind).toBe('loot');
+    expect(() => takeLoot(x, 0)).toThrow(/full/);
+    dropItem(x, 0);
+    takeLoot(x, 0);
+    expect(x.pack).toHaveLength(8);
+    expect(x.pending).toBeNull();
+  });
+
+  it('uses rations and healing, and keeps a heal that would do nothing', () => {
+    const x = fresh();
+    const ration = x.cfg.lootPool.find((i) => i.name === 'Hive rations')!;
+    const heal = x.cfg.lootPool.find((i) => i.name === 'Healing supplies')!;
+    x.pack.push(ration, heal);
+    const before = x.rations;
+    expect(useItem(x, 0)).toMatch(/rations/);
+    expect(x.rations).toBe(before + 4);
+    expect(useItem(x, 0)).toBeNull();
+    expect(x.pack).toHaveLength(1);
+    x.hp = [1, 1, 1, 1, 1];
+    expect(useItem(x, 0)).toMatch(/4 HP/);
+    expect(x.pack).toHaveLength(0);
+    x.pack.push(x.cfg.lootPool.find((i) => i.name === 'Riot shield')!);
+    expect(() => useItem(x, 0)).toThrow();
+  });
+
+  it('a Scavenge room offers one draw', () => {
+    for (let seed = 1; seed < 80; seed++) {
+      const x = fresh(seed);
+      const r = x.rooms.find((q) => q.type === 'Scavenge' && q.links.includes(0));
+      if (!r) continue;
+      move(x, r.id);
+      expect(x.pending?.kind).toBe('loot');
+      return;
+    }
+    throw new Error('no seed put a Scavenge next to the entrance');
+  });
+});
+
+describe('gambles', () => {
+  const start = (id: number, tier = 1): { x: Expedition; p: GamblePending } => {
+    const x = fresh(9);
+    const def = x.cfg.gambles.find((g) => g.id === id)!;
+    const room = x.rooms[x.rooms.length - 1]!;
+    x.pending = { kind: 'gamble', room: room.id, def, ladder: x.cfg.ladders[id]![tier - 1]!, stage: 'offer', rung: 0, last: null, outcome: null, owedLoot: 0 };
+    return { x, p: x.pending };
+  };
+  const stack = (x: Expedition, ...cards: number[]): void => {
+    x.results = [...cards].reverse();
+  };
+
+  it('maps cards to bands', () => {
+    expect([1, 5, 6, 9, 10, 13].map(bandOf)).toEqual(['low', 'low', 'mid', 'mid', 'high', 'high']);
+  });
+
+  it('prints the Eagle ladder from the table', () => {
+    const { p } = start(1, 1);
+    expect(p.ladder).toEqual({ stake: 5, rungs: [15, 34, 76] });
+    expect(start(1, 8).p.ladder).toEqual({ stake: 25, rungs: [75, 169, 380] });
+    expect(start(2, 1).p.ladder).toEqual({ stake: 1, rungs: [1, 2, 4] });
+    expect(start(2, 7).p.ladder).toEqual({ stake: 3, rungs: [2, 3, 6] });
+    expect(start(5, 2).p.ladder).toEqual({ stake: 8, rungs: [2, 4, 8] });
+  });
+
+  it('pays the stake once, climbs on high, holds on mid and cashes out', () => {
+    const { x, p } = start(1);
+    const purse = x.eagles;
+    commitGamble(x);
+    expect(x.eagles).toBe(purse - 5);
+    stack(x, 12, 7, 13);
+    pushGamble(x);
+    expect(p.rung).toBe(1);
+    pushGamble(x);
+    expect(p.rung).toBe(1);
+    expect(p.last?.band).toBe('mid');
+    pushGamble(x);
+    expect(p.rung).toBe(2);
+    cashOutGamble(x);
+    expect(p.stage).toBe('over');
+    expect(x.eagles).toBe(purse - 5 + 34);
+    closeGamble(x);
+    expect(x.pending).toBeNull();
+    expect(x.rooms[p.room]!.cleared).toBe(true);
+  });
+
+  it('busts on a low card and loses the winnings', () => {
+    const { x, p } = start(1);
+    const purse = x.eagles;
+    commitGamble(x);
+    stack(x, 11, 3);
+    pushGamble(x);
+    pushGamble(x);
+    expect(p.stage).toBe('over');
+    expect(p.outcome).toMatch(/Bust/);
+    expect(x.eagles).toBe(purse - 5);
+  });
+
+  it('the top rung pays on its own', () => {
+    const { x, p } = start(1);
+    const purse = x.eagles;
+    commitGamble(x);
+    stack(x, 10, 11, 12);
+    pushGamble(x);
+    pushGamble(x);
+    pushGamble(x);
+    expect(p.stage).toBe('over');
+    expect(x.eagles).toBe(purse - 5 + 76);
+  });
+
+  it('loot rewards become an offer when the result is closed', () => {
+    const { x } = start(2);
+    commitGamble(x);
+    expect(x.rations).toBe(x.cfg.rations - 1);
+    stack(x, 11, 12);
+    pushGamble(x);
+    pushGamble(x);
+    cashOutGamble(x);
+    closeGamble(x);
+    const next = x.pending as unknown as { kind: string; offers: unknown[] };
+    expect(next.kind).toBe('loot');
+    expect(next.offers).toHaveLength(2);
+  });
+
+  it('refuses a stake the squad cannot cover and lets them decline', () => {
+    const { x, p } = start(1);
+    x.eagles = 4;
+    expect(canAffordGamble(x, p)).toBe(false);
+    expect(() => commitGamble(x)).toThrow();
+    declineGamble(x);
+    expect(x.pending).toBeNull();
+    expect(x.rooms[p.room]!.cleared).toBe(false);
+  });
+
+  it('walking away at rung 0 loses the stake', () => {
+    const { x, p } = start(6);
+    commitGamble(x);
+    cashOutGamble(x);
+    expect(p.stage).toBe('over');
+    expect(x.rations).toBe(x.cfg.rations - 1);
+  });
+});
+
+describe('market', () => {
+  const atMarket = (): Expedition => {
+    const x = fresh(12);
+    x.pending = { kind: 'market', room: 0 };
+    return x;
+  };
+
+  it('sells a spare item for its value', () => {
+    const x = atMarket();
+    x.pack.push(x.cfg.lootPool[0]!);
+    const purse = x.eagles;
+    sellItem(x, 0);
+    expect(x.pack).toHaveLength(0);
+    expect(x.eagles).toBe(purse + x.cfg.sellValue);
+  });
+
+  it('buys a pack of draws and comes back to the market', () => {
+    const x = atMarket();
+    const purse = x.eagles;
+    expect(canBuyPack(x)).toBe(true);
+    buyPack(x);
+    expect(x.eagles).toBe(purse - x.cfg.packPrice);
+    const p = x.pending as { kind: string; offers: unknown[] };
+    expect(p.kind).toBe('loot');
+    expect(p.offers).toHaveLength(x.cfg.packDraws);
+    leaveLoot(x);
+    expect(x.pending?.kind).toBe('market');
+  });
+
+  it('cannot buy without the Eagles', () => {
+    const x = atMarket();
+    x.eagles = x.cfg.packPrice - 1;
+    expect(canBuyPack(x)).toBe(false);
+    expect(() => buyPack(x)).toThrow();
   });
 });

@@ -43,8 +43,11 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - `src/data/forces.ts`: Straggler band, Toll gang and Rat swarm from `data/tier1_patrols_new.csv`, with tier scaling. New enemy action kinds in the sim: attack with Suppressed, rally with a per-lane cap (Breed), soak buff to self or a lane friend (Dig In, Take Cover, Hold the Line). Pipe gang (needs Burning) and Ash cult (needs stress) are not in yet.
 - `src/data/rooms.ts`: the room deck from `data/starter_room_deck.csv`, the working expedition numbers, and `startFight` / `settleFight`, which carry the squad's HP into a fight and back.
 - `src/scenes/ExpeditionMap.ts`: the map (fog, current room, doors you can take with 1 to 3 or the arrows), the squad and ration panel, the retreat and gate modals and the end summary. Combat now takes its fight from the expedition when one is running; Quick fight on the setup screen still plays the old single Scavver fight.
-- Stub rooms: Scavenge, Gamble, Hazard, Market and Rest are walked through and marked done (Scavenge adds 1 to a loot tally). Clinic heals. Eagles and loot are only tallied.
-- Tests: `expedition.test.ts` (400 seeds all build a connected grid with a gate) and `forces.test.ts`.
+- Rooms: Clinic heals. Scavenge draws 1 loot card. Gamble runs the push-your-luck ladder. Market sells spares and buys packs. Hazard and Rest are still walk-through stubs (Hazard needs unit attributes, Rest needs exhausted cards).
+- Loot and Eagles: `src/data/loot.ts` loads the 30-item pool from `data/loot_pool_base_items.csv` into a shuffled loot deck drawn without replacement. Winning a fight pays its Eagles into a purse and offers its loot draws. The pack holds 8; take offers, drop to make room, click a pack item to use it (Hive rations, Healing supplies and Combat stim work on the map). Gear cannot be equipped yet.
+- Gamble: `src/data/gambles.ts` holds four of the six drafted cards (Back-alley dice, Scavver's wager, Pit side bet, Quartermaster's crate) with ladders from `data/hazard_gamble_tiers.csv`. Commit pays the stake; each push draws the top results card (10 to K climbs, 6 to 9 holds, A to 5 busts); cash out any time; the third rung pays by itself.
+- Market: a Basic pack (5 loot draws) costs 10 Eagles; a spare item sells for 1.
+- Tests: `expedition.test.ts` (1500 seeds all build a connected grid with a gate; loot, pack, gamble and market rules) and `forces.test.ts`.
 
 ## M0 scope in detail
 

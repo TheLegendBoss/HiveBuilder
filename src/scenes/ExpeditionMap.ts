@@ -3,12 +3,14 @@ import { session, startExpedition } from '../core/session';
 import { forceById } from '../data/rooms';
 import { mix, palette } from '../data/palette';
 import {
-  atCheckpoint, currentRoom, leaveGate, move, moves, retreat, takeGate, tierOf, type Expedition, type Room, type RoomType
+  atCheckpoint, buyPack, canAffordGamble, canBuyPack, leaveMarket, sellItem, cashOutGamble, closeGamble, commitGamble, currentRoom, declineGamble, dropItem, leaveGate, leaveLoot,
+  move, moves, pushGamble, retreat, takeGate, takeLoot, tierOf, useItem, type Expedition, type GamblePending, type Room, type RoomType
 } from '../sim/expedition';
 import { Button } from '../ui/Button';
 import { drawHpBar } from '../ui/combat/parts';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
+import type { LootItem } from '../sim/expedition';
 import { makePanel } from '../ui/Panel';
 import { monoText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
@@ -63,7 +65,30 @@ export class ExpeditionMap extends ScreenScene {
     if (this.modal?.isOpen) return;
     const x = this.exp;
     if (e.key === 'Escape') {
-      this.openPause();
+      if (this.exp.pending?.kind === 'market') {
+        leaveMarket(this.exp);
+        this.rebuild();
+      } else if (this.exp.pending?.kind === 'loot') {
+        leaveLoot(this.exp);
+        this.rebuild();
+      } else this.openPause();
+      return;
+    }
+    if (this.exp.pending?.kind === 'market') {
+      if (e.key === 'Enter') {
+        leaveMarket(this.exp);
+        this.rebuild();
+      } else if (e.key.toLowerCase() === 'b' && canBuyPack(this.exp)) {
+        buyPack(this.exp);
+        this.rebuild();
+      }
+      return;
+    }
+    if (this.exp.pending?.kind === 'loot') {
+      if (e.key === 'Enter') {
+        leaveLoot(this.exp);
+        this.rebuild();
+      } else if (e.key >= '1' && e.key <= '6') this.takeOffer(Number(e.key) - 1);
       return;
     }
     if (x.status !== 'running' || x.pending) return;
@@ -273,31 +298,78 @@ export class ExpeditionMap extends ScreenScene {
     }
     root.add(monoText(this, px, ry + 36 + 2 * 26 + 6, x.rations === 0 ? 'OUT: -1 HP EACH MOVE' : 'MOVING COSTS 1. FIGHTS COST 0.', 14, x.rations === 0 ? palette.danger : palette.textMuted));
 
-    const ty = SIDE.y + SIDE.h - 112;
+    const ey = SIDE.y + 590;
+    root.add(monoText(this, px, ey + 8, 'EAGLES', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(monoText(this, SIDE.x + SIDE.w - 28, ey, `${x.eagles}`, 32, palette.text, { originX: 1, weight: '700' }));
     const s = x.stats;
-    root.add(monoText(this, px, ty, `FIGHTS ${s.fights}   ROOMS ${s.rooms}   MOVES ${s.moves}`, 16, palette.textMuted));
-    root.add(monoText(this, px, ty + 28, `EAGLES ${s.eagles}   LOOT DRAWS ${s.loot}`, 16, palette.textMuted));
-    root.add(monoText(this, px, ty + 56, 'LOOT AND EAGLES ARE TALLIED ONLY', 14, palette.textMuted));
+    root.add(monoText(this, px, ey + 48, `FIGHTS ${s.fights}  ROOMS ${s.rooms}  MOVES ${s.moves}  XP ${s.xp}`, 14, palette.textMuted));
+    x.log.slice(-3).reverse().forEach((l, i) => {
+      const t = l.length > 34 ? l.slice(0, 32) + '…' : l;
+      root.add(monoText(this, px, ey + 76 + i * 22, '> ' + t, 14, i === 0 ? palette.text : palette.textMuted));
+    });
   }
 
   private drawFoot(root: Phaser.GameObjects.Container, signal: number): void {
     const x = this.exp;
     const here = currentRoom(x);
     root.add(stencilText(this, FOOT.x + 32, FOOT.y + 22, here.entrance ? 'Section entrance' : `${roomName[here.type]} room`, 36, palette.text, { spacing: 0.05 }));
-    root.add(monoText(this, FOOT.x + 34, FOOT.y + 74, this.note, 18, palette.textMuted, { wrap: 760, full: true }));
-    const lines = x.log.slice(-4).reverse();
-    root.add(monoText(this, FOOT.x + 900, FOOT.y + 24, 'LOG', 16, palette.textMuted, { spacing: 0.14 }));
-    lines.forEach((l, i) => {
-      const t = l.length > 70 ? l.slice(0, 67) + '…' : l;
-      root.add(monoText(this, FOOT.x + 900, FOOT.y + 54 + i * 30, '> ' + t, 17, i === 0 ? palette.text : palette.textMuted));
-    });
+    root.add(monoText(this, FOOT.x + 34, FOOT.y + 74, this.note, 18, palette.textMuted, { wrap: 440, full: true }));
+    root.add(monoText(this, FOOT.x + 34, FOOT.y + FOOT.h - 30, '1-3 OR ARROWS: MOVE   R: RETREAT   ESC: LEAVE', 14, palette.textMuted, { originY: 0.5 }));
+
+    const px = FOOT.x + 540;
+    root.add(monoText(this, px, FOOT.y + 20, `PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(monoText(this, px + 830, FOOT.y + 20, 'CLICK AN ITEM', 14, palette.textMuted, { originX: 1 }));
+    const g = this.add.graphics();
+    root.add(g);
+    for (let i = 0; i < x.cfg.packSize; i++) {
+      const sx = px + (i % 4) * 210;
+      const sy = FOOT.y + 52 + Math.floor(i / 4) * 66;
+      const item = x.pack[i];
+      g.fillStyle(palette.panelDeep, 1);
+      g.fillRect(sx, sy, 200, 56);
+      g.lineStyle(1.5, item?.use ? signal : palette.line, 1);
+      g.strokeRect(sx + 0.75, sy + 0.75, 198.5, 54.5);
+      if (!item) continue;
+      const size = Math.max(12, Math.min(16, Math.floor(180 / (item.name.length * 0.62))));
+      root.add(monoText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
+      root.add(monoText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));
+      const hit = this.add.rectangle(sx + 100, sy + 28, 200, 56, palette.bg, 0.001).setInteractive({ useHandCursor: true });
+      hit.on('pointerup', () => this.openItem(i));
+      root.add(hit);
+    }
     root.add(
       new Button(this, {
         x: FOOT.x + FOOT.w - 360, y: FOOT.y + FOOT.h - 92, w: 330, h: 70, label: 'Retreat', size: 33, state: x.status === 'running' && !x.pending ? 'live' : 'offline',
         signal, key: 'R', onClick: () => this.openRetreat()
       })
     );
-    root.add(monoText(this, FOOT.x + 34, FOOT.y + FOOT.h - 30, '1-3 OR ARROWS: MOVE   R: RETREAT   ESC: LEAVE', 14, palette.textMuted, { originY: 0.5 }));
+  }
+
+  private openItem(i: number): void {
+    const x = this.exp;
+    const item = x.pack[i];
+    if (!item || this.modal?.isOpen || x.status !== 'running' || (x.pending && x.pending.kind !== 'loot')) return;
+    const usable = item.use !== null;
+    this.modal = new Modal(this, this.root, {
+      title: item.name,
+      body: `${item.cls}\n${item.text}${usable ? '' : '\nGear cannot be equipped yet; it rides in the pack.'}`,
+      confirmLabel: usable ? 'Use' : 'Drop it',
+      cancelLabel: 'Keep it',
+      signal: this.signal,
+      onConfirm: () => {
+        if (usable) {
+          const r = useItem(x, i);
+          this.note = r ?? `${item.name}: nobody needs it right now`;
+        } else {
+          dropItem(x, i);
+          this.note = `Dropped ${item.name}`;
+        }
+        this.rebuild();
+      },
+      onCancel: () => {
+        this.modal = null;
+      }
+    });
   }
 
   // ---------- rooms that need an answer
@@ -322,6 +394,9 @@ export class ExpeditionMap extends ScreenScene {
       });
       return;
     }
+    if (p.kind === 'loot') return this.showLoot(p.offers, p.from);
+    if (p.kind === 'market') return this.showMarket();
+    if (p.kind === 'gamble') return this.showGamble(p);
     const last = x.section + 1 >= x.cfg.sections;
     this.modal = new Modal(this, this.root, {
       title: last ? 'Way out' : 'Gate',
@@ -342,6 +417,199 @@ export class ExpeditionMap extends ScreenScene {
         this.rebuild();
       }
     });
+  }
+
+  private showLoot(offers: LootItem[], from: string): void {
+    const x = this.exp;
+    const signal = this.signal;
+    const layer = this.add.container(0, 0);
+    this.root.add(layer);
+    const dim = this.add.rectangle(960, 540, 1920, 1080, palette.bg, 0.8).setInteractive();
+    const P = { x: 300, y: 150, w: 1320, h: 790 };
+    layer.add([dim, makePanel(this, { ...P, bolts: true, border: signal, borderWidth: 3 })]);
+    layer.add(stencilText(this, P.x + 40, P.y + 26, `Loot: ${from}`, 48, palette.text, { spacing: 0.05 }));
+    layer.add(monoText(this, P.x + 42, P.y + 96, 'TAKE WHAT YOU CAN CARRY. THE REST IS LEFT BEHIND.', 16, palette.textMuted, { spacing: 0.08 }));
+    const full = x.pack.length >= x.cfg.packSize;
+    layer.add(monoText(this, P.x + 42, P.y + 140, 'OFFERED', 16, palette.textMuted, { spacing: 0.14 }));
+    offers.slice(0, 6).forEach((o, i) => {
+      const y = P.y + 172 + i * 98;
+      const row = this.add.graphics();
+      row.fillStyle(palette.panelDeep, 1);
+      row.fillRect(P.x + 40, y, 700, 90);
+      row.lineStyle(1.5, palette.line, 1);
+      row.strokeRect(P.x + 40.75, y + 0.75, 698.5, 88.5);
+      layer.add(row);
+      const nm = stencilText(this, P.x + 56, y + 8, o.name, 27, palette.text, { spacing: 0.04 });
+      layer.add(nm);
+      layer.add(monoText(this, P.x + 56 + nm.width + 14, y + 16, o.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(monoText(this, P.x + 56, y + 44, o.text, 14, palette.textMuted, { wrap: 520 }));
+      layer.add(
+        new Button(this, {
+          x: P.x + 580, y: y + 16, w: 150, h: 58, label: 'Take', size: 27, state: full ? 'offline' : 'live', signal, accent: !full,
+          key: String(i + 1), onClick: () => this.takeOffer(i)
+        })
+      );
+    });
+    layer.add(monoText(this, P.x + 780, P.y + 140, `PACK ${x.pack.length}/${x.cfg.packSize}${full ? ' (FULL: DROP SOMETHING)' : ''}`, 16, full ? palette.danger : palette.textMuted, { spacing: 0.14 }));
+    x.pack.forEach((it, i) => {
+      const y = P.y + 172 + i * 56;
+      const row = this.add.graphics();
+      row.fillStyle(palette.panelDeep, 1);
+      row.fillRect(P.x + 780, y, 500, 50);
+      row.lineStyle(1.5, palette.line, 1);
+      row.strokeRect(P.x + 780.75, y + 0.75, 498.5, 48.5);
+      layer.add(row);
+      layer.add(monoText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
+      layer.add(monoText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(
+        new Button(this, {
+          x: P.x + 1140, y: y + 5, w: 128, h: 40, label: 'Drop', size: 21, state: 'live', signal, onClick: () => {
+            dropItem(x, i);
+            this.rebuild();
+          }
+        })
+      );
+    });
+    layer.add(
+      new Button(this, {
+        x: P.x + P.w - 440, y: P.y + P.h - 96, w: 400, h: 70, label: offers.length ? 'Leave the rest' : 'Done', size: 30, state: 'live', signal, accent: true, key: 'Enter',
+        onClick: () => {
+          leaveLoot(x);
+          this.rebuild();
+        }
+      })
+    );
+  }
+
+  private showMarket(): void {
+    const x = this.exp;
+    const signal = this.signal;
+    const layer = this.add.container(0, 0);
+    this.root.add(layer);
+    const dim = this.add.rectangle(960, 540, 1920, 1080, palette.bg, 0.8).setInteractive();
+    const P = { x: 300, y: 150, w: 1320, h: 790 };
+    layer.add([dim, makePanel(this, { ...P, bolts: true, border: signal, borderWidth: 3 })]);
+    layer.add(stencilText(this, P.x + 40, P.y + 26, 'Market', 48, palette.text, { spacing: 0.05 }));
+    layer.add(monoText(this, P.x + 42, P.y + 96, 'TRADE WITH A LOCAL STALL. PRICES ARE WORKING NUMBERS.', 16, palette.textMuted, { spacing: 0.08 }));
+    layer.add(monoText(this, P.x + 42, P.y + 140, 'FOR SALE', 16, palette.textMuted, { spacing: 0.14 }));
+    layer.add(monoText(this, P.x + 740, P.y + 140, `YOUR EAGLES ${x.eagles}`, 16, palette.text, { originX: 1, spacing: 0.1 }));
+    const can = canBuyPack(x);
+    const row = this.add.graphics();
+    row.fillStyle(palette.panelDeep, 1);
+    row.fillRect(P.x + 40, P.y + 172, 700, 90);
+    row.lineStyle(1.5, palette.line, 1);
+    row.strokeRect(P.x + 40.75, P.y + 172.75, 698.5, 88.5);
+    layer.add(row);
+    const nm = stencilText(this, P.x + 56, P.y + 180, 'Basic pack', 27, palette.text, { spacing: 0.04 });
+    layer.add(nm);
+    layer.add(monoText(this, P.x + 56 + nm.width + 14, P.y + 188, `${x.cfg.packPrice} EAGLES`, 13, palette.textMuted));
+    layer.add(monoText(this, P.x + 56, P.y + 216, `${x.cfg.packDraws} loot draws. Pick what you can carry.`, 14, palette.textMuted, { wrap: 520 }));
+    layer.add(
+      new Button(this, {
+        x: P.x + 580, y: P.y + 188, w: 150, h: 58, label: 'Buy', size: 27, state: can ? 'live' : 'offline', signal, accent: can, key: 'B',
+        onClick: () => {
+          if (!can) return;
+          buyPack(x);
+          this.rebuild();
+        }
+      })
+    );
+    layer.add(monoText(this, P.x + 780, P.y + 140, `SELL SPARES (${x.cfg.sellValue} EAGLE EACH)   PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.1 }));
+    x.pack.forEach((it, i) => {
+      const y = P.y + 172 + i * 56;
+      const r = this.add.graphics();
+      r.fillStyle(palette.panelDeep, 1);
+      r.fillRect(P.x + 780, y, 500, 50);
+      r.lineStyle(1.5, palette.line, 1);
+      r.strokeRect(P.x + 780.75, y + 0.75, 498.5, 48.5);
+      layer.add(r);
+      layer.add(monoText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
+      layer.add(monoText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(
+        new Button(this, {
+          x: P.x + 1140, y: y + 5, w: 128, h: 40, label: 'Sell', size: 21, state: 'live', signal, onClick: () => {
+            sellItem(x, i);
+            this.rebuild();
+          }
+        })
+      );
+    });
+    layer.add(
+      new Button(this, {
+        x: P.x + P.w - 440, y: P.y + P.h - 96, w: 400, h: 70, label: 'Leave market', size: 30, state: 'live', signal, accent: true, key: 'Enter',
+        onClick: () => {
+          leaveMarket(x);
+          this.rebuild();
+        }
+      })
+    );
+  }
+
+  private takeOffer(i: number): void {
+    const x = this.exp;
+    if (x.pending?.kind !== 'loot' || x.pack.length >= x.cfg.packSize || !x.pending.offers[i]) return;
+    takeLoot(x, i);
+    this.rebuild();
+  }
+
+  private showGamble(p: GamblePending): void {
+    const x = this.exp;
+    const noun: Record<string, string> = { eagles: 'Eagles', loot: 'loot draws', rations: 'rations', xp: 'XP' };
+    const stakeText = `${p.ladder.stake} ${noun[p.def.stake]}`;
+    const prize = (n: number): string => `${n} ${noun[p.def.reward]}`;
+    const [r1, r2, r3] = p.ladder.rungs;
+    const ladder = `Rung 1 pays ${prize(r1)}, rung 2 ${prize(r2)}, rung 3 ${prize(r3)}.`;
+    const last = p.last ? `Last card: ${p.last.card} (${p.last.band}).` : '';
+    const done = (): void => this.rebuild();
+    if (p.stage === 'offer') {
+      const can = canAffordGamble(x, p);
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${p.def.blurb}\nStake ${stakeText}. ${ladder}\nEach push draws the top results card: 10 to king climbs a rung, 6 to 9 holds, ace to 5 busts and loses the stake and winnings.${can ? '' : '\nYou cannot cover the stake.'}`,
+        confirmLabel: can ? `Stake ${stakeText}` : 'Walk away',
+        cancelLabel: can ? 'Walk away' : undefined,
+        signal: this.signal,
+        onConfirm: () => {
+          if (can) commitGamble(x);
+          else declineGamble(x);
+          done();
+        },
+        onCancel: () => {
+          declineGamble(x);
+          this.modal = null;
+          this.rebuild();
+        }
+      });
+    } else if (p.stage === 'live') {
+      const here = p.rung === 0 ? 'Nothing won yet.' : `Rung ${p.rung} of 3, worth ${prize(p.ladder.rungs[p.rung - 1]!)}.`;
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${here} ${p.rung < 3 ? `Next: ${prize(p.ladder.rungs[p.rung]!)}.` : ''}\n${last || 'Nothing drawn yet.'}\nA high card climbs, a mid card holds, a low card busts.`,
+        confirmLabel: 'Draw a card',
+        cancelLabel: p.rung === 0 ? 'Walk off' : 'Cash out',
+        signal: this.signal,
+        onConfirm: () => {
+          pushGamble(x);
+          done();
+        },
+        onCancel: () => {
+          cashOutGamble(x);
+          done();
+        }
+      });
+    } else {
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${p.outcome ?? ''}\n${last}`,
+        confirmLabel: 'Done',
+        signal: this.signal,
+        onConfirm: () => {
+          closeGamble(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+          done();
+        }
+      });
+    }
   }
 
   private showSummary(): void {

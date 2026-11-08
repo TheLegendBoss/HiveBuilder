@@ -5,6 +5,8 @@ import { nextRandom } from '../sim/rng';
 import { createGame } from '../sim/state';
 import type { Game } from '../sim/types';
 import { forces, type Force } from './forces';
+import { gambleDefs, gambleLadders } from './gambles';
+import { lootPool } from './loot';
 import { tscSquad, tscVsForce } from './scenarios';
 
 /** The 21-card starter room deck, expanded to one entry per card. */
@@ -15,7 +17,7 @@ export const starterRoomDeck: RoomType[] = parseCsv(roomDeckCsv).flatMap((r) => 
 });
 
 /** Working numbers for the sandbox expedition; see decisions.md. */
-export const expeditionDefaults = { sections: 3, rations: 24, clinicHeal: 3 };
+export const expeditionDefaults = { sections: 3, rations: 24, clinicHeal: 3, startEagles: 10, packSize: 8, packPrice: 10, packDraws: 5, sellValue: 1 };
 
 export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}): ExpeditionConfig {
   return {
@@ -23,6 +25,9 @@ export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}
     squad: tscSquad,
     roomDeck: starterRoomDeck,
     forceIds: forces.map((f) => f.id),
+    lootPool,
+    gambles: gambleDefs,
+    ladders: gambleLadders,
     ...expeditionDefaults,
     ...over
   };
