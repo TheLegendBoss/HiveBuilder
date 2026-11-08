@@ -4,6 +4,7 @@ export const SceneKeys = {
   SandboxSetup: 'SandboxSetup',
   Settings: 'Settings',
   Combat: 'Combat',
-  Expedition: 'Expedition'
+  Expedition: 'Expedition',
+  Hub: 'Hub'
 } as const;
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];

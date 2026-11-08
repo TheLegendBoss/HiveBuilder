@@ -45,10 +45,11 @@ export const tscVsScavvers: Scenario = {
 export const tscVsScavversPaper: Scenario = { ...tscVsScavvers, laneCap: 2, cycleLimit: 3 };
 
 /** The TSC crew against one tier-1 force. `step` is the tier step (0 is the CSV as written). */
-export function tscVsForce(force: Force, step = 0): Scenario {
+export function tscVsForce(force: Force, step = 0, squad: UnitTemplate[] = tscSquad): Scenario {
   const f = scaleForce(force, step);
   return {
     ...tscVsScavvers,
+    squad,
     name: `TSC crew vs ${f.name}`,
     enemyName: f.name,
     enemyStart: f.start,

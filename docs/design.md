@@ -751,7 +751,7 @@ Scarcity and lasting damage carry the bleak tone. These are early ideas, not loc
 
 ## Build status
 
-The prototype now plays through one full expedition floor: milestones M1 to M3 and the loot, Eagles, Gamble and Market slice are built, with 77 automated tests passing. Code is in the [HiveBuilder repo](https://github.com/TheLegendBoss/HiveBuilder) (Phaser 4, TypeScript, Electron for Windows).
+The prototype now plays through one full expedition floor: milestones M1 to M4 and the loot, Eagles, Gamble and Market slice are built, with 100 automated tests passing. Code is in the [HiveBuilder repo](https://github.com/TheLegendBoss/HiveBuilder) (Phaser 4, TypeScript, Electron for Windows).
 
 | Milestone | What it covers | State |
 | --- | --- | --- |
@@ -759,7 +759,7 @@ The prototype now plays through one full expedition floor: milestones M1 to M3 a
 | M2 Combat screen | Playable fight in Sandbox Mode with selection flow, intent badges, blood bars and the vox log | Built |
 | M3 Expedition | Generated floors one section at a time, room cards, gates, rations, retreat, three new enemy forces (Straggler band, Toll gang, Rat swarm) | Built |
 | Loot slice | Loot deck and 8-slot pack, Eagles purses, four Gamble cards, Market with Basic packs, selling spares | Built |
-| M4 Hub and economy | Claimed rooms, buildings, downtime, XP spending | Not started |
+| M4 HQ and economy | HQ screen: crew XP and promotion, droid aftermath and repairs, market and stash, purse and pack loadout, and the loop home with a debrief | Built |
 
 **Working rules invented in the build**
 
@@ -777,6 +777,10 @@ These are placeholders so the loop could run. Each is flagged in the repo's deci
 | Market | Basic pack 10 Eagles for 5 loot draws; a spare sells for 1 Eagle |
 | Consumables | Hive rations +4 rations, Healing supplies heal 4, Combat stim heal 2 |
 | Gamble ladders | A high card climbs a rung, mid holds, low busts; stake paid on commit; cash out any time |
+| HQ bank and purse | 30 Eagles to start; a run carries a purse in steps of 5, a pack of up to 8 stash items, and 24 rations |
+| Wipe | The purse and pack are lost; the bank, stash, power and XP from fights won are kept |
+| XP and promotion | A won fight pays its tier in XP to every crew member who went; a finished floor adds 5; tiers 2 to 5 cost 20, 40, 80 and 160 XP plus the same in Eagles and add 1 max HP each |
+| Aftermath and repairs | A droid that ends a fight downed draws once from the 35-card droid deck at home; a minor repair is 1 Eagle and instant, a major one is 3 Eagles and benches the droid for one run; Head Destroyed is permanent |
 
 **Measured balance.** With the starter squad the stand-in player wins every tier 1 and 2 fight, 74 to 100% of tier 3 and 25 to 50% of tier 4. A full clear of one section costs about 22 moves, so 24 rations is tight but workable.
 
@@ -787,9 +791,10 @@ These are placeholders so the loop could run. Each is flagged in the repo's deci
 - Shrine offering (stress stake) and Toll-booth bet (gear stake) Gamble cards
 - Pipe gang and Ash cult forces (need Burning and stress)
 - Gear equipping: items ride in the pack but do nothing yet
-- XP is tallied but not spent
+- Perk slots are counted but empty, and promotion only adds max HP (no perk card, no attributes)
 - Suppressed is applied to units but has no effect on enemies
-- Faction choice is not saved, and the faction accent colours are working values
+- Nothing is saved yet (the campaign lives in memory until M5), and the faction accent colours are working values
+- Buildings, claimed rooms and income, recruiting, XP for crew left at home, and the Glitching and Rebooting aftermath effects
 - The Windows build workflow has never been run
 
 ## Open questions and next steps
@@ -841,7 +846,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 
 **Next steps**
 
-Build order, pick one: M4 hub and economy, gear equipping, or Hazard attributes. The numbered design topics below are still open.
+Build order, pick one: gear equipping, Hazard attributes, or M5 saves and the Sandbox setup dials. The numbered design topics below are still open.
 
 1. The Hive Deck and encounters: floor generation, room cards, enemy forces, and how the deck grows as you explore.
 2. Crafting numbers: pitch values, upgrade costs, pack odds and prices.

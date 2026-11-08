@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { session, startExpedition } from '../core/session';
+import { campaign, session } from '../core/session';
+import { abandon, returnHome } from '../sim/campaign';
 import { forceById } from '../data/rooms';
 import { mix, palette } from '../data/palette';
 import {
@@ -28,6 +29,7 @@ const roomName: Record<RoomType, string> = {
 export class ExpeditionMap extends ScreenScene {
   private note = '';
   private starting = false;
+  private bail = false;
 
   constructor() {
     super(SceneKeys.Expedition);
@@ -39,7 +41,11 @@ export class ExpeditionMap extends ScreenScene {
   }
 
   protected override onCreate(): void {
-    if (!session.expedition) startExpedition();
+    this.bail = !session.expedition;
+    if (this.bail) {
+      this.scene.start(SceneKeys.Hub);
+      return;
+    }
     this.note = this.exp.log[this.exp.log.length - 1] ?? '';
     this.starting = false;
     this.input.keyboard?.on('keydown', this.onKey, this);
@@ -114,14 +120,15 @@ export class ExpeditionMap extends ScreenScene {
 
   private openPause(): void {
     this.modal = new Modal(this, this.root, {
-      title: 'Leave the expedition?',
-      body: 'This drops the whole run and returns to the sandbox setup. Nothing is saved.',
+      title: 'Abandon the expedition?',
+      body: 'This drops the run and returns to the HQ. The purse and the pack are lost; the crew come home as they are.',
       confirmLabel: 'Abandon',
       cancelLabel: 'Keep going',
       signal: this.signal,
       onConfirm: () => {
+        session.debrief = { status: 'retreated', lines: [abandon(campaign())] };
         session.expedition = null;
-        this.scene.start(SceneKeys.SandboxSetup);
+        this.scene.start(SceneKeys.Hub);
       },
       onCancel: () => {
         this.modal = null;
@@ -152,6 +159,7 @@ export class ExpeditionMap extends ScreenScene {
   // ---------- building
 
   protected build(root: Phaser.GameObjects.Container): void {
+    if (this.bail) return;
     textContext.dense = true;
     try {
       this.buildAll(root);
@@ -618,27 +626,20 @@ export class ExpeditionMap extends ScreenScene {
     const s = x.stats;
     const lines = [
       `${s.sections} of ${x.cfg.sections} sections cleared · ${s.fights} fights · ${s.rooms} rooms entered · ${s.moves} moves.`,
-      `Rations left ${x.rations}. Eagles ${s.eagles}, loot draws ${s.loot} (tallied only, not paid out yet).`,
       x.status === 'wiped'
-        ? 'Two lanes fell. Downed crew are left behind (nothing is lost in the sandbox).'
-        : x.status === 'retreated'
-          ? x.groundLost ? 'Ground lost on the floor (not wired yet).' : 'A clean pull-out from the entrance.'
-          : 'The squad heals fully at home.'
-    ];
+        ? `Two lanes fell and the downed are left behind. The purse (${x.eagles} Eagles) and the pack (${x.pack.length} items) are lost.`
+        : `Coming home with ${x.eagles} Eagles and ${x.pack.length} items. ${x.xpEach} XP each${x.status === 'done' ? ', plus 5 for the floor' : ''}.`,
+      x.status === 'retreated' && x.groundLost ? 'Ground lost on the floor (not wired yet).' : x.status === 'done' ? 'The squad heals fully at home.' : ''
+    ].filter(Boolean);
     this.modal = new Modal(this, this.root, {
       title,
       body: lines.join('\n'),
-      confirmLabel: 'New expedition',
-      cancelLabel: 'Back to setup',
+      confirmLabel: 'Return to HQ',
       signal: this.signal,
       onConfirm: () => {
-        startExpedition(Math.floor(Math.random() * 1e9));
-        this.note = '';
-        this.rebuild();
-      },
-      onCancel: () => {
+        session.debrief = returnHome(campaign(), x);
         session.expedition = null;
-        this.scene.start(SceneKeys.SandboxSetup);
+        this.scene.start(SceneKeys.Hub);
       }
     });
   }

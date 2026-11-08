@@ -68,6 +68,8 @@ export interface ExpeditionConfig {
   lootPool: LootItem[];
   /** most items the squad can carry */
   packSize: number;
+  /** items already in the pack when the squad leaves (from the HQ stash) */
+  startPack?: LootItem[];
   gambles: GambleDef[];
   /** ladders[gamble id][tier - 1] */
   ladders: Record<number, Ladder[]>;
@@ -124,6 +126,10 @@ export interface Expedition {
   /** the purse */
   eagles: number;
   pack: LootItem[];
+  /** XP every squad member has earned so far, from fights won */
+  xpEach: number;
+  /** per squad slot: fights that slot ended downed (each one draws from the aftermath deck at home) */
+  downs: number[];
   lootDeck: LootItem[];
   section: number;
   rooms: Room[];
@@ -139,6 +145,9 @@ export interface Expedition {
   log: string[];
   stats: ExpStats;
 }
+
+/** XP each member earns for a won fight: threat 1 (every force so far is a patrol) times the fight's tier. Working. */
+export const fightXp = (step: number): number => step + 1;
 
 export const MAX_DOORS = 3;
 const DIRS: Array<[number, number]> = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -162,7 +171,9 @@ export function createExpedition(cfg: ExpeditionConfig): Expedition {
     hp: cfg.squad.map((u) => u.hp),
     rations: cfg.rations,
     eagles: cfg.startEagles,
-    pack: [],
+    pack: (cfg.startPack ?? []).slice(0, cfg.packSize),
+    xpEach: 0,
+    downs: cfg.squad.map(() => 0),
     lootDeck: [],
     section: 0,
     rooms: [],
@@ -380,6 +391,9 @@ export function finishFight(x: Expedition, won: boolean, hpAfter: number[], rewa
   if (!p || p.kind !== 'fight') throw new Error('no fight pending');
   x.stats.fights++;
   x.pending = null;
+  hpAfter.forEach((h, i) => {
+    if (h <= 0) x.downs[i] = (x.downs[i] ?? 0) + 1;
+  });
   if (!won) {
     x.status = 'wiped';
     x.groundLost = true;
@@ -392,7 +406,8 @@ export function finishFight(x: Expedition, won: boolean, hpAfter: number[], rewa
   room.cleared = true;
   x.stats.eagles += reward.eagles;
   x.eagles += reward.eagles;
-  say(x, `Fight won: ${reward.eagles} Eagles`);
+  x.xpEach += fightXp(p.step);
+  say(x, `Fight won: ${reward.eagles} Eagles, ${fightXp(p.step)} XP each`);
   queueLoot(x, reward.loot, 'Fight');
 }
 

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { setFaction, session, startExpedition } from '../core/session';
+import { setFaction, session } from '../core/session';
 import { factionBlurbs, setupText } from '../data/menu';
 import { factionAccent, factionNames, factionOrder, mix, palette, type FactionId } from '../data/palette';
 import { Button } from '../ui/Button';
@@ -87,8 +87,8 @@ export class SandboxSetup extends ScreenScene {
   }
 
   private startRun(): void {
-    startExpedition();
-    this.scene.start(SceneKeys.Expedition);
+    session.expedition = null;
+    this.scene.start(SceneKeys.Hub);
   }
 
   private quickFight(): void {

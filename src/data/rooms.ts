@@ -41,7 +41,7 @@ export function startFight(x: Expedition): { game: Game; force: Force } {
   if (!p || p.kind !== 'fight') throw new Error('no fight pending');
   const force = forceById(p.force);
   const seed = Math.floor(nextRandom(x) * 0x7fffffff);
-  return { game: createGame(tscVsForce(force, p.step), seed, { squadHp: x.hp }), force };
+  return { game: createGame(tscVsForce(force, p.step, x.cfg.squad), seed, { squadHp: x.hp }), force };
 }
 
 /** Carry a finished fight back into the expedition. */

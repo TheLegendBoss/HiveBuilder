@@ -8,6 +8,7 @@ import { palette } from './data/palette';
 import { Boot } from './scenes/Boot';
 import { Combat } from './scenes/Combat';
 import { ExpeditionMap } from './scenes/ExpeditionMap';
+import { Hub } from './scenes/Hub';
 import { MainMenu } from './scenes/MainMenu';
 import { SandboxSetup } from './scenes/SandboxSetup';
 import { Settings } from './scenes/Settings';
@@ -22,7 +23,7 @@ const game = new Phaser.Game({
     height: '100%'
   },
   input: { keyboard: true, mouse: true },
-  scene: [Boot, MainMenu, SandboxSetup, Settings, Combat, ExpeditionMap]
+  scene: [Boot, MainMenu, SandboxSetup, Settings, Combat, ExpeditionMap, Hub]
 });
 
 // Handy for debugging in the browser console.

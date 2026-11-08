@@ -2,7 +2,7 @@
 
 A grim-dark deckbuilding campaign game. You lead a gang through a procedurally generated hive city and claim it district by district. Your crew, gear, perks and skills all feed one shared squad deck, and every card can be played for its effect or burned as fuel.
 
-**Status:** design phase, with the first build started. Milestones M0 (Phaser 4 scaffold and main menu), M1 (data-driven sim core), M2 (playable combat screen) and M3 (the expedition: generated floors, room screens, rations, retreat) are in `src/`. Everything is placeholder numbers and placeholder names.
+**Status:** design phase, with the first build started. Milestones M0 (Phaser 4 scaffold and main menu), M1 (data-driven sim core), M2 (playable combat screen) M3 (the expedition: generated floors, room screens, rations, retreat) and M4 (the HQ: crew, promotion, repairs, market, loadout, and the loop home) are in `src/`. Everything is placeholder numbers and placeholder names.
 
 ## Repo layout
 
@@ -49,7 +49,7 @@ npm test
 npm run build
 ```
 
-The main menu opens first. Sandbox Mode leads to the setup screen where you pick a faction (it changes the accent color). **Start expedition** (TSC only for now) generates a three-section floor and puts the TSC crew on its map; **Quick fight** (F) plays a single fight against the Scavver pack. Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
+The main menu opens first. Sandbox Mode leads to the setup screen where you pick a faction (it changes the accent color). **Enter HQ** (TSC only for now) opens the gang's headquarters: promote or repair crew, buy packs, sell spares, pick a purse and a pack, then **Start expedition** generates a three-section floor and puts the crew on its map. Finished runs return to the HQ with a debrief; **Quick fight** (F) plays a single fight against the Scavver pack. Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
 
 **On the map:** click a door (or press 1 to 3, or the arrows) to walk into a neighbouring room. Each move costs a ration; fights do not. Fight rooms start combat with the squad's current HP and pay Eagles and loot. Scavenge draws loot into an 8-slot pack (click a pack item to use or drop it), Gamble is a push-your-luck ladder, Market sells spares and buys packs, clinics heal, and gates lead on to the next section. Hazard and Rest are placeholders for now. R retreats (free from the section entrance), Esc leaves. `?seed=7` replays the same floor.
 

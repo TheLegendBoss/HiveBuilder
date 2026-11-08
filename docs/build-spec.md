@@ -22,7 +22,7 @@ A desktop game in Phaser 4 (TypeScript, Vite) that opens on a main menu and lets
 | M1 | Data and sim core (built) | CSV decks in `data/` load into typed data; results deck, hand, fuel and a 3-lane duel resolve in a headless test with fixed seeds; matches the paper-fight sims within tolerance |
 | M2 | Combat screen (built) | The v5 combat layout plays one fight against a Tier 1 force with mouse and keyboard, cables, intent badges, blood bars, vox log |
 | M3 | Expedition (built, with stub rooms) | Generate a floor section by section; room screens (Fight, Scavenge, Gamble, Hazard, Market, Rest, Clinic, Gate); supplies clock; retreat |
-| M4 | Hub and economy | Packs, selling, promotion, repairs, Start Expedition; Eagles and power counters |
+| M4 | Hub and economy (built) | Packs, selling, promotion, repairs, Start Expedition; Eagles and power counters |
 | M5 | Sandbox setup and saves | Sandbox Setup screen, depth dial, autosave, manual slots, quickstart preset |
 | M6 | Aftermath and pressure | Injuries, afflictions, stress breaks, virtues, loot rewards |
 | M7 | Control rooms and bosses | Five section functions and the drafted boss table |
@@ -48,6 +48,18 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - Gamble: `src/data/gambles.ts` holds four of the six drafted cards (Back-alley dice, Scavver's wager, Pit side bet, Quartermaster's crate) with ladders from `data/hazard_gamble_tiers.csv`. Commit pays the stake; each push draws the top results card (10 to K climbs, 6 to 9 holds, A to 5 busts); cash out any time; the third rung pays by itself.
 - Market: a Basic pack (5 loot draws) costs 10 Eagles; a spare item sells for 1.
 - Tests: `expedition.test.ts` (1500 seeds all build a connected grid with a gate; loot, pack, gamble and market rules) and `forces.test.ts`.
+
+## M4 as built
+
+- `src/sim/campaign.ts` (no phaser): the state that outlives an expedition. Eagles (the bank), power (counted, nothing to spend it on yet), a stash of loot items (24), the crew (tier, XP, damage, bench), `fallen` names, and the aftermath deck. `src/data/campaign.ts` holds the TSC config and parses `data/aftermath_deck_droid.csv`. The campaign lives in `session.campaign` in memory; saves are M5.
+- `src/scenes/Hub.ts`: the HQ. Crew rows with one contextual button each (Repair when damaged, otherwise Promote; keys 1 to 5), the market (Buy pack, B; Sell mode, S), the stash grid (click or arrows and Space to put an item in the pack, or sell it in sell mode), the pack, the purse stepper (- and +), Auto pack (A), Clear (C), Start expedition (Enter), and a debrief modal when a run comes home. Counters: Eagles, power, crew fit, runs.
+- **Going out:** `launch` takes the purse (Eagles) and the chosen stash items off the books and sends the crew who are fit. Damaged or benched crew stay home, so the squad can be 1 to 5 droids; combat and the map already handle any size.
+- **Coming home:** `returnHome` banks the purse and pack (lost on a wipe), adds power (1 per section cleared), shares XP, draws aftermath for crew who ended a fight downed, finishes major repairs that were on the bench, and returns a debrief. Abandoning a run from the pause menu loses the purse and pack and nothing else.
+- **XP:** a won fight pays every squad member its tier in XP (patrol threat 1 times the fight tier); a finished floor pays 5; the Pit side bet pays its XP to the lowest tier member.
+- **Promotion:** costs XP and the same number of Eagles (20, 40, 80, 160 for tiers 2 to 5). Each tier adds 1 max HP and a perk slot (counted, unused).
+- **Aftermath:** each time a crew member ends a fight downed, they draw once from the 35-card droid deck at home. Short-term results are free reboots (Firmware Patch gives 3 XP); lasting results need a repair; Core Breach counts as major; Head Destroyed removes the droid for good. The combat effects of the results (Suppressed or Stunned at the start of the next fight) are not wired.
+- **Repairs:** a minor repair costs 1 Eagle and is instant; a major repair costs 3, and the droid sits out the next expedition. Unrepaired damage also sits out.
+- Tests: `campaign.test.ts` (23 cases: market, stash cap, launch and return, wipe, abandon, promotion, aftermath, repairs).
 
 ## M0 scope in detail
 

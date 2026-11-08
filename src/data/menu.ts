@@ -52,7 +52,7 @@ export const setupText = {
     'Starting Eagles and gear: not set yet'
   ],
   back: 'Back',
-  start: 'Start expedition',
+  start: 'Enter HQ',
   quickFight: 'Quick fight',
   startStamp: 'TSC only'
 };
