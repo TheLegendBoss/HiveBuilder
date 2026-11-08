@@ -355,6 +355,7 @@ Gear is the unit of action and the source of the deck. Slots limit what is live,
 
 **Card anatomy (working layout)**
 
+- **Card text grammar (decided).** Every ability is one row: `(N): Name - Effect` for an activated ability (N is the fuel cost, `(0)` for free) or `Passive: Name - Effect` for one that is always on. Passives come first, then activated rows, then riders. Cards print final numbers, never rarity deltas. Keywords are explained on hover, with a Settings option to show them always. The full rules are in the UI guide, section 7.
 - A **gear card** is slotted. It lists its name, rarity, slot type, tags and any minimum stat, the always-available actions (each with a fuel cost, effect and timing), the action cards it adds to the deck, its riders and attachment slots (which can differ between copies of the same tier), a test rating, a pitch value and a grind recipe.
 - An **action card** goes into the deck and hand. It shows its source gear, a combat effect, a test line (an attribute and a bonus, such as +2 Wits) and a fuel value (default 1). Any wielder of the matching gear can play it, and anyone can burn it for fuel.
 - Gear adds a small number of cards: about 2 to 3 for a weapon, 1 to 2 for armor (the cards that refill the absorb pool), 1 to 2 for a perk or skill, and a few for a role. A full 5-person squad lands around 40 to 50 cards. Rarer gear adds better cards, not more of them. A gear piece can add duplicates of the same card, and its card set should express its role: an autogun adds two Burst Fire and one Suppressing Fire, since it is automatic, while precision shots such as Aimed Shot come from rifles or a scope attachment. As a standard template, a weapon adds two copies of its core card plus one utility card. Gear is grouped into classes (sidearms, close, line, support, precision, explosives, defense, melee, tools and implants) that share a card template, with light, medium and heavy variants changing numbers, costs and ammo. Classes are also how perks, skills, passives, keywords and specialty packs target gear. Melee splits into Light, Heavy and Special (non-conventional melee such as power tools and drilling rigs) and can break down further by type (for example light blades and heavy axes). Melee subclasses have their own identity. Light melee is a cheap, fast attack with a defensive utility (such as Parry, which gives soak or cuts the next fight-back). Heavy melee is a wind-up big hit with a lane utility (such as Cleave, which hits a second unit in the lane). Special melee has one signature trick per tool (a drill ignores soak, a shock baton Stuns). Tools split into physical and digital tools. Physical tools act on the squad and the room (a medkit, grapple, lockpick or scanner). Digital tools act on units and systems (hack a droid, jam a turret, open a door). Physical tools can also be used up or run on counters, and digital tools run on Tech checks. Tools also work outside fights: they can act as keys (a lockpick opens a locked room, a hacking deck opens a digital gate), and carrying the right tool can replace an attribute requirement at a gate. Implants are mostly parallel types: prosthetic is crude but solid and visible, with a drawback; cybernetic is better and still visible, like the classic cyborg eye; bionic is an indistinguishable replacement with equal or better stats; and archeotech is also indistinguishable and purely positive. Rarity overlaps with type, so an orange prosthetic can be nearly as good as a white archeotech implant. Visibility is mostly aesthetic, though some factions view visible implants poorly. Accessories such as tools and clothing add 1 core and 1 utility card. Implants add cards by quality: prosthetic 1 core and 1 negative, cybernetic 2 core and 1 negative, bionic 2 core, and archeotech 2 core and 1 utility. A negative card is a clog-style card like the stun and burn cards. For humanoids, a prosthetic swaps the long-lasting penalty of a lost limb or eye for a negative card, which is generally the better deal. Decided: lasting injuries are lasting, and an implant is how you fix one. A member with a lasting injury opens a separate prosthetic slot that only exists while the injury does, so the replacement never competes with the member's other implants. White implants can be made at fabricator buildings, and prosthetics can be produced for Eagles at clinics and hospitals; implants can also drop as loot. Droids repair their damage instead and can only use brain and armor implants. Humanoid implants have body areas: limb, eye, brain and torso. A lasting injury needs the matching area to fix it (Eye Injury takes an eye implant, Hand Injury and Shattered Arm take a limb implant, Hobbled takes a leg, Head Injury takes a brain implant; the exact map for Spinal Injury, Grievous Injury and Enfeebled is still to set). A member opens one prosthetic slot per lasting injury, with no cap. Attachments are cards slotted onto gear. They can add an activator (an extra action on the gear, such as a scope's aimed shot), cards for the deck, or both. For example, a laser sight adds a card that, when burned as fuel for an action on the gear it is attached to, increases that action's damage and reduces its cost.
@@ -371,7 +372,7 @@ Gear is the unit of action and the source of the deck. Slots limit what is live,
 
 **Gear tiers and starter gear**
 
-- Gear rarity follows the standard color ladder used by most loot games: white, green, blue, purple and orange (working names for the first four: Basic, Improved, Advanced, Enhanced; orange is still to be named). Above orange the ladder splits in two directions: red is named or unique gear, and gold or yellow is archeotech or lostech. Loot tier scales with hive depth, so orange, red and gold need deep floors, but a pack can always contain one with a small chance. Red follows the Borderlands and Diablo approach: named uniques can appear more than once, each time with different riders and stats, so you are never stuck with a version that does not suit your gang. Gold is archeotech or lostech with the best numbers and no drawback. It also carries a lostech keyword that no other tier has (for example self-refilling ammo, ignoring a cost, or never wearing out), and it comes from a fixed, finite list of named archeotech pieces, like a small known set rather than random gear. Gold comes from the late slots of packs (including Vault and Eagle packs) and also from bosses, quests and the deepest floors. Red and gold can appear in the late slots of any pack tier with a tiny chance.
+- Gear rarity follows the standard color ladder used by most loot games: white, green, blue, purple and orange (decided names for the first four: Basic, Improved, Advanced, Enhanced; orange is still to be named; red is Unique and gold is Archeotech). Above orange the ladder splits in two directions: red is named or unique gear, and gold or yellow is archeotech or lostech. Loot tier scales with hive depth, so orange, red and gold need deep floors, but a pack can always contain one with a small chance. Red follows the Borderlands and Diablo approach: named uniques can appear more than once, each time with different riders and stats, so you are never stuck with a version that does not suit your gang. Gold is archeotech or lostech with the best numbers and no drawback. It also carries a lostech keyword that no other tier has (for example self-refilling ammo, ignoring a cost, or never wearing out), and it comes from a fixed, finite list of named archeotech pieces, like a small known set rather than random gear. Gold comes from the late slots of packs (including Vault and Eagle packs) and also from bosses, quests and the deepest floors. Red and gold can appear in the late slots of any pack tier with a tiny chance.
 - Each member's base slots are two weapon slots, armor, an accessory slot for tools, implant and perk, with role, perk, backpack and chassis extras on top.
 - Each faction starts with basic versions of its gear plus one faction signature piece.
 - Higher tiers improve gear through riders, better damage and better activation costs. Damage is allowed to escalate so end-game gear feels meaningful. Every base item (gear, perks, skills, tools, accessories, implants, supplies and disposables) exists at every rarity from white to orange, with red and gold as separate named and lostech tracks. Each version is built from a template for its class, where every rarity step adds a fixed bump to damage, ammo or a rider, and a drop picks the rarity first and then a base item. Upgrading a card produces the next rarity of the same item.
@@ -401,36 +402,36 @@ White versions of the 30 base items in the sandbox loot pool. Each one exists at
 
 | # | Base item | Class | White version |
 | --- | --- | --- | --- |
-| 1 | Scrap cleaver | Melee, light | Quick: 1 fuel, 2 damage. Normal: 2 fuel, 3 damage |
-| 2 | Arc blade | Melee, medium | Quick: 1 fuel, 2 damage. Arc: 2 fuel, 3 damage and Stunned if it is the only target |
-| 3 | Power maul | Melee, heavy | Crushing Blow: 2 fuel, 4 damage and Exposed, wind-up 1 |
-| 4 | Hive revolver | Sidearm | Shot: 1 fuel, 2 damage (ranged), ammo 6 |
-| 5 | Hand cannon | Sidearm, heavy | Shot: 1 fuel, 3 damage (ranged), ammo 4 |
-| 6 | Pump shotgun | Close | Blast: 1 fuel, 1 to 3 damage. Slug: 2 fuel, 3 damage |
-| 7 | Riot gun | Close, heavy | Blast: 1 fuel, 2 to 4 damage, ammo 4 |
-| 8 | Surplus autogun | Line | Burst: 1 fuel, 2 damage. Autofire: 2 fuel, 2 to 4 damage |
-| 9 | Lasrifle | Line | Shot: 1 fuel, 2 damage. Burst: 2 fuel, 3 damage to two units |
-| 10 | Hunting rifle | Precision | Aimed Shot: 2 fuel, 4 damage (ranged), wind-up 1 |
-| 11 | Long-las | Precision, heavy | Aimed Shot: 2 fuel, 4 damage that ignores 2 soak, wind-up 1, ammo 3 |
-| 12 | Heavy stubber | Support | Suppress: 2 fuel, 1 damage to every enemy in the lane and Suppressed, ammo 6 |
-| 13 | Grenade belt | Explosive | Throw: 1 fuel, 2 damage to every enemy in the lane, ammo 4 |
-| 14 | Grenade launcher | Explosive, heavy | Lob: 2 fuel, 3 damage to every enemy in the lane, ammo 3 |
-| 15 | Riot shield | Defense | Max soak 3. Block: cancel the fight-back from the next melee attack |
-| 16 | Ablative shield | Defense | Max soak 3. Interpose: take the next hit aimed at an ally in this lane |
-| 17 | Patched plating | Armor | Max soak 3. Brace: refill 1 |
-| 18 | Composite vest | Armor | Max soak 3. Plate Check: refill 2 |
-| 19 | Hive carapace | Armor, heavy | Max soak 3. Reinforce: refill 2, and your actions cost +1 fuel on the first turn of a fight |
-| 20 | Field medkit | Tool | Patch Up: 1 fuel, restore 2 HP to a unit in this lane |
-| 21 | Red-dot sight | Attachment | The next attack with the attached gear deals +1 damage and costs 1 less fuel |
-| 22 | Adrenal injector | Accessory | Once per fight: remove Suppressed or Slowed from this unit |
-| 23 | Gambler's coin | Accessory | Once per expedition: redraw one Gamble push card |
-| 24 | Hive rations | Supply | A ration pack that restores rations for the counter |
-| 25 | Mixed ammo | Supply | Refill 2 ammo on one gear |
-| 26 | Healing supplies | Supply | Heal 4 HP |
-| 27 | Frag grenade | Disposable | Throw: 3 damage to every enemy in the lane, one use |
-| 28 | Smoke canister | Disposable | Ranged attacks into or out of the lane cost +1 fuel for 2 rounds, one use |
-| 29 | Combat stim | Disposable | Restore 2 HP and remove one status, one use |
-| 30 | Breaching charge | Disposable | 4 damage to the enemy lane HP, one use |
+| 1 | Scrap cleaver | Melee, light | (1): Quick - Deal 2 damage to one enemy. / (2): Normal - Deal 3 damage to one enemy. |
+| 2 | Arc blade | Melee, medium | (1): Quick - Deal 2 damage to one enemy. / (2): Arc - Deal 3 damage to one enemy. If it is the only target, apply Stunned. |
+| 3 | Power maul | Melee, heavy | (2): Crushing Blow - Deal 4 damage to one enemy and apply Exposed. Wind-up 1. |
+| 4 | Hive revolver | Sidearm | (1): Shot - Deal 2 damage to one enemy. Ranged. / Passive: Ammo - 6. |
+| 5 | Hand cannon | Sidearm, heavy | (1): Shot - Deal 3 damage to one enemy. Ranged. / Passive: Ammo - 4. |
+| 6 | Pump shotgun | Close | (1): Blast - Deal 1 to 3 damage to one enemy. / (2): Slug - Deal 3 damage to one enemy. |
+| 7 | Riot gun | Close, heavy | (1): Blast - Deal 2 to 4 damage to one enemy. / Passive: Ammo - 4. |
+| 8 | Surplus autogun | Line | (1): Burst - Deal 2 damage to one enemy. / (2): Autofire - Deal 2 to 4 damage to one enemy. |
+| 9 | Lasrifle | Line | (1): Shot - Deal 2 damage to one enemy. / (2): Burst - Deal 3 damage to two enemies. |
+| 10 | Hunting rifle | Precision | (2): Aimed Shot - Deal 4 damage to one enemy. Ranged. Wind-up 1. |
+| 11 | Long-las | Precision, heavy | (2): Aimed Shot - Deal 4 damage to one enemy, ignoring 2 soak. Wind-up 1. / Passive: Ammo - 3. |
+| 12 | Heavy stubber | Support | (2): Suppress - Deal 1 damage to every enemy in the lane and apply Suppressed. / Passive: Ammo - 6. |
+| 13 | Grenade belt | Explosive | (1): Throw - Deal 2 damage to every enemy in the lane. / Passive: Ammo - 4. |
+| 14 | Grenade launcher | Explosive, heavy | (2): Lob - Deal 3 damage to every enemy in the lane. / Passive: Ammo - 3. |
+| 15 | Riot shield | Defense | Passive: Max soak - 3. / (0): Block - Cancel the fight-back from the next melee attack. |
+| 16 | Ablative shield | Defense | Passive: Max soak - 3. / (0): Interpose - Take the next hit aimed at an ally in this lane. |
+| 17 | Patched plating | Armor | Passive: Max soak - 3. / (0): Brace - Restore 1 soak. |
+| 18 | Composite vest | Armor | Passive: Max soak - 3. / (0): Plate Check - Restore 2 soak. |
+| 19 | Hive carapace | Armor, heavy | Passive: Max soak - 3. / Passive: Heavy Frame - Your actions cost 1 more fuel on the first turn of a fight. / (0): Reinforce - Restore 2 soak. |
+| 20 | Field medkit | Tool | (1): Patch Up - Restore 2 HP to one unit in this lane. |
+| 21 | Red-dot sight | Attachment | (0): Sight Alignment - The next attack with the attached gear deals 1 more damage and costs 1 less fuel. |
+| 22 | Adrenal injector | Accessory | (0): Adrenaline - Remove Suppressed or Slowed from this unit. Once per fight. |
+| 23 | Gambler's coin | Accessory | (0): Redraw - Redraw one Gamble push card. Once per expedition. |
+| 24 | Hive rations | Supply | (0): Eat - Restore 4 rations. Consumed. |
+| 25 | Mixed ammo | Supply | (0): Reload - Refill 2 ammo on one gear. Consumed. |
+| 26 | Healing supplies | Supply | (0): Treat - Restore 4 HP. Consumed. |
+| 27 | Frag grenade | Disposable | (0): Throw - Deal 3 damage to every enemy in the lane. Consumed. |
+| 28 | Smoke canister | Disposable | (0): Deploy - Ranged attacks into or out of the lane cost 1 more fuel for 2 rounds. Consumed. |
+| 29 | Combat stim | Disposable | (0): Stim - Restore 2 HP and remove one status. Consumed. |
+| 30 | Breaching charge | Disposable | (0): Detonate - Deal 4 damage to the enemy lane HP. Consumed. |
 
 ## Tests, economy and progression
 

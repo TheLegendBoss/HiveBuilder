@@ -83,7 +83,7 @@ One scene per screen. A persistent HUD scene runs in parallel and keeps its own 
 | --- | --- |
 | Boot | Load fonts and data, then go to Main Menu |
 | Main Menu | Title lockup top left, hive cutaway on the left (see below), bolted console on the right with Continue, New Game, Load Game, Sandbox Mode, Settings, Exit. Continue, New Game and Load Game carry an OFFLINE stamp in the first build. Bottom left: Expeditions Lost counter (four digits) with skull outlines, and a memorial plaque |
-| Settings | Volume, fullscreen, text size, colorblind mode, animation speed. Back returns to wherever it was opened from |
+| Settings | Volume, fullscreen, text size, colorblind mode, animation speed, keyword reminders (on hover or always). Back returns to wherever it was opened from |
 | Sandbox Setup | Pick a faction, start tier and ramp, starting Eagles and gear, or load a saved quickstart preset. Save preset, load preset |
 | Save / Load | One autosave slot plus manual slots; each shows faction, depth and timestamp |
 | Hub (HQ) | Always has a market for packs. Buttons for squad and loadout, deck view, promotion, repairs, selling, and Start Expedition |
@@ -114,11 +114,40 @@ Every screen has Esc open a pause or back menu, and no screen is a dead end.
 
 ## 7. Card anatomy
 
-- Fixed card size at the reference resolution (working: 201 by 294, the mockup's 134 by 196), drawn as a Container: frame, fuel circle, name, type line, art slot, effect text, footer.
-- Frame color is the rarity. Top left: fuel value in a circle (a square for Pressmen). Next to it: the name in stencil type. Below: the type line (for example ATTACK. LANE 1-2). Then a small art slot with a simple line icon, then the effect text. Footer: rank label (COMMON, UNCOMMON, RARE, EPIC, LEGEND) on the left and the keyboard shortcut in a small box on the right.
+- Fixed card size at the reference resolution (working: 201 by 294, the mockup's 134 by 196), drawn as a Container: frame, fuel circle, name, type line, art slot, rules box, footer.
+- Frame color is the rarity. Top left: fuel value in a circle (a square for Pressmen) on action cards. Next to it: the name in stencil type. Below: the type line (see 7.2). Then a small art slot with a simple line icon, then the rules box (see 7.1). Footer: the rarity name with one notch per step on the left and the keyboard shortcut in a small box on the right.
+- Rarity names (decided): white **Basic**, green **Improved**, blue **Advanced**, purple **Enhanced**, orange **[name still to decide]**, red **Unique**, gold **Archeotech**. Anywhere the game names a rarity (card footer, reveal stamps, tooltips, pack summaries) it uses these words, never the color name. Frame color and notches repeat the same information, so rarity never relies on color alone.
 - Hand cards show all of the above. Hovering raises the card and shows the full text in a tooltip panel if it is clipped.
 - States: normal, hover (raised, panelRaised), selected (raised 36 px at the reference, signal outline plus a glow), disabled or unplayable (dim, with the reason in the tooltip), locked (small lock mark, so it can't be sold by accident), exhausted (turned dim and greyed).
 - Clog cards (burn and similar) use the panel color with a danger-red frame and show the discard damage on the card.
+
+### 7.1 Rules box: one grammar for every ability
+
+Every ability is one row, and every row has the same three parts: a leader, a name and an effect.
+
+```
+(3): Quick - Deal 2 damage to one enemy.
+Passive: Max soak - 3.
+```
+
+| Row | Leader | Meaning |
+| --- | --- | --- |
+| Activated | `(N)` in a circle: the fuel cost to use it. `(0)` is printed for free actions | You choose to use it. Gear actions, action cards, supplies |
+| Passive | `Passive` tag | Always on while the card is in play. Stat lines (ammo, max soak), drawbacks and standing triggers ("When ...") |
+
+- A card lists passives first, then activated rows, cheapest first. Rarity riders come last in a row group labelled RIDER, in the same grammar.
+- In plain text (data files, docs, tooltips) a row is `(N): Name - Effect` or `Passive: Name - Effect`. On the card the leader is drawn as the cost circle or the PASSIVE tag, the name is bold, and the effect is regular weight.
+- Names are short (one or two words) and unique on the card.
+- The effect is one or two short sentences, imperative, in this vocabulary: **Deal** N damage, **Restore** N HP or soak, **Gain** N soak, **Refill** N ammo, **Draw**, **Remove** a status, **Apply** a status. Targets: "one enemy", "two enemies", "every enemy in the lane", "one unit in this lane", "this unit", "the attached gear".
+- Numbers are digits. A card prints final numbers only: a green Scrap cleaver says "Deal 3", never "+1 damage". Deltas between rarities live in tooltips and the Codex.
+- Limits come last, as a short sentence: "Once per fight." "Once per expedition." **Consumed.** (the item is destroyed after use, as in the Fate table).
+- Keywords are capitalized and defined once in the glossary: Wind-up N, Ranged, Exposed, Stunned, Suppressed, Slowed, Burning, Consumed. Reminder text appears in the hover tooltip. The Settings option **Keyword reminders** switches between **On hover** (default) and **Always** (small italic text under the row).
+- Row budget: at most 4 rows on a hand card. Anything longer is cut in design, not shrunk.
+
+### 7.2 Type line and card kinds
+
+- Format: `KIND · CLASS, SIZE`. Kinds: GEAR, ACTION, SUPPLY, DISPOSABLE, ATTACHMENT, ACCESSORY, PERK, SKILL, UNIT, CLOG. Example: `GEAR · MELEE, LIGHT`.
+- Each kind also gets a frame cue so the silhouette reads before the text does (working, to be reviewed in a card-kinds pass): gear with a notched corner, action cards plain, supplies with a taped edge, disposables with a hazard stripe on the footer, attachments with a socket mark on the frame, units with a wider header plate.
 
 ## 8. Faction skins
 
