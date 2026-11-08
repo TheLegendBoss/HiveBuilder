@@ -6,7 +6,16 @@ export const FONT_STENCIL = "'Big Shoulders Stencil Display', Impact, sans-serif
 export const FONT_MONO = "'IBM Plex Mono', monospace";
 
 /** Set by ScreenScene on every rebuild so text stays crisp inside the scaled root. */
-export const textContext = { res: 1 };
+export const textContext = { res: 1, dense: false };
+
+/**
+ * Dense screens (combat) grow small labels by only 40% of the text size setting, so the layout holds.
+ * Text that has room (card effects, tooltips, the vox log) opts in to the full setting with `full`.
+ */
+export function textMultiplier(full: boolean | undefined): number {
+  const m = session.settings.textScale / 100;
+  return textContext.dense && !full ? 1 + (m - 1) * 0.4 : m;
+}
 
 export interface TextOpts {
   /** letter spacing in em */
@@ -19,6 +28,8 @@ export interface TextOpts {
   align?: 'left' | 'center' | 'right';
   /** ignore the text size setting (for the big title lockup) */
   fixed?: boolean;
+  /** use the full text size setting even on a dense screen */
+  full?: boolean;
 }
 
 function build(
@@ -31,7 +42,7 @@ function build(
   color: number,
   o: TextOpts
 ): Phaser.GameObjects.Text {
-  const px = Math.round(size * (o.fixed ? 1 : session.settings.textScale / 100));
+  const px = Math.round(size * (o.fixed ? 1 : textMultiplier(o.full)));
   const style: Phaser.Types.GameObjects.Text.TextStyle = {
     fontFamily: family,
     fontSize: `${px}px`,

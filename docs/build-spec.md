@@ -19,8 +19,8 @@ A desktop game in Phaser 4 (TypeScript, Vite) that opens on a main menu and lets
 | # | Milestone | Done when |
 | --- | --- | --- |
 | M0 | Scaffold and main menu (this build) | `npm run dev` opens the v5 main menu at 1920 by 1080 and 1280 by 720; number keys and mouse work; Sandbox Mode opens a placeholder setup screen; Settings saves volume, fullscreen and text size; Exit asks to confirm; typecheck, tests and build pass |
-| M1 | Data and sim core | CSV decks in `data/` load into typed data; results deck, hand, fuel and a 3-lane duel resolve in a headless test with fixed seeds; matches the paper-fight sims within tolerance |
-| M2 | Combat screen | The v5 combat layout plays one fight against a Tier 1 force with mouse and keyboard, cables, intent badges, blood bars, vox log |
+| M1 | Data and sim core (built) | CSV decks in `data/` load into typed data; results deck, hand, fuel and a 3-lane duel resolve in a headless test with fixed seeds; matches the paper-fight sims within tolerance |
+| M2 | Combat screen (built) | The v5 combat layout plays one fight against a Tier 1 force with mouse and keyboard, cables, intent badges, blood bars, vox log |
 | M3 | Expedition | Generate a floor section by section; room screens (Fight, Scavenge, Gamble, Hazard, Market, Rest, Clinic, Gate); supplies clock; retreat |
 | M4 | Hub and economy | Packs, selling, promotion, repairs, Start Expedition; Eagles and power counters |
 | M5 | Sandbox setup and saves | Sandbox Setup screen, depth dial, autosave, manual slots, quickstart preset |
@@ -28,6 +28,14 @@ A desktop game in Phaser 4 (TypeScript, Vite) that opens on a main menu and lets
 | M7 | Control rooms and bosses | Five section functions and the drafted boss table |
 
 Work one milestone at a time. Each ends with a commit and a short note of what to try.
+
+## M1 and M2 as built
+
+- `src/sim/` (no phaser): seeded RNG, 52-card results deck, hand, draw and reshuffle, fuel burning, three-lane duel, TSC starter deck effects, Scavver pack AI, win and loss. `listActions` says what the player can do right now, `perform` does it, `enemyPlan` and `enemyAct` run the other side. Events come back as a list and the view catches up from them.
+- `src/data/`: the starter deck loads from `data/tsc_starting_deck.csv`; the squad, the Scavver pack and the Service corridor are in `scenarios.ts`; basic gear actions in `gearActions.ts`.
+- `src/core/selection.ts`: the pick-an-item, actor, target, variant flow shared by mouse and keyboard.
+- Parity with the paper sim: over 2000 seeds the stand-in player wins every fight in about 10.1 actions after setup (paper sim: 10.0), with almost nobody downed. `src/sim/*.test.ts` cover each card rule.
+- Where the sim chose a rule the paper sim or the design left open, it is listed under "Sandbox build notes" in `decisions.md`.
 
 ## M0 scope in detail
 

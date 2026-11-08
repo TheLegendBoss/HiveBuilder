@@ -55,6 +55,22 @@ Quick reference. `docs/design.md` has the full text and reasoning.
 - Concord update (playtest 08): four starting crew (Marshal, Sentinel, Warden, Breacher), 26 HP total, armor soak 4 per piece. Subdue is replaced by Concussive: stun counters instead of HP loss, ignoring soak. Stunned at counters at least current HP, captured at twice current HP. A stunned enemy rolls to remove counters (4 or more removes 1). Stun counters also raise enemy fuel costs (not yet simulated). Volley is modal (3 lethal or 5 concussive), Cuff Shot (x3) splashes 4 on one enemy and 2 on the other in its lane, Stun Pulse gives 2 counters to the lane, Breach Blast is 4 lethal. Warrant Mark applies to a monster's body (+1 damage, never captured). Enemy fight-backs get the +1 enemy damage.
 - Gang engine: AI gangs with 4 difficulties and 4 attitudes (Raiders, Builders, Swarm, Cadre), each with 3 paths.
 
+## Sandbox build notes (working, from the M1 and M2 build)
+
+Rules the sim had to pick. Change any of these in `src/sim/` and the data; none are locked.
+- **No pass action.** Every action is a card, a gear action, a deploy or Cycle. The guide's "end turn" key (E or Space) is bound to Cycle, because ending a turn by doing nothing is not in the rules.
+- **Cycle discards 1 or 2 cards** (the design number). The paper sim let the stand-in discard 3; it never cycled anyway.
+- **Counter expires at the end of the round** if nothing hit its holder (the card says "this round"). The paper sim kept it until triggered.
+- **Suppressed has no effect on enemies yet.** The card applies it for 2 rounds and it shows as a chip, but the design only says what it does to a unit that pays fuel. Needs a rule (for example -1 damage on the enemy's next attack).
+- **Repair Pack is playable** (heal 4 HP). The paper sim never played it.
+- **Data Burst** looks at the top 3 results and puts them back highest-first or lowest-first (two options). A full reorder screen can wait until a test uses the results deck. Nothing in the Scavver fight draws a result yet.
+- **Targeting reach:** every attack, stun, mark and area card can reach the actor's own lane, plus both neighbours (or the middle lane) once the opposing lane is captured. Sustained Fire and Autofire hit up to two units in one lane.
+- **Downed units** keep their lane body for the lane cap, do not screen, cannot act, and Patch or Repair Pack stands them back up. Enemies never attack a downed unit (the design says they may, at the cost of an action; not built).
+- **Lane cap:** none, as designed. The paper-parity scenario uses 2 per lane because the Python sim did.
+- **Melee fight-back** applies to enemy melee attacks only; squad members have no melee yet.
+- **Burn choice:** the game suggests which cards to burn (cards with no play right now first, then the least useful per fuel point); B lets the player choose.
+- **Dev aids:** F8 plays the stand-in player's action; `?seed=N` replays a shuffle.
+
 ## Open questions
 
 - [x] Floor generation: Decided: a floor is generated one section at a time using the floor group's section count, gates sit between sections and floors, each section has at least one way up and one way down, and section size comes from the room deck size and the number of room connectors, so sections grow as you add rooms from packs. The starter room deck is 21 cards (8 Fight, 4 Scavenge, 2 Gamble, 2 Hazard, 1 Market, 1 Rest, 1 Clinic, 2 Gate), and the mix after that depends on what you pull. An expedition can cover one section, several, or a whole floor, but a normal expedition tries to clear and claim a section. Gates ask for one requirement type early, a mix in the middle and two far down. Keys come from the loot deck, from bosses or guarded rooms, and from markets. Gate power cost scales with depth, working from about 1 on easy floors up to about 6 on the deepest, and it falls mostly on floor gates. A section ends when both of its gates are placed and no open exits remain. Fights per dungeon grow with the room deck (5 to 10 is the starter range). Attribute thresholds scale with floor group, and room cards have rarity. If the room deck runs out while exits are still open, the leftover exits are sealed as dead ends and the section ends (a reshuffle was considered and set aside). Rarer room cards are stronger versions of the same type (a rare Market stocks better packs, a rare Rest restores more) and also unlock room types white rooms cannot be, such as Vault, Lair or boss, and Bounty from the held list. Section gates cost no power: they ask for an attribute or a key only.

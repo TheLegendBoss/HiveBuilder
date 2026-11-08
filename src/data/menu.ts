@@ -52,8 +52,8 @@ export const setupText = {
     'Starting Eagles and gear: not set yet'
   ],
   back: 'Back',
-  start: 'Start expedition',
-  startStamp: 'Next build'
+  start: 'Start fight',
+  startStamp: 'TSC only'
 };
 
 export const settingsText = {

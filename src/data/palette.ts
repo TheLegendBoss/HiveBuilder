@@ -18,6 +18,8 @@ export const palette = {
   bone: 0xb8ab8f,
   boneDim: 0x4a4237,
   cableDark: 0x0e0c0a,
+  enemyPlate: 0x231913,
+  enemyBorder: 0x5a3a22,
   rarity: {
     white: 0xd9d4c7,
     green: 0x6fae5a,

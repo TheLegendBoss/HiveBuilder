@@ -39,3 +39,61 @@ export function drawSkull(g: Phaser.GameObjects.Graphics, x: number, y: number, 
     strokePoly(g, pts, true);
   }
 }
+
+/** Simple line glyphs for the card art slot, drawn inside a box centered on (cx, cy). */
+export function drawCardGlyph(g: Phaser.GameObjects.Graphics, kind: string, cx: number, cy: number, s: number, color: number): void {
+  g.lineStyle(3, color, 1);
+  g.fillStyle(color, 1);
+  const r = s / 2;
+  switch (kind) {
+    case 'weapon': // crosshair
+      g.strokeCircle(cx, cy, r * 0.62);
+      g.lineBetween(cx - r, cy, cx - r * 0.3, cy);
+      g.lineBetween(cx + r * 0.3, cy, cx + r, cy);
+      g.lineBetween(cx, cy - r, cx, cy - r * 0.3);
+      g.lineBetween(cx, cy + r * 0.3, cx, cy + r);
+      break;
+    case 'armor':
+    case 'defense': // shield
+      strokePoly(g,
+        [
+          { x: cx - r * 0.75, y: cy - r * 0.8 },
+          { x: cx + r * 0.75, y: cy - r * 0.8 },
+          { x: cx + r * 0.75, y: cy + r * 0.05 },
+          { x: cx, y: cy + r * 0.9 },
+          { x: cx - r * 0.75, y: cy + r * 0.05 }
+        ],
+        true
+      );
+      break;
+    case 'skill': // chevrons
+      for (const dy of [-r * 0.5, 0, r * 0.5]) {
+        strokePoly(g,
+          [{ x: cx - r * 0.7, y: cy + dy - r * 0.3 }, { x: cx, y: cy + dy + r * 0.2 }, { x: cx + r * 0.7, y: cy + dy - r * 0.3 }],
+          false
+        );
+      }
+      break;
+    case 'tool': // plus in a box
+      g.strokeRect(cx - r * 0.8, cy - r * 0.8, r * 1.6, r * 1.6);
+      g.lineBetween(cx - r * 0.4, cy, cx + r * 0.4, cy);
+      g.lineBetween(cx, cy - r * 0.4, cx, cy + r * 0.4);
+      break;
+    case 'supply': // crate
+      g.strokeRect(cx - r * 0.85, cy - r * 0.6, r * 1.7, r * 1.3);
+      g.lineBetween(cx - r * 0.85, cy - r * 0.1, cx + r * 0.85, cy - r * 0.1);
+      g.lineBetween(cx, cy - r * 0.6, cx, cy + r * 0.7);
+      break;
+    case 'attachment': // scope dot and bar
+      g.lineBetween(cx - r, cy, cx + r, cy);
+      g.strokeCircle(cx, cy, r * 0.45);
+      g.fillCircle(cx, cy, r * 0.12);
+      break;
+    default: // accessory: chip
+      g.strokeRect(cx - r * 0.55, cy - r * 0.55, r * 1.1, r * 1.1);
+      for (const d of [-0.3, 0.3]) {
+        g.lineBetween(cx + d * r, cy - r * 0.55, cx + d * r, cy - r * 0.95);
+        g.lineBetween(cx + d * r, cy + r * 0.55, cx + d * r, cy + r * 0.95);
+      }
+  }
+}

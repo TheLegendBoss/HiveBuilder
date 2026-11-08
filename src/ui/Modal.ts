@@ -35,7 +35,9 @@ export class Modal {
     c.add(dim);
 
     const w = 840;
-    const h = 360;
+    const bodyText = monoText(scene, 0, 0, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 });
+    const h = Math.max(360, 138 + bodyText.height + 42 + 78 + 42);
+    bodyText.destroy();
     const x = (REF_W - w) / 2;
     const y = (REF_H - h) / 2;
     const panel = makePanel(scene, { x, y, w, h, bolts: true, hazard: true, scan: true, border: o.signal, borderWidth: 3 });

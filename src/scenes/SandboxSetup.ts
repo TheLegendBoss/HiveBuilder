@@ -49,7 +49,8 @@ export class SandboxSetup extends ScreenScene {
     root.add(
       new Button(this, {
         x: CARD.x + 3 * CARD.w + 2 * CARD.gap - 600, y: 912, w: 600, h: 84, label: setupText.start, size: 36,
-        state: 'offline', signal, stamp: setupText.startStamp, onClick: () => undefined
+        state: session.faction === 'tsc' ? 'live' : 'offline', accent: session.faction === 'tsc', signal, key: 'Enter',
+        stamp: setupText.startStamp, onClick: () => this.scene.start(SceneKeys.Combat)
       })
     );
   }
@@ -98,6 +99,9 @@ export class SandboxSetup extends ScreenScene {
         break;
       case 'ArrowRight':
         this.choose(factionOrder[Math.min(factionOrder.length - 1, i + 1)]!);
+        break;
+      case 'Enter':
+        if (session.faction === 'tsc') this.scene.start(SceneKeys.Combat);
         break;
       case 'Escape':
         this.scene.start(SceneKeys.MainMenu);

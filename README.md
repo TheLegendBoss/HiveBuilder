@@ -2,7 +2,7 @@
 
 A grim-dark deckbuilding campaign game. You lead a gang through a procedurally generated hive city and claim it district by district. Your crew, gear, perks and skills all feed one shared squad deck, and every card can be played for its effect or burned as fuel.
 
-**Status:** design phase, with the first build started. Milestone M0 (Phaser 4 scaffold and main menu) is in `src/`. Everything is placeholder numbers and placeholder names.
+**Status:** design phase, with the first build started. Milestones M0 (Phaser 4 scaffold and main menu), M1 (data-driven sim core) and M2 (playable combat screen) are in `src/`. Everything is placeholder numbers and placeholder names.
 
 ## Repo layout
 
@@ -49,7 +49,9 @@ npm test
 npm run build
 ```
 
-The main menu opens first. Sandbox Mode leads to a placeholder setup screen where you pick a faction (it changes the accent color). Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
+The main menu opens first. Sandbox Mode leads to the setup screen where you pick a faction (it changes the accent color). **Start fight** (TSC only for now) plays the TSC crew against the Scavver pack on the Service corridor. Keys: 1 to 6 on the menu, arrows and Enter, Esc to go back.
+
+**In a fight:** the first three rounds you deploy a squad member into each lane (click a reserve chip or press R, then click a lane or press 1 to 3). After that, each action is one of: play a card (click it or press 1 to 7, then pick the unit and target; Tab cycles the choices, Enter confirms), use a gear action (G, or the buttons in the right panel), or Cycle (E: mark up to 2 cards, Enter) to discard and draw. Fuel is paid by burning cards from your hand; the suggested burn is shown on the cards, and B lets you choose. L opens the vox log, Esc cancels a pick or opens the pause menu. Dev aids: F8 lets the stand-in player take your action, and `?seed=7` on the address replays the same shuffle.
 
 ## Windows app
 
