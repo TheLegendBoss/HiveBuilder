@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { loadoutOf } from '../core/loadout';
 import { candidates, needsConfirm, pickActor, pickLane, pickTarget, pickVariant, resolve, unplayableReason, type Sel, type Step } from '../core/selection';
 import { session } from '../core/session';
 import { cardDefs } from '../data/cards';
@@ -16,7 +17,7 @@ import { beginEnemyTurn, beginTurn } from '../sim/turn';
 import type { Action, Ev, Game, Target, Unit } from '../sim/types';
 import { Button } from '../ui/Button';
 import { drawCable } from '../ui/Cable';
-import { makeCard, makeIntentBadge, makePile, makePlate, drawHpBar, CARD_H, CARD_W, type PlateMark } from '../ui/combat/parts';
+import { flowInline, makeCard, makeIntentBadge, makePile, makePlate, makeUnitCard, drawHpBar, CARD_H, CARD_W, type PlateMark } from '../ui/combat/parts';
 import { drawSuit } from '../ui/icons';
 import { toRef } from '../ui/layout';
 import { drawLamp } from '../ui/Lamp';
@@ -74,6 +75,9 @@ export class Combat extends ScreenScene {
   /** a squad member the player clicked on to act with; the next ability they pick uses this unit */
   private chosenUnit: number | null = null;
   private busy = false;
+  /** which hand fills the tray: the squad's unit cards or the action cards */
+  private handView: 'units' | 'actions' = 'units';
+  private loadoutPane: Phaser.GameObjects.Container | null = null;
   /** the initiative roll is on screen */
   private intro = false;
   private initiative: Extract<Ev, { t: 'initiative' }> | null = null;
@@ -126,6 +130,8 @@ export class Combat extends ScreenScene {
     this.cycleSet = [];
     this.viewUnit = null;
     this.chosenUnit = null;
+    this.handView = 'units';
+    this.loadoutPane = null;
     this.busy = true;
     this.intro = true;
     this.outcomeOpen = false;
@@ -168,6 +174,11 @@ export class Combat extends ScreenScene {
       if (r.step.step === 'none') this.clearSel();
     } else this.step = null;
     this.trimBurn();
+  }
+
+  /** Open on the unit hand while the squad is being deployed, on the action hand once the fight is on (reserves can still be fetched with the tab or H). */
+  private autoHand(): void {
+    this.handView = inSetup(this.sim) && this.actions.some((a) => a.kind === 'deploy') ? 'units' : 'actions';
   }
 
   private clearSel(): void {
@@ -229,6 +240,7 @@ export class Combat extends ScreenScene {
     if (this.busy || this.sim.result) return;
     this.clearSel();
     this.sel = { item, targets: [], ...(actor !== undefined ? { actor } : {}) };
+    this.handView = item.kind === 'deploy' ? 'units' : 'actions';
     this.refresh();
   }
 
@@ -417,6 +429,7 @@ export class Combat extends ScreenScene {
       this.absorb(beginTurn(this.sim));
       this.busy = false;
       this.derive();
+      this.autoHand();
       this.rebuild();
     });
   }
@@ -469,6 +482,11 @@ export class Combat extends ScreenScene {
     }
     if (this.intro) {
       this.endIntro();
+      return;
+    }
+    if (key.toLowerCase() === 'h') {
+      this.handView = this.handView === 'units' ? 'actions' : 'units';
+      this.rebuild();
       return;
     }
     if (this.busy || this.sim.result) return;
@@ -888,12 +906,47 @@ export class Combat extends ScreenScene {
   private drawTray(root: Phaser.GameObjects.Container, signal: number): void {
     const g = this.sim;
     this.drawUnitHand(root, signal);
-    root.add(bodyText(this, HAND_X0 + HAND_W, TRAY.y + 14, `ACTION HAND ${g.hand.length}/${g.scenario.handSize}`, 16, palette.textMuted, { originX: 1, originY: 0.5, spacing: 0.12 }));
-
+    this.drawHandTabs(root, signal);
     root.add(makePile(this, TRAY.x + 26, CARD_TOP + 10, 'DECK', g.deck.length, signal));
     root.add(makePile(this, TRAY.x + TRAY.w - 138, CARD_TOP + 10, 'DISCARD', g.discard.length, palette.bone));
+    if (this.handView === 'units') this.drawUnitCards(root, signal);
+    else this.drawActionCards(root, signal);
+  }
 
-    // Cards.
+  /** Two tabs flip the tray between the squad's unit cards and the action hand (H does the same). */
+  private drawHandTabs(root: Phaser.GameObjects.Container, signal: number): void {
+    const g = this.sim;
+    const left = this.reserve().length;
+    const tabs: Array<{ id: 'units' | 'actions'; label: string; w: number }> = [
+      { id: 'units', label: left ? `UNIT HAND · ${left}` : 'UNIT HAND', w: left ? 170 : 130 },
+      { id: 'actions', label: `ACTION HAND ${g.hand.length}/${g.scenario.handSize}`, w: 180 }
+    ];
+    let x = HAND_X0 + HAND_W - tabs.reduce((n, t) => n + t.w + 8, -8);
+    for (const t of tabs) {
+      const on = this.handView === t.id;
+      const h = 32;
+      const b = this.add.container(x + t.w / 2, TRAY.y + 8 + h / 2);
+      const gg = this.add.graphics();
+      gg.fillStyle(on ? mix(signal, palette.bg, 0.85) : palette.panelDeep, 1);
+      gg.fillRect(-t.w / 2, -h / 2, t.w, h);
+      gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.line, 1);
+      gg.strokeRect(-t.w / 2, -h / 2, t.w, h);
+      b.add(gg);
+      b.add(bodyText(this, 0, 0, t.label, 15, on ? palette.text : palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.1, weight: '700' }));
+      b.setSize(t.w, h);
+      b.setInteractive({ useHandCursor: !on });
+      b.on('pointerup', () => {
+        if (on || this.intro) return;
+        this.handView = t.id;
+        this.rebuild();
+      });
+      root.add(b);
+      x += t.w + 8;
+    }
+  }
+
+  private drawActionCards(root: Phaser.GameObjects.Container, signal: number): void {
+    const g = this.sim;
     const n = g.hand.length;
     const gap = 12;
     const total = n * CARD_W + (n - 1) * gap;
@@ -942,10 +995,10 @@ export class Combat extends ScreenScene {
     const y = TRAY.y + 8;
     const h = 50;
     const gap = 10;
-    const maxW = 1290;
+    const maxW = 1120;
     const w = Math.min(250, Math.floor((maxW - (squad.length - 1) * gap) / Math.max(1, squad.length)));
     const inReserve = squad.filter((u) => u.lane === null && isLive(u)).length;
-    root.add(bodyText(this, TRAY.x + 22, y + 12, 'UNIT HAND', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 }));
+    root.add(bodyText(this, TRAY.x + 22, y + 12, 'SQUAD', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 }));
     root.add(bodyText(this, TRAY.x + 22, y + 34, inReserve ? `${inReserve} TO DEPLOY` : 'ALL DEPLOYED', 14, inReserve ? signal : palette.textMuted, { originY: 0.5, spacing: 0.08 }));
     const picked = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
     squad.forEach((u, i) => {
@@ -975,22 +1028,134 @@ export class Combat extends ScreenScene {
       tile.setSize(w, h);
       tile.setAlpha(reserve ? 1 : 0.7);
       tile.setInteractive({ useHandCursor: reserve ? can : true });
-      if (reserve && can) {
-        tile.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
-          this.dragMoved = false;
-          this.dragCand = { unit: u.id, x: ptr.x, y: ptr.y };
-        });
-        tile.on('pointerup', () => {
-          if (this.dragMoved || this.busy) return;
-          if (on) {
-            this.clearSel();
-            this.refresh();
-          } else this.select({ kind: 'deploy', unit: u.id });
-        });
-      } else if (!reserve) tile.on('pointerup', () => this.clickFriend(u));
+      this.bindUnitPointer(root, tile, u, reserve, can, on);
       root.add(tile);
       this.unitTiles.set(u.id, { x, y, w, h });
     });
+  }
+
+  /** Click, drag and hover for a unit's tile or card: reserve units deploy, units on the field become the acting unit. */
+  private bindUnitPointer(root: Phaser.GameObjects.Container, obj: Phaser.GameObjects.Container, u: Unit, reserve: boolean, can: boolean, on: boolean): void {
+    obj.on('pointerover', () => this.showLoadout(root, u));
+    obj.on('pointerout', () => this.hideLoadout());
+    if (reserve && can) {
+      obj.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+        this.dragMoved = false;
+        this.dragCand = { unit: u.id, x: ptr.x, y: ptr.y };
+      });
+      obj.on('pointerup', () => {
+        if (this.dragMoved || this.busy) return;
+        if (on) {
+          this.clearSel();
+          this.refresh();
+        } else this.select({ kind: 'deploy', unit: u.id });
+      });
+    } else if (!reserve) obj.on('pointerup', () => this.clickFriend(u));
+  }
+
+  /** The squad as full cards in the place of the action hand. */
+  private drawUnitCards(root: Phaser.GameObjects.Container, signal: number): void {
+    const g = this.sim;
+    const squad = g.units.filter((u) => u.side === 'P' && !u.dead);
+    const n = squad.length;
+    const gap = 12;
+    const total = n * CARD_W + (n - 1) * gap;
+    const x0 = HAND_X0 + (HAND_W - total) / 2;
+    const picked = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
+    squad.forEach((u, i) => {
+      const reserve = u.lane === null && isLive(u);
+      const can = reserve && !this.busy && this.actions.some((a) => a.kind === 'deploy' && a.unit === u.id);
+      const on = picked === u.id;
+      const acting = !reserve && (this.chosenUnit === u.id || this.viewUnit === u.id);
+      const state = u.downed ? 'DOWNED' : on ? 'PICK A LANE' : can ? 'CLICK TO DEPLOY' : reserve ? 'WAITING' : `LANE ${u.lane! + 1}`;
+      const cx = x0 + i * (CARD_W + gap) + CARD_W / 2;
+      const cy = CARD_TOP + CARD_H / 2;
+      const outer = this.add.container(cx, cy);
+      const inner = makeUnitCard(this, { unit: u, signal, ready: can || acting, selected: on, state });
+      inner.y = on ? -28 : 0;
+      outer.add(inner);
+      outer.setSize(CARD_W, CARD_H);
+      outer.setInteractive({ useHandCursor: reserve ? can : true });
+      outer.on('pointerover', () => {
+        if (!on) this.tweens.add({ targets: inner, y: -14, duration: this.anim(100) });
+      });
+      outer.on('pointerout', () => {
+        if (!on) this.tweens.add({ targets: inner, y: 0, duration: this.anim(100) });
+      });
+      this.bindUnitPointer(root, outer, u, reserve, can, on);
+      root.add(outer);
+    });
+  }
+
+  private hideLoadout(): void {
+    this.loadoutPane?.destroy();
+    this.loadoutPane = null;
+  }
+
+  /** Hovering a unit shows its whole loadout where the acting unit panel is, until the pointer leaves. */
+  private showLoadout(root: Phaser.GameObjects.Container, u: Unit): void {
+    this.hideLoadout();
+    const signal = this.signal;
+    const p = makePanel(this, { x: PANEL.x, y: PANEL.y, w: PANEL.w, h: PANEL.h, bolts: true, scan: true, border: signal, borderWidth: 3 });
+    const lamp = this.add.graphics();
+    drawLamp(lamp, 24, 22, 7, signal);
+    p.add(lamp);
+    p.add(bodyText(this, 42, 22, 'UNIT LOADOUT', 16, palette.textMuted, { originY: 0.5, spacing: 0.14 }));
+    const W = PANEL.w - 44;
+    let y = 42;
+    const nm = stencilText(this, 22, y, u.name, 44, palette.text, { spacing: 0.04 });
+    if (nm.width > W) nm.setScale(W / nm.width);
+    p.add(nm);
+    y += nm.height * nm.scaleY;
+    const where = u.downed ? 'DOWNED' : u.lane === null ? 'IN RESERVE' : `LANE ${u.lane + 1}`;
+    const st: string[] = [];
+    if (u.stunned) st.push('STUNNED');
+    if (u.exposed) st.push('EXPOSED');
+    if (u.suppressed > 0) st.push(`SUPPRESSED ${u.suppressed}`);
+    if (u.burning > 0) st.push(`BURNING ${u.burning}`);
+    p.add(bodyText(this, 22, y, `${where} · TSC DROID${st.length ? ' · ' + st.join(' · ') : ''}`, 16, st.length || u.downed ? palette.danger : palette.textMuted, { wrap: W }));
+    y += 26;
+    const bar = this.add.graphics();
+    drawHpBar(bar, 22, y, W - 70, 18, u.hp, u.maxHp);
+    p.add(bar);
+    p.add(bodyText(this, 22 + W, y + 9, `${u.hp}/${u.maxHp}`, 19, palette.text, { originX: 1, originY: 0.5 }));
+    y += 28;
+    p.add(bodyText(this, 22, y, `SOAK ${u.armor + u.builtin} (ARMOR ${u.armor}/${u.armorMax} + BUILT-IN ${u.builtin})${u.ammoMax > 0 ? `   AMMO ${u.ammo}/${u.ammoMax}` : ''}`, 15, palette.bone, { wrap: W }));
+    y += 28;
+
+    // One block per piece of gear: what it does as a basic action, then the cards that need it.
+    const lo = loadoutOf(u.gear);
+    const limit = PANEL.h - 16;
+    const rule = this.add.graphics();
+    rule.fillStyle(signal, 1);
+    rule.fillRect(22, y, W, 2);
+    p.add(rule);
+    y += 10;
+    const lay = (size: number, dry: boolean, parent: Phaser.GameObjects.Container): number => {
+      let yy = y;
+      for (const e of lo) {
+        if (!dry) {
+          parent.add(bodyText(this, 22, yy, e.gear.toUpperCase(), size + 1, palette.text, { spacing: 0.06, weight: '700' }));
+          if (e.type) parent.add(bodyText(this, 22 + W, yy + 1, e.type.toUpperCase(), 12, palette.textMuted, { originX: 1, spacing: 0.14 }));
+        }
+        yy += size + 7;
+        for (const a of e.actions) {
+          const desc = `${a.dmg} damage to ${a.targets > 1 ? `up to ${a.targets} units` : 'one unit'}. Costs ${a.fuel} fuel${a.ammo ? ` and ${a.ammo} ammo` : ''}.`;
+          yy += flowInline(this, parent, 34, yy, W - 12, a.name, desc, size, signal, palette.text, { dry }).height + 2;
+        }
+        for (const d of e.cards) {
+          const desc = `${d.text.charAt(0).toUpperCase()}${d.text.slice(1)}.${d.playFuel ? ` Costs ${d.playFuel} fuel.` : ''}${d.ammoCost ? ` Uses ${d.ammoCost} ammo.` : ''}`;
+          yy += flowInline(this, parent, 34, yy, W - 12, d.name, desc, size, palette.bone, palette.textMuted, { dry }).height + 2;
+        }
+        yy += 6;
+      }
+      return yy;
+    };
+    let size = 16;
+    while (size > 12 && lay(size, true, p) > limit) size -= 1;
+    lay(size, false, p);
+    root.add(p);
+    this.loadoutPane = p;
   }
 
   private showTip(root: Phaser.GameObjects.Container, name: string, iid: number, cx: number, playable: boolean): void {
@@ -1644,6 +1809,7 @@ export class Combat extends ScreenScene {
     } else {
       this.busy = false;
       this.derive();
+      this.autoHand();
       this.rebuild();
     }
   }

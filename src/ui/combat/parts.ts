@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { CardDef } from '../../data/cards';
 import { mix, palette, rarityInfo } from '../../data/palette';
+import { loadoutOf } from '../../core/loadout';
 import type { Unit } from '../../sim/types';
 import { drawCardGlyph } from '../icons';
 import { bodyText, stencilText } from '../text';
@@ -435,6 +436,98 @@ export function makeCard(scene: Phaser.Scene, o: CardOpts): Phaser.GameObjects.C
     c.add([bg, tg]);
   }
 
+  return c;
+}
+
+export interface UnitCardOpts {
+  unit: Unit;
+  signal: number;
+  /** waiting in reserve and able to be deployed right now */
+  ready: boolean;
+  /** picked to deploy (or to act) */
+  selected: boolean;
+  /** printed in the footer: DEPLOY, LANE 2, DOWNED... */
+  state: string;
+}
+
+/** Cut a text object down with an ellipsis until it fits `max` pixels. */
+export function fitText(t: Phaser.GameObjects.Text, max: number): void {
+  let str = t.text;
+  while (t.width > max && str.length > 1) {
+    str = str.slice(0, -1);
+    t.setText(str.replace(/[ ·,.]+$/, '') + '…');
+  }
+}
+
+/**
+ * A squad member as a card the size of a hand card: name, HP, soak, ammo and the loadout (each piece of gear with what it
+ * lets the unit do). Container centered on the card; the caller adds the hit area.
+ */
+export function makeUnitCard(scene: Phaser.Scene, o: UnitCardOpts): Phaser.GameObjects.Container {
+  const u = o.unit;
+  const c = scene.add.container(0, 0);
+  const hx = -CARD_W / 2;
+  const hy = -CARD_H / 2;
+  const live = o.ready || o.selected;
+  const frame = u.downed ? palette.danger : live ? o.signal : palette.line;
+  const ink = live || u.lane !== null ? palette.text : palette.textMuted;
+  const soft = live ? palette.textMuted : palette.boneDim;
+  const g = scene.add.graphics();
+  g.fillStyle(palette.panelDeep, 1);
+  g.fillRect(hx, hy, CARD_W, CARD_H);
+  if (o.selected) {
+    g.lineStyle(3, o.signal, 0.12);
+    g.strokeRect(hx - 9, hy - 9, CARD_W + 18, CARD_H + 18);
+    g.lineStyle(3, o.signal, 0.28);
+    g.strokeRect(hx - 4.5, hy - 4.5, CARD_W + 9, CARD_H + 9);
+  }
+  g.lineStyle(o.selected ? 4.5 : 3, frame, 1);
+  g.strokeRect(hx + 1.5, hy + 1.5, CARD_W - 3, CARD_H - 3);
+  c.add(g);
+
+  const left = hx + 12;
+  const colW = CARD_W - 24;
+  const nm = stencilText(scene, left, hy + 9, u.name, 26, ink);
+  if (nm.width > colW) nm.setScale(colW / nm.width);
+  c.add(nm);
+
+  // HP.
+  const bar = scene.add.graphics();
+  drawHpBar(bar, left, hy + 46, colW - 52, 16, u.hp, u.maxHp);
+  c.add(bar);
+  c.add(bodyText(scene, left + colW, hy + 54, `${u.hp}/${u.maxHp}`, 17, ink, { originX: 1, originY: 0.5, weight: '700' }));
+
+  // Soak and ammo.
+  const soak = u.armor + u.builtin;
+  const stats = `SOAK ${soak}${u.ammoMax > 0 ? `   AMMO ${u.ammo}/${u.ammoMax}` : ''}`;
+  c.add(bodyText(scene, left, hy + 70, stats, 15, live ? palette.bone : soft, { spacing: 0.06, weight: '700' }));
+
+  // Loadout.
+  const lo = loadoutOf(u.gear);
+  const ruleCol = live ? o.signal : palette.line;
+  c.add(bodyText(scene, left, hy + 94, 'LOADOUT', 12, soft, { spacing: 0.2 }));
+  const rule = scene.add.graphics();
+  rule.fillStyle(ruleCol, 1);
+  rule.fillRect(left, hy + 110, colW, 2);
+  c.add(rule);
+  const rows = lo.length;
+  const top = hy + 116;
+  const room = hy + CARD_H - 34 - top;
+  const rowH = Math.min(38, Math.floor(room / Math.max(1, rows)));
+  lo.forEach((e, i) => {
+    const y = top + i * rowH;
+    const name = bodyText(scene, left, y, e.gear.toUpperCase(), 14, ink, { spacing: 0.04, weight: '700' });
+    fitText(name, colW);
+    c.add(name);
+    const parts = [...e.actions.map((a) => a.name), ...e.cards.map((d) => d.name)];
+    const sub = bodyText(scene, left, y + 17, parts.length ? parts.join(' · ') : e.type || 'passive', 12, soft);
+    fitText(sub, colW);
+    c.add(sub);
+  });
+
+  // Footer: what a click does.
+  const col = u.downed ? palette.danger : live ? o.signal : palette.textMuted;
+  c.add(bodyText(scene, 0, hy + CARD_H - 17, o.state, 14, col, { originX: 0.5, originY: 0.5, spacing: 0.2, weight: '700' }));
   return c;
 }
 
