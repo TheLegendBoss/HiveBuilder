@@ -65,6 +65,8 @@ export function createGame(scenario: Scenario, seed: number, opts: GameOptions =
     eptr: 0,
     results: [...RESULT_VALUES],
     result: null,
+    how: null,
+    first: 'P',
     nextId: 1,
     nextIid: 1,
     arrivals: 0,
@@ -227,18 +229,51 @@ function reapLinked(g: Game, ev: Ev[]): void {
   }
 }
 
+/** Is any enemy on the board, or still due to take its setup deployment? Reserve units only come in through a rally, so they do not count. */
+export function enemyHasForces(g: Game): boolean {
+  const startIds = new Set([...g.enemyStart, ...g.enemyAlso.map((a) => a.id)]);
+  return g.units.some((u) => u.side === 'E' && !u.dead && (u.lane !== null || startIds.has(u.id)));
+}
+
 export function checkResult(g: Game, ev: Ev[]): void {
   if (g.result) return;
   reapLinked(g, ev);
-  let result: 'win' | 'loss' | null = capturedCount(g, 'E') >= 2 ? 'win' : capturedCount(g, 'P') >= 2 ? 'loss' : null;
+  let result: 'win' | 'loss' | null = null;
+  let how: Game['how'] = null;
+  if (capturedCount(g, 'E') >= 2) {
+    result = 'win';
+    how = 'lanes';
+  } else if (capturedCount(g, 'P') >= 2) result = 'loss';
   const boss = g.scenario.bossTag;
   if (!result && boss) {
     const mine = g.units.filter((u) => u.side === 'E' && u.tags.includes(boss));
-    if (mine.length > 0 && mine.every((u) => u.dead)) result = 'win';
+    if (mine.length > 0 && mine.every((u) => u.dead)) {
+      result = 'win';
+      how = 'boss';
+    }
+  }
+  // Nobody left on their side and nobody due to arrive: the fight is over. Lane HP only matters while someone stands in the way.
+  if (!result && !inSetup(g) && !enemyHasForces(g)) {
+    result = 'win';
+    how = 'cleared';
   }
   if (result) {
     g.result = result;
+    g.how = how;
     ev.push({ t: 'result', result });
+  }
+}
+
+/** Close a full round: timers count down, burning ticks, and a hold-out scenario may end. */
+export function closeRound(g: Game, ev: Ev[]): void {
+  endRound(g, ev);
+  checkResult(g, ev);
+  const hold = g.scenario.surviveRounds;
+  if (!g.result && hold !== undefined && g.round >= g.scenario.setupRounds + hold) {
+    g.result = 'win';
+    g.how = 'held';
+    ev.push({ t: 'log', text: 'The reactor shuts down. The squad held.' });
+    ev.push({ t: 'result', result: 'win' });
   }
 }
 

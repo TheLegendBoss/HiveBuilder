@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { candidates, nextStep, pickActor, pickLane, pickTarget, pickVariant, unplayableReason, type Sel, type Step } from '../core/selection';
+import { candidates, needsConfirm, pickActor, pickLane, pickTarget, pickVariant, resolve, unplayableReason, type Sel, type Step } from '../core/selection';
 import { session } from '../core/session';
 import { cardDefs } from '../data/cards';
 import type { Force } from '../data/forces';
@@ -10,12 +10,15 @@ import { fuelAvailable, listActions, perform, suggestBurn } from '../sim/actions
 import { needsActor } from '../sim/cards';
 import { chooseAction } from '../sim/autoplay';
 import { enemyAct, enemyPlan } from '../sim/enemy';
+import { rollInitiative } from '../sim/initiative';
 import { createGame, inLane, inSetup, isLive, unitById } from '../sim/state';
-import { beginTurn } from '../sim/turn';
+import { beginEnemyTurn, beginTurn } from '../sim/turn';
 import type { Action, Ev, Game, Target, Unit } from '../sim/types';
 import { Button } from '../ui/Button';
 import { drawCable } from '../ui/Cable';
 import { makeCard, makeIntentBadge, makePile, makePlate, drawHpBar, CARD_H, CARD_W, type PlateMark } from '../ui/combat/parts';
+import { drawSuit } from '../ui/icons';
+import { toRef } from '../ui/layout';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import { drawHazardStrip, makePanel } from '../ui/Panel';
@@ -34,6 +37,7 @@ const PLATE_H = 96;
 const PANEL = { x: 1470, y: 92, w: 410, h: 568 };
 const LOG_Y = 668;
 const TRAY = { x: 40, y: 708, w: 1840, h: 364 };
+const LANE_BOTTOM = LANE_TOP + 578;
 const CARD_TOP = 772;
 const HAND_X0 = 190;
 const HAND_W = 1500;
@@ -62,21 +66,35 @@ export class Combat extends ScreenScene {
   private actions: Action[] = [];
   private step: Step | null = null;
   private focusIdx = 0;
-  private burnMode = false;
-  private burn: number[] | null = null;
+  /** hand cards marked to be burned for the pending action */
+  private burn: number[] = [];
   private cycleSet: number[] = [];
+  /** the squad member shown in the side panel (the last to act, or the last one clicked) */
   private viewUnit: number | null = null;
+  /** a squad member the player clicked on to act with; the next ability they pick uses this unit */
+  private chosenUnit: number | null = null;
   private busy = false;
+  /** the initiative roll is on screen */
+  private intro = false;
+  private initiative: Extract<Ev, { t: 'initiative' }> | null = null;
+  private fx: Phaser.GameObjects.Container | null = null;
+  private fxMs = 0;
+  /** a unit card the pointer is down on, and whether it has turned into a drag */
+  private dragCand: { unit: number; x: number; y: number } | null = null;
+  private dragging: { unit: number; ghost: Phaser.GameObjects.Container; hi: Phaser.GameObjects.Graphics } | null = null;
+  private dragMoved = false;
   private outcomeOpen = false;
   private showLog = false;
   private logLine = '';
   private logHistory: string[] = [];
   private fxQueue: Ev[] = [];
   private pos = new Map<number, Box>();
-  private laneBars = new Map<string, Box>();
+  /** where each lane's enemy half and squad half sit, for targeting and effects */
+  private laneBoxes = new Map<string, Box>();
   private cardBox = new Map<number, Box>();
   private tip: Phaser.GameObjects.Container | null = null;
   private gearBtn: Box | null = null;
+  private unitTiles = new Map<number, Box>();
 
   constructor() {
     super(SceneKeys.Combat);
@@ -104,37 +122,59 @@ export class Combat extends ScreenScene {
       this.sim = createGame(tscVsScavvers, this.seed);
     }
     this.sel = null;
-    this.burnMode = false;
-    this.burn = null;
+    this.burn = [];
     this.cycleSet = [];
     this.viewUnit = null;
-    this.busy = false;
+    this.chosenUnit = null;
+    this.busy = true;
+    this.intro = true;
     this.outcomeOpen = false;
     this.showLog = false;
     this.logHistory = [];
-    this.logLine = 'Fight started. Deploy a squad member into each lane.';
+    this.logLine = 'Rolling for initiative…';
     this.pos.clear();
     this.fxQueue = [];
-    this.absorb(beginTurn(this.sim));
+    this.fxMs = 0;
+    this.dragging = null;
+    this.dragCand = null;
+    this.fx = null;
+    this.absorb(rollInitiative(this.sim));
+    this.initiative = this.fxQueue.find((e): e is Extract<Ev, { t: 'initiative' }> => e.t === 'initiative') ?? null;
+    this.fxQueue = [];
+    if (this.sim.first === 'P') this.absorb(beginTurn(this.sim));
     this.derive();
     this.input.keyboard?.on('keydown', this.onKey, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onKey, this));
+    this.input.on('pointermove', this.onPointerMove, this);
+    this.input.on('pointerup', this.onPointerUp, this);
+    this.input.on('pointerdown', this.onPointerDown, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown', this.onKey, this);
+      this.input.off('pointermove', this.onPointerMove, this);
+      this.input.off('pointerup', this.onPointerUp, this);
+      this.input.off('pointerdown', this.onPointerDown, this);
+    });
+    // The first build has to exist before the roll can draw on top of it.
+    this.time.delayedCall(60, () => this.playIntro());
   }
 
   // ---------- state
 
   private derive(): void {
     this.actions = listActions(this.sim);
-    this.step = this.sel ? nextStep(this.actions, this.sel) : null;
-    if (this.sel && this.step?.step === 'none') this.clearSel();
+    if (this.sel) {
+      const r = resolve(this.actions, this.sel);
+      this.sel = r.sel;
+      this.step = r.step;
+      if (r.step.step === 'none') this.clearSel();
+    } else this.step = null;
+    this.trimBurn();
   }
 
   private clearSel(): void {
     this.sel = null;
     this.step = null;
     this.focusIdx = 0;
-    this.burnMode = false;
-    this.burn = null;
+    this.burn = [];
     this.cycleSet = [];
   }
 
@@ -157,8 +197,10 @@ export class Combat extends ScreenScene {
     }
   }
 
+  /** Re-read the legal actions, fire the pending one if nothing is left to choose, and redraw. */
   private refresh(): void {
     this.derive();
+    if (this.tryFire()) return;
     this.rebuild();
   }
 
@@ -180,22 +222,67 @@ export class Combat extends ScreenScene {
     else if (o.k === 'lane') this.sel = pickLane(this.sel, o.lane);
     else this.sel = pickVariant(this.sel, o.v);
     this.focusIdx = 0;
-    this.burn = null;
     this.refresh();
   }
 
-  private select(item: Sel['item']): void {
+  private select(item: Sel['item'], actor?: number): void {
     if (this.busy || this.sim.result) return;
     this.clearSel();
-    this.sel = { item, targets: [] };
+    this.sel = { item, targets: [], ...(actor !== undefined ? { actor } : {}) };
     this.refresh();
+  }
+
+  /** The card in hand the pending play would use up. It can never be burned for itself. */
+  private playIid(): number | undefined {
+    if (!this.sel) return undefined;
+    const a = this.readyAction();
+    if (a) return a.cardIid;
+    if (this.sel.item.kind !== 'card') return undefined;
+    return candidates(this.actions, this.sel)[0]?.cardIid;
+  }
+
+  /** Fuel the pending action costs. Before it is fully chosen: the least any version of it costs. */
+  private fuelNeed(): number {
+    if (!this.sel || this.sel.item.kind === 'cycle') return 0;
+    const a = this.readyAction();
+    if (a) return a.fuel;
+    const c = candidates(this.actions, this.sel);
+    return c.length ? Math.min(...c.map((x) => x.fuel)) : 0;
+  }
+
+  private fuelOf(iid: number): number {
+    const c = this.sim.hand.find((x) => x.iid === iid);
+    return c ? (cardDefs[c.name]?.fuelValue ?? 1) : 0;
+  }
+
+  /** Drop marks that no longer make sense: cards that left the hand, the card being played, fuel already covered. */
+  private trimBurn(): void {
+    const need = this.fuelNeed();
+    const play = this.playIid();
+    const out: number[] = [];
+    let total = 0;
+    for (const iid of this.burn) {
+      if (total >= need) break;
+      if (iid === play || !this.sim.hand.some((c) => c.iid === iid)) continue;
+      out.push(iid);
+      total += this.fuelOf(iid);
+    }
+    this.burn = out;
   }
 
   private selectCard(i: number): void {
     const c = this.sim.hand[i];
-    if (!c) return;
-    if (this.burnMode || this.sel?.item.kind === 'cycle') {
-      this.toggleSet(c.iid);
+    if (!c || this.busy || this.sim.result) return;
+    if (this.sel?.item.kind === 'cycle') {
+      this.toggleCycle(c.iid);
+      return;
+    }
+    // An action that costs fuel is waiting: the hand is now the place to pick what to burn.
+    if (this.sel && this.fuelNeed() > 0) {
+      if (c.iid === this.playIid()) {
+        this.clearSel();
+        this.refresh();
+      } else this.toggleBurn(c.iid);
       return;
     }
     if (this.sel?.item.kind === 'card' && this.sel.item.name === c.name) {
@@ -208,21 +295,29 @@ export class Combat extends ScreenScene {
       this.rebuild();
       return;
     }
-    this.select({ kind: 'card', name: c.name });
+    const who = this.chosenUnit;
+    const pre = who !== null && this.actions.some((a) => a.kind === 'play' && a.card === c.name && a.actor === who) ? who : undefined;
+    this.select({ kind: 'card', name: c.name }, pre);
   }
 
-  private toggleSet(iid: number): void {
-    const playedIid = this.readyAction()?.cardIid;
-    if (iid === playedIid) return;
-    if (this.sel?.item.kind === 'cycle') {
-      const at = this.cycleSet.indexOf(iid);
-      if (at >= 0) this.cycleSet.splice(at, 1);
-      else if (this.cycleSet.length < this.sim.scenario.cycleLimit) this.cycleSet.push(iid);
-    } else {
-      const cur = this.currentBurn();
-      const at = cur.indexOf(iid);
-      this.burn = at >= 0 ? cur.filter((x) => x !== iid) : [...cur, iid];
+  private toggleBurn(iid: number): void {
+    const at = this.burn.indexOf(iid);
+    if (at >= 0) this.burn.splice(at, 1);
+    else {
+      if (this.burnValue(this.burn) >= this.fuelNeed()) {
+        this.logLine = 'Fuel is covered. Click a marked card to unmark it.';
+        this.rebuild();
+        return;
+      }
+      this.burn.push(iid);
     }
+    this.refresh();
+  }
+
+  private toggleCycle(iid: number): void {
+    const at = this.cycleSet.indexOf(iid);
+    if (at >= 0) this.cycleSet.splice(at, 1);
+    else if (this.cycleSet.length < this.sim.scenario.cycleLimit) this.cycleSet.push(iid);
     this.rebuild();
   }
 
@@ -230,19 +325,44 @@ export class Combat extends ScreenScene {
     return this.step?.step === 'ready' ? this.step.action : null;
   }
 
-  private currentBurn(): number[] {
-    const a = this.readyAction();
-    if (!a || a.fuel <= 0) return [];
-    return this.burn ?? suggestBurn(this.sim, a, this.actions);
-  }
-
   private burnValue(ids: number[]): number {
-    return ids.reduce((s, id) => {
-      const c = this.sim.hand.find((x) => x.iid === id);
-      return s + (c ? (cardDefs[c.name]?.fuelValue ?? 1) : 0);
-    }, 0);
+    return ids.reduce((sum, id) => sum + this.fuelOf(id), 0);
   }
 
+  /** The marked cards, topped up from the game's suggestion when they do not cover the cost. */
+  private fillBurn(a: Action, need: number = a.fuel): number[] {
+    const marked = [...this.burn];
+    let have = this.burnValue(marked);
+    const add = (iid: number): void => {
+      if (have >= need || marked.includes(iid) || iid === a.cardIid) return;
+      marked.push(iid);
+      have += this.fuelOf(iid);
+    };
+    for (const iid of suggestBurn(this.sim, { ...a, fuel: need }, this.actions)) add(iid);
+    for (const c of this.sim.hand) add(c.iid);
+    return marked;
+  }
+
+  /** B: burn the cards the game would pick, for the fuel still owed. */
+  private autoBurn(): void {
+    const need = this.fuelNeed();
+    const base = this.readyAction() ?? (this.sel ? candidates(this.actions, this.sel)[0] : undefined);
+    if (!base || need <= 0) return;
+    this.burn = this.fillBurn(base, need);
+    this.refresh();
+  }
+
+  /** Perform the pending action as soon as nothing is left to choose and the fuel is covered. */
+  private tryFire(): boolean {
+    if (this.busy || this.sim.result || !this.sel || !this.step) return false;
+    if (this.step.step !== 'ready' || needsConfirm(this.step, this.sel)) return false;
+    const a = this.step.action;
+    if (a.fuel > 0 && this.burnValue(this.burn) < a.fuel) return false;
+    this.perform(a, a.fuel > 0 ? [...this.burn] : undefined);
+    return true;
+  }
+
+  /** The Confirm button and Enter: for the optional second target, the discard picks, or burning the suggestion. */
   private confirm(): void {
     if (this.busy || this.sim.result || !this.sel) return;
     const a = this.readyAction();
@@ -255,15 +375,13 @@ export class Combat extends ScreenScene {
         return;
       }
       cards = this.cycleSet;
-    } else if (a.fuel > 0) {
-      cards = this.currentBurn();
-      if (this.burnValue(cards) < a.fuel) {
-        this.logLine = `Need ${a.fuel} fuel: burn more cards.`;
-        this.rebuild();
-        return;
-      }
-    }
+    } else if (a.fuel > 0) cards = this.fillBurn(a);
     this.perform(a, cards);
+  }
+
+  /** How long to wait before the next side moves: the usual beat, or long enough for the effects to play out. */
+  private beat(base: number): number {
+    return this.anim(Math.max(base, this.fxMs + 220));
   }
 
   private perform(a: Action, cards?: number[]): void {
@@ -276,24 +394,26 @@ export class Combat extends ScreenScene {
       return;
     }
     if (a.actor !== undefined) this.viewUnit = a.actor;
+    this.chosenUnit = null;
     this.clearSel();
     this.absorb(ev);
     this.busy = true;
     this.derive();
     this.rebuild();
-    if (this.sim.result) this.time.delayedCall(this.anim(900), () => this.openOutcome());
-    else this.time.delayedCall(this.anim(750), () => this.enemyTurn());
+    if (this.sim.result) this.time.delayedCall(this.beat(900), () => this.openOutcome());
+    else this.time.delayedCall(this.beat(750), () => this.enemyTurn());
   }
 
   private enemyTurn(): void {
+    this.absorb(beginEnemyTurn(this.sim));
     this.absorb(enemyAct(this.sim));
     this.derive();
     this.rebuild();
     if (this.sim.result) {
-      this.time.delayedCall(this.anim(900), () => this.openOutcome());
+      this.time.delayedCall(this.beat(900), () => this.openOutcome());
       return;
     }
-    this.time.delayedCall(this.anim(550), () => {
+    this.time.delayedCall(this.beat(550), () => {
       this.absorb(beginTurn(this.sim));
       this.busy = false;
       this.derive();
@@ -336,13 +456,19 @@ export class Combat extends ScreenScene {
       return;
     }
     if (key === 'Escape') {
-      if (this.burnMode) {
-        this.burnMode = false;
-        this.rebuild();
+      if (this.intro) {
+        this.endIntro();
       } else if (this.sel) {
         this.clearSel();
         this.refresh();
+      } else if (this.chosenUnit !== null) {
+        this.chosenUnit = null;
+        this.rebuild();
       } else this.openPause();
+      return;
+    }
+    if (this.intro) {
+      this.endIntro();
       return;
     }
     if (this.busy || this.sim.result) return;
@@ -379,17 +505,16 @@ export class Combat extends ScreenScene {
       return;
     }
     if (key.toLowerCase() === 'b') {
-      if (this.step?.step === 'ready' && this.step.action.fuel > 0) {
-        this.burnMode = !this.burnMode;
-        this.rebuild();
-      }
+      this.autoBurn();
       return;
     }
     if (key.toLowerCase() === 'g') {
-      const gear = [...new Set(this.actions.filter((a) => a.kind === 'basic').map((a) => a.label))];
+      // Gear actions of the clicked unit if there is one, else of everyone.
+      const mine = this.chosenUnit !== null ? this.actions.filter((a) => a.kind === 'basic' && a.actor === this.chosenUnit) : [];
+      const gear = [...new Set((mine.length ? mine : this.actions.filter((a) => a.kind === 'basic')).map((a) => a.label))];
       if (!gear.length) return;
       const cur = this.sel?.item.kind === 'gear' ? gear.indexOf(this.sel.item.label) : -1;
-      this.select({ kind: 'gear', label: gear[(cur + 1) % gear.length]! });
+      this.select({ kind: 'gear', label: gear[(cur + 1) % gear.length]! }, mine.length ? this.chosenUnit! : undefined);
       return;
     }
     if (key.toLowerCase() === 'r') {
@@ -439,6 +564,7 @@ export class Combat extends ScreenScene {
   // ---------- building
 
   protected build(root: Phaser.GameObjects.Container): void {
+    this.ensureFx();
     textContext.dense = true;
     try {
       this.buildAll(root);
@@ -447,11 +573,23 @@ export class Combat extends ScreenScene {
     }
   }
 
+  /** Effects live on their own layer so a redraw of the screen never cuts them short. */
+  private ensureFx(): Phaser.GameObjects.Container {
+    if (!this.fx || !this.fx.active) {
+      this.fx = this.add.container(0, 0);
+      this.fx.setDepth(100);
+    }
+    this.fx.setPosition(this.L.offsetX, this.L.offsetY);
+    this.fx.setScale(this.L.scale);
+    return this.fx;
+  }
+
   private buildAll(root: Phaser.GameObjects.Container): void {
     this.tip = null;
     this.gearBtn = null;
     this.cardBox.clear();
-    this.laneBars.clear();
+    this.laneBoxes.clear();
+    this.unitTiles.clear();
     const signal = this.signal;
     const g = this.sim;
     const opts = this.options();
@@ -471,7 +609,7 @@ export class Combat extends ScreenScene {
     this.drawPanel(root, signal, opts, focus);
     this.drawCables(cableGfx, signal);
     if (this.showLog) this.drawLogOverlay(root, signal);
-    this.playFx(root);
+    this.playFx();
     if (this.outcomeOpen) this.showOutcome(root);
   }
 
@@ -498,6 +636,33 @@ export class Combat extends ScreenScene {
     const r1 = bodyText(this, 1880, 10, `RESULTS DECK ${g.results.length}/52`, 18, palette.textMuted, { originX: 1, spacing: 0.06 });
     root.add(r1);
     root.add(bodyText(this, 1880, r1.y + r1.height + 4, `SEED ${this.seed} · DEPTH 1 · MIDDLE HIVE`, 16, palette.textMuted, { originX: 1, spacing: 0.06 }));
+    this.drawInitiativeChips(root, signal);
+  }
+
+  /** The two initiative cards from the opening roll, the winner filled. */
+  private drawInitiativeChips(root: Phaser.GameObjects.Container, signal: number): void {
+    const ini = this.initiative;
+    if (!ini || this.intro) return;
+    const chips: Array<{ label: string; d: { value: number; suit: number }; first: boolean }> = [
+      { label: 'SQUAD', d: ini.squad, first: ini.first === 'P' },
+      { label: 'ENEMY', d: ini.enemy, first: ini.first === 'E' }
+    ];
+    root.add(bodyText(this, 1060, 12, `INITIATIVE · ${ini.first === 'P' ? 'SQUAD' : 'ENEMY'} FIRST`, 14, palette.textMuted, { spacing: 0.12 }));
+    chips.forEach((c, i) => {
+      const x = 1060 + i * 190;
+      const y = 36;
+      const gg = this.add.graphics();
+      if (c.first) {
+        gg.fillStyle(signal, 1);
+        gg.fillRect(x, y, 180, 40);
+      } else {
+        gg.lineStyle(1.5, palette.line, 1);
+        gg.strokeRect(x, y, 180, 40);
+      }
+      drawSuit(gg, c.d.suit, x + 152, y + 20, 18, c.first ? palette.bg : palette.textMuted);
+      root.add(gg);
+      root.add(bodyText(this, x + 12, y + 20, `${c.label} ${c.d.value}`, 18, c.first ? palette.bg : palette.textMuted, { originY: 0.5, spacing: 0.06 }));
+    });
   }
 
   private drawLaneBg(root: Phaser.GameObjects.Container, L: number): void {
@@ -523,14 +688,34 @@ export class Combat extends ScreenScene {
     const x0 = LANE_X[L]!;
     const targetStep = this.step?.step === 'target' || (this.step?.step === 'ready' && opts.length > 0);
     const laneChoice = opts.find((o) => o.k === 'lane' && o.lane === L);
+    const laneTarget = opts.find((o): o is Extract<Opt, { k: 'target' }> => o.k === 'target' && o.t.k === 'lane' && o.t.side === 'E' && o.t.lane === L);
+    const foes = inLane(g, 'E', L);
+    const enemyHalf: Box = { x: x0, y: LANE_TOP, w: LANE_W, h: FRONT_Y - LANE_TOP };
+    const squadHalf: Box = { x: x0, y: FRONT_Y + 14, w: LANE_W, h: LANE_BOTTOM - FRONT_Y - 14 };
+    this.laneBoxes.set(`E${L}`, enemyHalf);
+    this.laneBoxes.set(`P${L}`, squadHalf);
+
+    // A lane as a target (its HP, or everything standing in it): the whole enemy half lights up and is the button.
+    // It sits under the plates, so a plate that is itself a target still wins the click.
+    if (laneTarget) {
+      const isFocus = focus?.k === 'target' && focus.t.k === 'lane' && focus.t.lane === L;
+      const z = this.add.graphics();
+      z.fillStyle(signal, isFocus ? 0.2 : 0.1);
+      z.fillRect(enemyHalf.x, enemyHalf.y, enemyHalf.w, enemyHalf.h);
+      z.lineStyle(isFocus ? 6 : 4, signal, 1);
+      z.strokeRect(x0 + 3, LANE_TOP + 3, LANE_W - 6, enemyHalf.h - 6);
+      root.add(z);
+      const hit = this.add.zone(x0 + LANE_W / 2, enemyHalf.y + enemyHalf.h / 2, enemyHalf.w, enemyHalf.h).setInteractive({ useHandCursor: true });
+      hit.on('pointerup', () => this.pickOption(laneTarget));
+      root.add(hit);
+    }
 
     // Enemy lane HP.
     const hdr = stencilText(this, x0 + 14, LANE_TOP + 8, `Lane ${L + 1}`, 26, palette.textMuted, { spacing: 0.08 });
     root.add(hdr);
-    this.drawLaneHp(root, 'E', L, LANE_TOP + 20, x0 + 14 + hdr.width + 14, signal, opts, focus);
+    this.drawLaneHp(root, 'E', L, LANE_TOP + 20, x0 + 14 + hdr.width + 14, signal, !!laneTarget, foes.length > 0);
 
     // Enemy plates.
-    const foes = inLane(g, 'E', L);
     this.placePlates(root, foes, x0, ENEMY_ZONE_Y, true, opts, focus, nextUnit, targetStep);
 
     // Player plates.
@@ -538,18 +723,23 @@ export class Combat extends ScreenScene {
     this.placePlates(root, friends, x0, PLAYER_ZONE_Y, false, opts, focus, null, targetStep);
 
     // Your lane HP.
-    this.drawLaneHp(root, 'P', L, LANE_TOP + 334, x0 + 14, signal, opts, focus);
+    this.drawLaneHp(root, 'P', L, LANE_TOP + 334, x0 + 14, signal, false, false);
 
     // Deploy drop zone.
     if (laneChoice) {
+      const hot = this.dragging !== null;
       const z = this.add.graphics();
       const isFocus = focus?.k === 'lane' && focus.lane === L;
+      z.fillStyle(signal, hot || isFocus ? 0.12 : 0.05);
+      z.fillRect(x0 + 4, PLAYER_ZONE_Y - 4, LANE_W - 8, 214);
       z.lineStyle(isFocus ? 4.5 : 3, signal, 1);
       z.strokeRect(x0 + 4, PLAYER_ZONE_Y - 4, LANE_W - 8, 214);
       root.add(z);
       root.add(bodyText(this, x0 + LANE_W / 2, PLAYER_ZONE_Y + 100, `DEPLOY HERE (${L + 1})`, 22, signal, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
       const hit = this.add.zone(x0 + LANE_W / 2, PLAYER_ZONE_Y + 102, LANE_W - 8, 212).setInteractive({ useHandCursor: true });
-      hit.on('pointerup', () => this.pickOption({ k: 'lane', lane: L }));
+      hit.on('pointerup', () => {
+        if (!this.dragMoved) this.pickOption({ k: 'lane', lane: L });
+      });
       root.add(hit);
     }
   }
@@ -561,45 +751,34 @@ export class Combat extends ScreenScene {
     cy: number,
     labelX: number,
     signal: number,
-    opts: Opt[],
-    focus: Opt | null
+    asTarget: boolean,
+    hasFoes: boolean
   ): void {
     const g = this.sim;
     const hp = g.laneHP[side][L]!;
     const max = g.scenario.battlefield.laneHp[L]!;
-    const asTarget = side === 'E' ? opts.find((o) => o.k === 'target' && o.t.k === 'lane' && o.t.lane === L) : undefined;
-    const isFocus = !!asTarget && focus?.k === 'target' && focus.t.k === 'lane' && focus.t.lane === L;
-    const open = side === 'E' && inLane(g, 'E', L).length === 0 && g.round > g.scenario.setupRounds;
+    const open = side === 'E' && !hasFoes && g.round > g.scenario.setupRounds;
     let label = side === 'E' ? 'ENEMY HP' : 'YOUR HP';
     let color: number = palette.textMuted;
     if (hp === 0) {
       label = side === 'E' ? 'CAPTURED' : 'LOST';
       color = side === 'E' ? signal : palette.danger;
     } else if (asTarget) {
-      label = 'TARGET';
+      label = hasFoes ? 'TARGET · EVERY ENEMY HERE' : 'TARGET · LANE HP';
       color = signal;
     } else if (open) {
       label = 'OPEN';
       color = palette.bone;
     }
     const x0 = LANE_X[L]!;
-    root.add(bodyText(this, labelX, cy, label, 14, color, { originY: 0.5, spacing: 0.08 }));
+    root.add(bodyText(this, labelX, cy, label, asTarget ? 15 : 14, color, { originY: 0.5, spacing: 0.08, weight: asTarget ? '700' : undefined }));
     const count = bodyText(this, x0 + LANE_W - 14, cy, `${hp}/${max}`, 16, palette.text, { originX: 1, originY: 0.5 });
     root.add(count);
-    const bar: Box = { x: count.x - count.width - 10 - 120, y: cy - 8, w: 120, h: 16 };
+    const barW = asTarget ? 70 : 120;
+    const bar: Box = { x: count.x - count.width - 10 - barW, y: cy - 8, w: barW, h: 16 };
     const gfx = this.add.graphics();
-    if (asTarget) {
-      gfx.lineStyle(isFocus ? 4.5 : 3, signal, 1);
-      gfx.strokeRect(bar.x - 6, bar.y - 6, bar.w + 12, bar.h + 12);
-    }
     drawHpBar(gfx, bar.x, bar.y, bar.w, bar.h, hp, max);
     root.add(gfx);
-    this.laneBars.set(`${side}${L}`, bar);
-    if (asTarget) {
-      const hit = this.add.zone(bar.x + bar.w / 2, bar.y + bar.h / 2, bar.w + 20, bar.h + 20).setInteractive({ useHandCursor: true });
-      hit.on('pointerup', () => this.pickOption(asTarget));
-      root.add(hit);
-    }
   }
 
   private placePlates(
@@ -644,10 +823,11 @@ export class Combat extends ScreenScene {
         compact,
         onClick: () => {
           if (choice) this.pickOption(choice);
-          else if (!enemy) {
-            this.viewUnit = u.id;
-            this.rebuild();
-          }
+          else if (enemy) {
+            // A lane that is a target takes the click anywhere in its box, plates included.
+            const lane = opts.find((o) => o.k === 'target' && o.t.k === 'lane' && o.t.side === 'E' && o.t.lane === u.lane);
+            if (lane) this.pickOption(lane);
+          } else this.clickFriend(u);
         }
       });
       root.add(plate);
@@ -656,6 +836,13 @@ export class Combat extends ScreenScene {
         root.add(this.intentBadge(u, px, py - 24, w, nextUnit === u.id));
       }
     });
+  }
+
+  /** Clicking one of your own units picks it to act: its abilities show in the side panel and the next one you pick is its. */
+  private clickFriend(u: Unit): void {
+    this.viewUnit = u.id;
+    if (!this.sel && !this.busy) this.chosenUnit = this.chosenUnit === u.id ? null : u.id;
+    this.rebuild();
   }
 
   private stepActor(): number | null {
@@ -700,32 +887,8 @@ export class Combat extends ScreenScene {
 
   private drawTray(root: Phaser.GameObjects.Container, signal: number): void {
     const g = this.sim;
-    // Reserve row.
-    const resLabel = bodyText(this, HAND_X0, TRAY.y + 14, 'RESERVE', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 });
-    root.add(resLabel);
-    let rx = HAND_X0 + resLabel.width + 16;
-    const selDeploy = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
-    for (const u of this.reserve()) {
-      const w = 150;
-      const on = selDeploy === u.id;
-      const chip = this.add.container(rx + w / 2, TRAY.y + 14);
-      const gg = this.add.graphics();
-      gg.fillStyle(on ? mix(signal, palette.bg, 0.85) : palette.panelDeep, 1);
-      gg.fillRect(-w / 2, -12, w, 24);
-      gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.line, 1);
-      gg.strokeRect(-w / 2, -12, w, 24);
-      chip.add(gg);
-      const t = bodyText(this, 0, 0, u.name.toUpperCase(), 16, palette.text, { originX: 0.5, originY: 0.5 });
-      if (t.width > w - 14) t.setScale((w - 14) / t.width);
-      chip.add(t);
-      chip.setSize(w, 24);
-      chip.setInteractive({ useHandCursor: true });
-      chip.on('pointerup', () => (on ? (this.clearSel(), this.refresh()) : this.select({ kind: 'deploy', unit: u.id })));
-      root.add(chip);
-      rx += w + 12;
-    }
-    if (!this.reserve().length) root.add(bodyText(this, rx, TRAY.y + 14, 'ALL DEPLOYED', 16, palette.textMuted, { originY: 0.5 }));
-    root.add(bodyText(this, HAND_X0 + HAND_W, TRAY.y + 14, `HAND ${g.hand.length}/${g.scenario.handSize}`, 16, palette.textMuted, { originX: 1, originY: 0.5, spacing: 0.12 }));
+    this.drawUnitHand(root, signal);
+    root.add(bodyText(this, HAND_X0 + HAND_W, TRAY.y + 14, `ACTION HAND ${g.hand.length}/${g.scenario.handSize}`, 16, palette.textMuted, { originX: 1, originY: 0.5, spacing: 0.12 }));
 
     root.add(makePile(this, TRAY.x + 26, CARD_TOP + 10, 'DECK', g.deck.length, signal));
     root.add(makePile(this, TRAY.x + TRAY.w - 138, CARD_TOP + 10, 'DISCARD', g.discard.length, palette.bone));
@@ -735,37 +898,98 @@ export class Combat extends ScreenScene {
     const gap = 12;
     const total = n * CARD_W + (n - 1) * gap;
     const x0 = HAND_X0 + (HAND_W - total) / 2;
-    const ready = this.readyAction();
-    const burning = new Set(this.burnMode || (ready && ready.fuel > 0) ? this.currentBurn() : []);
+    const marked = new Set(this.burn);
     const cycling = this.sel?.item.kind === 'cycle';
-    const selCard = this.sel?.item.kind === 'card' ? this.sel.item.name : null;
-    let selIid = -1;
-    if (selCard) selIid = (ready?.cardIid ?? g.hand.find((c) => c.name === selCard)?.iid) ?? -1;
+    // An action that costs fuel is waiting: every other card in hand is a candidate to burn.
+    const need = this.fuelNeed();
+    const awaiting = !this.busy && !!this.sel && !cycling && need > 0 && this.burnValue(this.burn) < need;
+    const playIid = this.sel?.item.kind === 'card' ? this.playIid() : undefined;
     g.hand.forEach((c, i) => {
       const def = cardDefs[c.name]!;
       const cx = x0 + i * (CARD_W + gap) + CARD_W / 2;
       const cy = CARD_TOP + CARD_H / 2;
-      const isSel = c.iid === selIid;
+      const isSel = c.iid === playIid;
       const playable = !this.busy && this.actions.some((a) => a.kind === 'play' && a.card === c.name);
-      const tag = cycling && this.cycleSet.includes(c.iid) ? 'DISCARD' : burning.has(c.iid) ? 'BURN' : isSel && ready ? 'PLAYING' : null;
+      const tag = cycling && this.cycleSet.includes(c.iid) ? 'DISCARD' : marked.has(c.iid) ? 'BURN' : isSel && this.sel ? 'PLAYING' : awaiting ? 'BURN?' : null;
       const outer = this.add.container(cx, cy);
-      const inner = makeCard(this, { def, key: String(i + 1), signal, selected: isSel, playable: playable || cycling || this.burnMode, tag, focus: false });
-      inner.y = isSel ? -28 : 0;
+      const inner = makeCard(this, { def, key: String(i + 1), signal, selected: isSel, playable: playable || cycling || awaiting || marked.has(c.iid), tag, focus: false });
+      inner.y = isSel || marked.has(c.iid) ? -28 : 0;
       outer.add(inner);
       outer.setSize(CARD_W, CARD_H);
       outer.setInteractive({ useHandCursor: true });
       outer.on('pointerover', () => {
-        if (!isSel) this.tweens.add({ targets: inner, y: -14, duration: this.anim(100) });
+        if (!isSel && !marked.has(c.iid)) this.tweens.add({ targets: inner, y: -14, duration: this.anim(100) });
         this.showTip(root, c.name, c.iid, cx, playable);
       });
       outer.on('pointerout', () => {
-        if (!isSel) this.tweens.add({ targets: inner, y: 0, duration: this.anim(100) });
+        if (!isSel && !marked.has(c.iid)) this.tweens.add({ targets: inner, y: 0, duration: this.anim(100) });
         this.tip?.destroy();
         this.tip = null;
       });
       outer.on('pointerup', () => this.selectCard(i));
       root.add(outer);
       this.cardBox.set(c.iid, { x: cx, y: cy - (isSel ? 28 : 0) - CARD_H / 2, w: CARD_W, h: CARD_H });
+    });
+  }
+
+  /**
+   * The squad as a hand of unit cards. Units in reserve are the ones you can play: click one and then a
+   * lane, or drag it onto a lane. Units already on the field stay in the row, dimmed, with their lane.
+   */
+  private drawUnitHand(root: Phaser.GameObjects.Container, signal: number): void {
+    const g = this.sim;
+    const squad = g.units.filter((u) => u.side === 'P' && !u.dead);
+    const y = TRAY.y + 8;
+    const h = 50;
+    const gap = 10;
+    const maxW = 1290;
+    const w = Math.min(250, Math.floor((maxW - (squad.length - 1) * gap) / Math.max(1, squad.length)));
+    const inReserve = squad.filter((u) => u.lane === null && isLive(u)).length;
+    root.add(bodyText(this, TRAY.x + 22, y + 12, 'UNIT HAND', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 }));
+    root.add(bodyText(this, TRAY.x + 22, y + 34, inReserve ? `${inReserve} TO DEPLOY` : 'ALL DEPLOYED', 14, inReserve ? signal : palette.textMuted, { originY: 0.5, spacing: 0.08 }));
+    const picked = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
+    squad.forEach((u, i) => {
+      const x = HAND_X0 + i * (w + gap);
+      const reserve = u.lane === null && isLive(u);
+      const can = reserve && this.actions.some((a) => a.kind === 'deploy' && a.unit === u.id);
+      const on = picked === u.id;
+      const viewed = !reserve && (this.chosenUnit === u.id || this.viewUnit === u.id);
+      const tile = this.add.container(x + w / 2, y + h / 2);
+      const gg = this.add.graphics();
+      gg.fillStyle(on ? mix(signal, palette.bg, 0.85) : palette.panelDeep, 1);
+      gg.fillRect(-w / 2, -h / 2, w, h);
+      gg.lineStyle(on ? 4 : can ? 2.5 : viewed ? 2.5 : 1.5, on || can || viewed ? signal : palette.line, 1);
+      gg.strokeRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2);
+      tile.add(gg);
+      const tag = u.downed ? 'DOWNED' : reserve ? (can ? 'DEPLOY' : 'WAIT') : `LANE ${u.lane! + 1}`;
+      const tagCol = u.downed ? palette.danger : can ? signal : palette.textMuted;
+      const tg = bodyText(this, w / 2 - 10, -h / 2 + 15, tag, 14, tagCol, { originX: 1, originY: 0.5, spacing: 0.08 });
+      const nm = stencilText(this, -w / 2 + 10, -h / 2 + 4, u.name, 22, reserve || on ? palette.text : palette.textMuted, { spacing: 0.04 });
+      const room = w - 20 - tg.width - 8;
+      if (nm.width > room) nm.setScale(room / nm.width);
+      tile.add([nm, tg]);
+      const bar = this.add.graphics();
+      drawHpBar(bar, -w / 2 + 10, h / 2 - 17, w - 70, 9, u.hp, u.maxHp);
+      tile.add(bar);
+      tile.add(bodyText(this, w / 2 - 10, h / 2 - 12, `${u.hp}/${u.maxHp}`, 14, palette.text, { originX: 1, originY: 0.5 }));
+      tile.setSize(w, h);
+      tile.setAlpha(reserve ? 1 : 0.7);
+      tile.setInteractive({ useHandCursor: reserve ? can : true });
+      if (reserve && can) {
+        tile.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+          this.dragMoved = false;
+          this.dragCand = { unit: u.id, x: ptr.x, y: ptr.y };
+        });
+        tile.on('pointerup', () => {
+          if (this.dragMoved || this.busy) return;
+          if (on) {
+            this.clearSel();
+            this.refresh();
+          } else this.select({ kind: 'deploy', unit: u.id });
+        });
+      } else if (!reserve) tile.on('pointerup', () => this.clickFriend(u));
+      root.add(tile);
+      this.unitTiles.set(u.id, { x, y, w, h });
     });
   }
 
@@ -846,15 +1070,18 @@ export class Combat extends ScreenScene {
       line('NO UNIT DEPLOYED YET', 18, palette.textMuted, 12);
     }
 
-    // Fuel pips: fuel the hand can pay, with the pending cost outlined.
-    const ready = this.readyAction();
+    // Fuel pips: fuel the hand can pay. Cards marked to burn fill red; the rest of the pending cost is outlined.
+    const need = this.fuelNeed();
+    const have = this.burnValue(this.burn);
     const fuelHand = g.hand.reduce((s2, c) => s2 + (cardDefs[c.name]?.fuelValue ?? 1), 0);
-    line(`FUEL IN HAND ${fuelHand}${ready && ready.fuel > 0 ? ` · COST ${ready.fuel}` : ''}`, 16, palette.textMuted, 4);
+    line(`FUEL IN HAND ${fuelHand}${need > 0 ? ` · COST ${need} · BURNING ${Math.min(have, need)}` : ''}`, 16, palette.textMuted, 4);
     const pips = this.add.graphics();
-    const cost = ready?.fuel ?? 0;
     for (let i = 0; i < Math.min(fuelHand, 18); i++) {
       const px = 30 + i * 20;
-      if (i < cost) {
+      if (i < Math.min(have, need)) {
+        pips.fillStyle(palette.danger, 1);
+        pips.fillCircle(px, y + 7, 7);
+      } else if (i < need) {
         pips.lineStyle(2, signal, 1);
         pips.strokeCircle(px, y + 7, 7);
       } else {
@@ -886,7 +1113,7 @@ export class Combat extends ScreenScene {
         b.add([nameT, costT]);
         b.setSize(W, bh);
         b.setInteractive({ useHandCursor: true });
-        b.on('pointerup', () => (on ? (this.clearSel(), this.refresh()) : this.select({ kind: 'gear', label: lab })));
+        b.on('pointerup', () => (on ? (this.clearSel(), this.refresh()) : this.select({ kind: 'gear', label: lab }, unit.id)));
         p.add(b);
         if (i === 0) this.gearBtn = { x: PANEL.x + 22 + W / 2, y: PANEL.y + y + bh / 2, w: W, h: bh };
         y += bh + 6;
@@ -920,13 +1147,22 @@ export class Combat extends ScreenScene {
       });
     }
 
-    // Buttons.
+    // Buttons. Confirm only exists when something is left to confirm: the optional second target or the discard picks.
+    const confirmNow = !!this.sel && !!this.step && this.step.step === 'ready' && needsConfirm(this.step, this.sel);
     const bw = (W - 10) / 2;
     const by = PANEL.h - 14 - 46;
     p.add(
       new Button(this, {
-        x: 22, y: by, w: bw, h: 46, label: ready ? 'Confirm' : 'Cancel', size: 26, state: 'live', accent: !!ready, signal,
-        onClick: () => (ready ? this.confirm() : (this.clearSel(), this.refresh()))
+        x: 22, y: by, w: bw, h: 46, label: confirmNow ? (this.sel?.item.kind === 'cycle' ? 'Discard' : 'Fire') : 'Cancel', size: 26,
+        state: confirmNow || this.sel || this.chosenUnit !== null ? 'live' : 'offline', accent: confirmNow, signal,
+        onClick: () => {
+          if (confirmNow) this.confirm();
+          else {
+            this.chosenUnit = null;
+            this.clearSel();
+            this.refresh();
+          }
+        }
       })
     );
     p.add(
@@ -939,41 +1175,59 @@ export class Combat extends ScreenScene {
 
   private prompt(opts: Opt[], focus: Opt | null): string {
     const g = this.sim;
-    if (g.result) return g.result === 'win' ? 'Two enemy lanes are captured. The fight is won.' : 'Two of your lanes fell. Retreat.';
+    if (g.result) {
+      if (g.result === 'loss') return 'Two of your lanes fell. Retreat.';
+      return g.how === 'cleared' ? 'The enemy has nobody left on the board. The fight is won.' : g.how === 'boss' ? 'The boss is down. The fight is won.' : g.how === 'held' ? 'The squad held. The fight is won.' : 'Two enemy lanes are captured. The fight is won.';
+    }
+    if (this.intro) return 'Rolling for initiative…';
     if (this.busy) return 'Enemy acting…';
     const s = this.step;
     if (!this.sel || !s) {
-      return inSetup(g)
-        ? `SETUP: pick a reserve unit (click or R), then an empty lane. ${3 - g.round + 1} deploys left.`
-        : 'Pick a card (1-7 or click), a gear action (G), or Cycle (E) to discard up to ' + g.scenario.cycleLimit + ' cards and draw.';
+      if (inSetup(g)) {
+        const empty = [0, 1, 2].filter((L) => !g.units.some((u) => u.side === 'P' && u.lane === L)).length;
+        return `SETUP: click a unit card in your unit hand, then a lane, or drag the card onto a lane. ${empty} lane${empty === 1 ? '' : 's'} still empty.`;
+      }
+      if (this.chosenUnit !== null) return `${unitById(g, this.chosenUnit).name} is ready. Pick one of its abilities below, or a card from your hand.`;
+      return 'Click a unit to act with it, play a card (1-7), or Cycle (E). Click a unit card in your unit hand to deploy it.';
     }
     if (this.sel.item.kind === 'cycle') {
-      return `DISCARD & DRAW: click or press 1-7 to mark up to ${g.scenario.cycleLimit} cards (${this.cycleSet.length} marked), then Enter.`;
+      return `DISCARD & DRAW: click or press 1-7 to mark up to ${g.scenario.cycleLimit} cards (${this.cycleSet.length} marked), then Discard.`;
     }
+    const aid = this.stepActor();
+    const what =
+      this.sel.item.kind === 'card' ? this.sel.item.name : this.sel.item.kind === 'gear' ? this.sel.item.label : `Deploy ${unitById(g, this.sel.item.unit).name}`;
+    const head = `${what}${aid !== null && this.sel.item.kind !== 'deploy' ? ' · ' + unitById(g, aid).name : ''}`;
+    const bits: string[] = [head];
     switch (s.step) {
       case 'actor':
-        return 'WHO USES IT? Click a highlighted unit, or Tab and Enter.';
+        bits.push('WHO USES IT? Click a highlighted unit, or Tab and Enter.');
+        break;
       case 'target':
-        return 'PICK A TARGET: click one, or Tab and Enter.';
+        bits.push(opts.some((o) => o.k === 'target' && o.t.k === 'lane') ? 'PICK A TARGET: click an enemy, or click the lane itself.' : 'PICK A TARGET: click one, or Tab and Enter.');
+        break;
       case 'lane':
-        return 'PICK A LANE: click it, or press 1-3.';
+        bits.push('PICK A LANE: click it, or press 1-3.');
+        break;
       case 'variant':
-        return 'CHOOSE ONE:';
-      case 'ready': {
-        const a = s.action;
-        const bits: string[] = [a.kind === 'deploy' ? a.label : `${a.label}${a.actor ? ' · ' + unitById(g, a.actor).name : ''}`];
-        if (a.fuel > 0) {
-          const ids = this.currentBurn();
-          const names = ids.map((id) => g.hand.find((c) => c.iid === id)?.name ?? '?').join(', ');
-          bits.push(`BURN ${names || 'nothing'} (${this.burnValue(ids)}/${a.fuel} fuel). B to change.`);
-        }
-        if (opts.length && focus) bits.push('Pick another target or Enter to fire.');
-        else bits.push('Enter to confirm.');
-        return bits.join('\n');
-      }
+        bits.push('CHOOSE ONE:');
+        break;
+      case 'ready':
+        if (opts.length && focus) bits.push('Click a second target for a second hit, or Fire.');
+        break;
       default:
-        return '';
+        break;
     }
+    const need = this.fuelNeed();
+    if (need > 0) {
+      const have = this.burnValue(this.burn);
+      const names = this.burn.map((id) => g.hand.find((c) => c.iid === id)?.name ?? '?').join(', ');
+      if (have >= need) bits.push(`BURNING ${names}.`);
+      else {
+        const more = need - have;
+        bits.push(`BURN ${more} FUEL: click ${more > 1 ? 'cards' : 'a card'} in your hand. B picks for you.${names ? ` Marked: ${names}.` : ''}`);
+      }
+    }
+    return bits.join('\n');
   }
 
   private drawCables(gfx: Phaser.GameObjects.Graphics, signal: number): void {
@@ -982,13 +1236,13 @@ export class Combat extends ScreenScene {
     const opts = this.options();
     if (!opts.length || s.step === 'variant' || s.step === 'lane') return;
     let from: { x: number; y: number } | null = null;
-    const ready = this.readyAction();
     if (this.sel.item.kind === 'card') {
-      const iid = ready?.cardIid ?? this.sim.hand.find((c) => this.sel!.item.kind === 'card' && c.name === (this.sel!.item as { name: string }).name)?.iid;
+      const iid = this.playIid();
       const b = iid !== undefined ? this.cardBox.get(iid) : undefined;
       if (b) from = { x: b.x + b.w / 2, y: b.y };
     } else if (this.sel.item.kind === 'deploy') {
-      from = { x: HAND_X0 + 140, y: TRAY.y + 4 };
+      const tile = this.unitTiles.get(this.sel.item.unit);
+      from = tile ? { x: tile.x + tile.w / 2, y: tile.y } : { x: HAND_X0 + 140, y: TRAY.y + 4 };
     } else {
       const aid = this.stepActor();
       const b = aid !== null ? this.pos.get(aid) : this.gearBtn;
@@ -1005,8 +1259,8 @@ export class Combat extends ScreenScene {
           const b = this.pos.get(o.t.id);
           if (b) to = { x: b.x, y: b.y + b.h / 2 };
         } else {
-          const b = this.laneBars.get(`${o.t.side}${o.t.lane}`);
-          if (b) to = { x: b.x + b.w / 2, y: b.y + b.h + 4 };
+          const b = this.laneBoxes.get(`${o.t.side}${o.t.lane}`);
+          if (b) to = { x: b.x + b.w / 2, y: b.y + 44 };
         }
       }
       if (to) drawCable(gfx, from, to, { color: signal, c1: { x: 0, y: -170 }, c2: { x: 0, y: 150 }, width: 3 });
@@ -1027,62 +1281,438 @@ export class Combat extends ScreenScene {
   }
 
   // ---------- feedback
+  // There is no sound, so every action has to read on screen: who acted, what it hit, how much it did.
+  // Everything here draws on the effects layer, which a redraw of the screen does not clear.
 
-  private floater(root: Phaser.GameObjects.Container, text: string, x: number, y: number, color: number, size = 28): void {
+  private later(ms: number, fn: () => void): void {
+    if (ms <= 0) fn();
+    else this.time.delayedCall(this.anim(ms), fn);
+  }
+
+  private sideColor(unitId: number | null): number {
+    if (unitId === null) return palette.danger;
+    const u = this.sim.units.find((x) => x.id === unitId);
+    return u && u.side === 'P' ? this.signal : palette.danger;
+  }
+
+  private floater(text: string, x: number, y: number, color: number, size = 28, rise = 46, hold = 1100): void {
+    const fx = this.fx;
+    if (!fx) return;
     const t = bodyText(this, x, y, text, size, color, { originX: 0.5, originY: 0.5, weight: 'bold' });
-    t.setStroke(toCss(palette.bg), 6);
-    root.add(t);
+    t.setStroke(toCss(palette.bg), 7);
+    t.setScale(1.45);
+    fx.add(t);
+    this.tweens.add({ targets: t, scale: 1, duration: this.anim(140), ease: 'Back.easeOut' });
+    this.tweens.add({ targets: t, y: y - rise, alpha: 0, delay: this.anim(hold * 0.35), duration: this.anim(hold * 0.65), ease: 'Quad.easeIn', onComplete: () => t.destroy() });
+  }
+
+  /** A block of color over a box, fading out. `cx, cy` is the centre. */
+  private flash(cx: number, cy: number, w: number, h: number, color: number, alpha = 0.5, ms = 380): void {
+    const fx = this.fx;
+    if (!fx) return;
+    const r = this.add.rectangle(cx, cy, w, h, color, alpha);
+    fx.add(r);
+    this.tweens.add({ targets: r, alpha: 0, duration: this.anim(ms), onComplete: () => r.destroy() });
+  }
+
+  private ring(x: number, y: number, color: number, r1 = 64, ms = 340): void {
+    const fx = this.fx;
+    if (!fx) return;
+    const c = this.add.circle(x, y, 10);
+    c.setStrokeStyle(5, color, 1);
+    fx.add(c);
+    this.tweens.add({ targets: c, scale: r1 / 10, alpha: 0, duration: this.anim(ms), ease: 'Quad.easeOut', onComplete: () => c.destroy() });
+  }
+
+  private sparks(x: number, y: number, color: number, n: number): void {
+    const fx = this.fx;
+    if (!fx) return;
+    for (let i = 0; i < n; i++) {
+      const ang = (Math.PI * 2 * i) / n + (i % 2) * 0.3;
+      const d = 34 + (i % 3) * 16;
+      const sp = this.add.rectangle(x, y, 9, 4, color, 1);
+      sp.setRotation(ang);
+      fx.add(sp);
+      this.tweens.add({
+        targets: sp,
+        x: x + Math.cos(ang) * d,
+        y: y + Math.sin(ang) * d,
+        alpha: 0,
+        duration: this.anim(360),
+        ease: 'Quad.easeOut',
+        onComplete: () => sp.destroy()
+      });
+    }
+  }
+
+  /** Two quick slashes across a plate. */
+  private slash(x: number, y: number, w: number, h: number, color: number): void {
+    const fx = this.fx;
+    if (!fx) return;
+    const g = this.add.graphics();
+    g.lineStyle(6, color, 1);
+    g.lineBetween(x - w * 0.4, y - h * 0.4, x + w * 0.4, y + h * 0.4);
+    g.lineBetween(x - w * 0.25, y - h * 0.45, x + w * 0.45, y + h * 0.25);
+    fx.add(g);
+    this.tweens.add({ targets: g, alpha: 0, duration: this.anim(420), onComplete: () => g.destroy() });
+  }
+
+  /** A shot: a muzzle ring at the attacker and a bolt that runs to the target. */
+  private tracer(from: { x: number; y: number }, to: { x: number; y: number }, color: number, ms: number): void {
+    const fx = this.fx;
+    if (!fx) return;
+    this.ring(from.x, from.y, color, 40, 240);
+    const line = this.add.graphics();
+    const dot = this.add.circle(from.x, from.y, 8, color, 1);
+    fx.add([line, dot]);
     this.tweens.add({
-      targets: t,
-      y: y - 46,
-      alpha: 0,
-      duration: this.anim(950),
-      ease: 'Quad.easeOut',
-      onComplete: () => t.destroy()
+      targets: dot,
+      x: to.x,
+      y: to.y,
+      duration: this.anim(ms),
+      ease: 'Quad.easeIn',
+      onUpdate: () => {
+        line.clear();
+        line.lineStyle(5, color, 0.85);
+        line.lineBetween(from.x, from.y, dot.x, dot.y);
+      },
+      onComplete: () => {
+        dot.destroy();
+        this.tweens.add({ targets: line, alpha: 0, duration: this.anim(160), onComplete: () => line.destroy() });
+      }
     });
   }
 
-  private playFx(root: Phaser.GameObjects.Container): void {
-    const q = this.fxQueue;
-    this.fxQueue = [];
-    let stack = 0;
-    for (const e of q) {
-      if (e.t === 'damage') {
-        const b = this.pos.get(e.unit);
-        if (!b) continue;
-        const parts: string[] = [];
-        if (e.hp > 0) parts.push(`-${e.hp}`);
-        if (e.soaked > 0) parts.push(`${e.soaked} SOAK`);
-        if (e.killed) parts.push('KILLED');
-        if (e.downed) parts.push('DOWNED');
-        if (parts.length) this.floater(root, parts.join(' · '), b.x, b.y - 10 - (stack++ % 3) * 6, e.hp > 0 || e.killed || e.downed ? palette.danger : palette.bone, 24);
-        const flash = this.add.rectangle(b.x, b.y, b.w, b.h, palette.danger, 0.4);
-        root.add(flash);
-        this.tweens.add({ targets: flash, alpha: 0, duration: this.anim(350), onComplete: () => flash.destroy() });
-      } else if (e.t === 'laneDamage') {
-        const b = this.laneBars.get(`${e.side}${e.lane}`);
-        if (b && e.amount > 0) this.floater(root, `-${e.amount} LANE${e.captured ? ' CAPTURED' : ''}`, b.x + b.w / 2, b.y + 28, e.side === 'E' ? this.signal : palette.danger, 22);
-      } else if (e.t === 'heal') {
-        const b = this.pos.get(e.unit);
-        if (b) this.floater(root, `+${e.hp} HP${e.revived ? ' UP' : ''}`, b.x, b.y, palette.text, 24);
-      } else if (e.t === 'soakGain') {
-        const b = this.pos.get(e.unit);
-        if (b) this.floater(root, `+${e.amount} SOAK`, b.x, b.y, palette.bone, 24);
-      } else if (e.t === 'ammoGain') {
-        const b = this.pos.get(e.unit);
-        if (b) this.floater(root, `+${e.amount} AMMO`, b.x, b.y, palette.bone, 24);
-      } else if (e.t === 'status' && e.on) {
-        const b = this.pos.get(e.unit);
-        if (b) this.floater(root, e.status.toUpperCase(), b.x, b.y + 20, e.status === 'counter' || e.status === 'sight' ? this.signal : palette.danger, 20);
-      } else if (e.t === 'intentSkip') {
-        const b = this.pos.get(e.unit);
-        if (b) this.floater(root, 'LOSES ACTION', b.x, b.y, palette.text, 22);
-      } else if (e.t === 'results') {
-        this.floater(root, 'RESULTS ' + e.cards.map((v) => `${v} ${band(v)}`).join(' → '), 720, 380, palette.text, 30);
-      } else if (e.t === 'draw' && e.reshuffled) {
-        this.floater(root, 'RESHUFFLED', 120, CARD_TOP - 10, palette.bone, 22);
+  /** A melee blow: an outline of the attacker's plate rushes the target and snaps back. */
+  private lunge(from: Box, to: { x: number; y: number }, color: number, ms: number): void {
+    const fx = this.fx;
+    if (!fx) return;
+    const ghost = this.add.rectangle(from.x, from.y, from.w, from.h);
+    ghost.setStrokeStyle(5, color, 1);
+    ghost.setFillStyle(color, 0.18);
+    fx.add(ghost);
+    this.tweens.add({
+      targets: ghost,
+      x: from.x + (to.x - from.x) * 0.7,
+      y: from.y + (to.y - from.y) * 0.7,
+      duration: this.anim(ms * 0.55),
+      ease: 'Quad.easeIn',
+      yoyo: true,
+      hold: this.anim(40),
+      onComplete: () => ghost.destroy()
+    });
+  }
+
+  /** Where an effect aimed at a target lands. */
+  private targetPoint(t: Target): { x: number; y: number } | null {
+    if (t.k === 'unit') {
+      const b = this.pos.get(t.id);
+      return b ? { x: b.x, y: b.y } : null;
+    }
+    const lb = this.laneBoxes.get(`${t.side}${t.lane}`);
+    return lb ? { x: lb.x + lb.w / 2, y: lb.y + lb.h / 2 } : null;
+  }
+
+  private impact(b: Box, e: Extract<Ev, { t: 'damage' }>): void {
+    const lost = e.hp > 0 || e.killed || e.downed;
+    const col = lost ? palette.danger : palette.bone;
+    this.flash(b.x, b.y, b.w, b.h, col, lost ? 0.6 : 0.35, 460);
+    this.sparks(b.x, b.y, col, lost ? 12 : 6);
+    if (lost) this.slash(b.x, b.y, b.w, b.h, palette.text);
+    if (e.hp > 0) this.floater(`-${e.hp}`, b.x, b.y - 6, palette.danger, 44, 52, 1300);
+    if (e.soaked > 0) this.floater(`SOAK ${e.soaked}`, b.x, b.y + (e.hp > 0 ? 30 : -4), palette.bone, 22, 36, 1100);
+    if (e.exposed) this.floater('EXPOSED +1', b.x, b.y + 54, palette.danger, 18, 28, 1000);
+    if (e.killed) this.floater('KILLED', b.x, b.y - 44, palette.danger, 30, 40, 1500);
+    else if (e.downed) this.floater('DOWNED', b.x, b.y - 44, palette.danger, 30, 40, 1500);
+    if (e.killed || e.downed) {
+      // The plate leaves the board on the next redraw; leave its outline behind to fade.
+      const fx = this.fx;
+      if (fx) {
+        const ghost = this.add.graphics();
+        ghost.lineStyle(4, palette.danger, 1);
+        ghost.strokeRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
+        ghost.lineBetween(b.x - b.w / 2, b.y - b.h / 2, b.x + b.w / 2, b.y + b.h / 2);
+        ghost.lineBetween(b.x + b.w / 2, b.y - b.h / 2, b.x - b.w / 2, b.y + b.h / 2);
+        fx.add(ghost);
+        this.tweens.add({ targets: ghost, alpha: 0, duration: this.anim(900), delay: this.anim(200), onComplete: () => ghost.destroy() });
       }
     }
+    if (e.killed || e.downed || e.hp >= 3) this.cameras.main.shake(this.anim(170), 0.0045);
+    else if (e.hp > 0) this.cameras.main.shake(this.anim(90), 0.0018);
+  }
+
+  private laneImpact(e: Extract<Ev, { t: 'laneDamage' }>): void {
+    const box = this.laneBoxes.get(`${e.side}${e.lane}`);
+    if (!box || e.amount <= 0) return;
+    const col = e.side === 'E' ? this.signal : palette.danger;
+    this.flash(box.x + box.w / 2, box.y + box.h / 2, box.w, box.h, col, 0.28, 520);
+    this.sparks(box.x + box.w / 2, box.y + box.h / 2, col, 10);
+    this.floater(`-${e.amount} LANE HP`, box.x + box.w / 2, box.y + 90, col, 38, 46, 1400);
+    if (e.captured) {
+      this.floater('LANE CAPTURED', box.x + box.w / 2, box.y + 140, col, 30, 30, 1700);
+      this.cameras.main.shake(this.anim(220), 0.005);
+    }
+  }
+
+  /** Play the events since the last redraw, one after another, and note how long they take. */
+  private playFx(): void {
+    const q = this.fxQueue;
+    this.fxQueue = [];
+    if (!q.length) {
+      this.fxMs = 0;
+      return;
+    }
+    let t = 0;
+    let end = 0;
+    const at = (fn: () => void): void => {
+      this.later(t, fn);
+      end = Math.max(end, t);
+    };
+    for (const e of q) {
+      if (e.t === 'played') {
+        const b = e.actor !== null ? this.pos.get(e.actor) : undefined;
+        if (b && e.card) {
+          const name = e.card.toUpperCase();
+          at(() => this.floater(name, b.x, b.y - 58, this.signal, 22, 26, 1500));
+          t += 140;
+        }
+      } else if (e.t === 'strike') {
+        const from = e.from !== null ? this.pos.get(e.from) : undefined;
+        const to = this.targetPoint(e.to);
+        if (from && to) {
+          const col = this.sideColor(e.from);
+          if (e.melee) {
+            at(() => this.lunge(from, to, col, 300));
+            t += 230;
+          } else {
+            at(() => this.tracer(from, to, col, 240));
+            t += 250;
+          }
+        }
+      } else if (e.t === 'damage') {
+        const b = this.pos.get(e.unit);
+        if (b) {
+          at(() => this.impact(b, e));
+          t += 110;
+        }
+      } else if (e.t === 'laneDamage') {
+        at(() => this.laneImpact(e));
+        t += 110;
+      } else if (e.t === 'heal') {
+        const b = this.pos.get(e.unit);
+        if (b) at(() => {
+          this.flash(b.x, b.y, b.w, b.h, palette.text, 0.3, 420);
+          this.floater(`+${e.hp} HP${e.revived ? ' · UP' : ''}`, b.x, b.y, palette.text, 30, 40);
+        });
+      } else if (e.t === 'soakGain') {
+        const b = this.pos.get(e.unit);
+        if (b) at(() => this.floater(`+${e.amount} SOAK`, b.x, b.y, palette.bone, 26, 36));
+      } else if (e.t === 'ammoGain') {
+        const b = this.pos.get(e.unit);
+        if (b) at(() => this.floater(`+${e.amount} AMMO`, b.x, b.y, palette.bone, 26, 36));
+      } else if (e.t === 'status' && e.on) {
+        const b = this.pos.get(e.unit);
+        if (b) at(() => this.floater(e.status.toUpperCase(), b.x, b.y + 24, e.status === 'counter' || e.status === 'sight' ? this.signal : palette.danger, 22, 30));
+      } else if (e.t === 'intentSkip') {
+        const b = this.pos.get(e.unit);
+        if (b) at(() => this.floater('LOSES ACTION', b.x, b.y, palette.text, 24, 30));
+      } else if (e.t === 'deploy') {
+        const b = this.pos.get(e.unit);
+        if (b) {
+          const col = this.sideColor(e.unit);
+          at(() => {
+            this.ring(b.x, b.y, col, 90, 420);
+            this.flash(b.x, b.y, b.w, b.h, col, 0.35, 520);
+            this.floater('DEPLOYED', b.x, b.y - 4, col, 24, 24);
+          });
+          t += 120;
+        }
+      } else if (e.t === 'results') {
+        at(() => this.floater('RESULTS ' + e.cards.map((v) => `${v} ${band(v)}`).join(' → '), 720, 380, palette.text, 30));
+      } else if (e.t === 'draw' && e.reshuffled) {
+        at(() => this.floater('RESHUFFLED', 120, CARD_TOP - 10, palette.bone, 22));
+      }
+    }
+    this.fxMs = end + 600;
+  }
+
+  // ---------- initiative roll
+
+  private introLayer: Phaser.GameObjects.Container | null = null;
+
+  /** Two results cards turn over: the higher one acts first. Click or press a key to move on. */
+  private playIntro(): void {
+    const ini = this.initiative;
+    if (!this.intro) return;
+    // With animation off the roll is just the chip in the top bar.
+    if (!ini || session.settings.animSpeed === 0) {
+      this.endIntro();
+      return;
+    }
+    const fx = this.ensureFx();
+    const layer = this.add.container(0, 0);
+    fx.add(layer);
+    this.introLayer = layer;
+    const sig = this.signal;
+    const dim = this.add.rectangle(960, 540, 1920, 1080, palette.bg, 0.9).setInteractive();
+    dim.on('pointerup', () => this.endIntro());
+    layer.add(dim);
+    layer.add(stencilText(this, 960, 150, 'Rolling for initiative', 72, palette.text, { originX: 0.5, spacing: 0.06, fixed: true }));
+    layer.add(bodyText(this, 960, 232, 'The higher card acts first. Suits only break a tie.', 22, palette.textMuted, { originX: 0.5 }));
+
+    const W = 250;
+    const H = 350;
+    const rank = (v: number): string => (v === 1 ? 'A' : v === 11 ? 'J' : v === 12 ? 'Q' : v === 13 ? 'K' : String(v));
+    const sides = [
+      { x: 640, label: 'YOUR SQUAD', d: ini.squad, win: ini.first === 'P' },
+      { x: 1280, label: this.sim.scenario.enemyName.toUpperCase(), d: ini.enemy, win: ini.first === 'E' }
+    ];
+    const cardsAt: Array<{ face: Phaser.GameObjects.Container; back: Phaser.GameObjects.Container; win: boolean }> = [];
+    sides.forEach((sd) => {
+      layer.add(bodyText(this, sd.x, 300, sd.label, 24, palette.text, { originX: 0.5, spacing: 0.14 }));
+      const back = this.add.container(sd.x, 520);
+      const bg = this.add.graphics();
+      bg.fillStyle(palette.panelDeep, 1);
+      bg.fillRect(-W / 2, -H / 2, W, H);
+      bg.lineStyle(4, palette.line, 1);
+      bg.strokeRect(-W / 2 + 2, -H / 2 + 2, W - 4, H - 4);
+      bg.lineStyle(2, palette.lineDim, 1);
+      for (let i = -H; i < W; i += 28) bg.lineBetween(-W / 2 + Math.max(0, i), -H / 2 + Math.max(0, -i), -W / 2 + Math.min(W, i + H), -H / 2 + Math.min(H, -i + W));
+      back.add(bg);
+      const face = this.add.container(sd.x, 520);
+      face.setScale(0, 1);
+      const fg = this.add.graphics();
+      fg.fillStyle(palette.panelRaised, 1);
+      fg.fillRect(-W / 2, -H / 2, W, H);
+      face.add(fg);
+      face.add(stencilText(this, 0, -60, rank(sd.d.value), 150, palette.text, { originX: 0.5, originY: 0.5, fixed: true }));
+      const sg = this.add.graphics();
+      drawSuit(sg, sd.d.suit, 0, 80, 74, palette.text);
+      face.add(sg);
+      face.add(bodyText(this, 0, 142, band(sd.d.value), 22, palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.18 }));
+      layer.add([back, face]);
+      cardsAt.push({ face, back, win: sd.win });
+    });
+
+    const flip = (i: number): void => {
+      const c = cardsAt[i]!;
+      this.tweens.add({
+        targets: c.back,
+        scaleX: 0,
+        duration: this.anim(170),
+        onComplete: () => {
+          c.back.destroy();
+          this.tweens.add({ targets: c.face, scaleX: 1, duration: this.anim(170), ease: 'Back.easeOut' });
+        }
+      });
+    };
+    const verdict = (): void => {
+      cardsAt.forEach((c, i) => {
+        const frame = this.add.graphics();
+        frame.lineStyle(c.win ? 8 : 3, c.win ? sig : palette.line, 1);
+        frame.strokeRect(sides[i]!.x - W / 2 - 4, 520 - H / 2 - 4, W + 8, H + 8);
+        layer.add(frame);
+        if (!c.win) c.face.setAlpha(0.55);
+      });
+      const first = ini.first === 'P' ? 'YOUR SQUAD' : this.sim.scenario.enemyName.toUpperCase();
+      layer.add(stencilText(this, 960, 760, `${first} ACTS FIRST`, 64, sig, { originX: 0.5, spacing: 0.06, fixed: true }));
+      if (ini.squad.value === ini.enemy.value) {
+        layer.add(bodyText(this, 960, 860, 'Tied on value: the higher suit wins (spades, hearts, diamonds, clubs).', 22, palette.textMuted, { originX: 0.5 }));
+      } else if (ini.first === 'E') {
+        layer.add(bodyText(this, 960, 860, 'They get the first move: expect to take the first hit.', 22, palette.textMuted, { originX: 0.5 }));
+      }
+      layer.add(bodyText(this, 960, 960, 'Click or press any key to continue', 20, palette.textMuted, { originX: 0.5, spacing: 0.1 }));
+    };
+    // The roll can be skipped at any point, which tears the layer down: late steps must not touch it.
+    this.later(450, () => this.intro && flip(0));
+    this.later(1050, () => this.intro && flip(1));
+    this.later(1650, () => this.intro && verdict());
+    this.later(5200, () => this.endIntro());
+  }
+
+  private endIntro(): void {
+    if (!this.intro) return;
+    this.intro = false;
+    const layer = this.introLayer;
+    this.introLayer = null;
+    if (layer) {
+      this.tweens.add({ targets: layer, alpha: 0, duration: this.anim(220), onComplete: () => layer.destroy() });
+    }
+    if (this.sim.first === 'E') {
+      this.rebuild();
+      this.later(300, () => this.enemyTurn());
+    } else {
+      this.busy = false;
+      this.derive();
+      this.rebuild();
+    }
+  }
+
+  // ---------- drag a unit card onto a lane
+
+  private laneAt(x: number, y: number): number | null {
+    if (y < LANE_TOP || y > LANE_BOTTOM) return null;
+    for (let L = 0; L < 3; L++) if (x >= LANE_X[L]! && x <= LANE_X[L]! + LANE_W) return L;
+    return null;
+  }
+
+  private onPointerDown(): void {
+    this.dragMoved = false;
+  }
+
+  private onPointerMove(ptr: Phaser.Input.Pointer): void {
+    if (!this.dragCand || this.busy) return;
+    if (!this.dragging) {
+      if (!ptr.isDown || Math.hypot(ptr.x - this.dragCand.x, ptr.y - this.dragCand.y) < 12) return;
+      this.startDrag(this.dragCand.unit);
+      if (!this.dragging) return;
+    }
+    const d = this.dragging as NonNullable<Combat['dragging']>;
+    const r = toRef(this.L, ptr.x, ptr.y);
+    d.ghost.setPosition(r.x, r.y);
+    d.hi.clear();
+    const lane = this.laneAt(r.x, r.y);
+    if (lane !== null && this.step?.step === 'lane' && this.step.lanes.includes(lane)) {
+      d.hi.lineStyle(7, this.signal, 1);
+      d.hi.strokeRect(LANE_X[lane]! + 2, LANE_TOP + 2, LANE_W - 4, LANE_BOTTOM - LANE_TOP - 4);
+    }
+  }
+
+  private startDrag(unit: number): void {
+    this.dragMoved = true;
+    // Selecting the unit lights up the lanes it can go to.
+    this.select({ kind: 'deploy', unit });
+    if (this.busy || this.step?.step !== 'lane') {
+      this.dragCand = null;
+      return;
+    }
+    const fx = this.ensureFx();
+    const u = unitById(this.sim, unit);
+    const ghost = this.add.container(0, 0);
+    const gg = this.add.graphics();
+    gg.fillStyle(palette.panelRaised, 0.95);
+    gg.fillRect(-100, -25, 200, 50);
+    gg.lineStyle(4, this.signal, 1);
+    gg.strokeRect(-99, -24, 198, 48);
+    ghost.add(gg);
+    ghost.add(stencilText(this, 0, 0, u.name, 26, palette.text, { originX: 0.5, originY: 0.5 }));
+    const hi = this.add.graphics();
+    fx.add([hi, ghost]);
+    this.dragging = { unit, ghost, hi };
+  }
+
+  private onPointerUp(ptr: Phaser.Input.Pointer): void {
+    this.dragCand = null;
+    const d = this.dragging;
+    if (!d) return;
+    this.dragging = null;
+    d.ghost.destroy();
+    d.hi.destroy();
+    const r = toRef(this.L, ptr.x, ptr.y);
+    const lane = this.laneAt(r.x, r.y);
+    // Dropped on a lane it can go to: deploy. Anywhere else the unit stays picked, so clicking a lane still works.
+    if (lane !== null && this.step?.step === 'lane' && this.step.lanes.includes(lane)) this.pickOption({ k: 'lane', lane });
+    else this.rebuild();
   }
 
   private showOutcome(root: Phaser.GameObjects.Container): void {

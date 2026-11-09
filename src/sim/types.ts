@@ -104,8 +104,17 @@ export type Ev =
   | { t: 'draw'; count: number; reshuffled: boolean }
   | { t: 'discard'; names: string[] }
   | { t: 'results'; cards: number[] }
+  | { t: 'initiative'; squad: InitiativeDraw; enemy: InitiativeDraw; first: Side }
+  /** an attack leaving `from` (a unit, or null for no one in particular) for `to`; the damage events follow it */
+  | { t: 'strike'; from: number | null; to: Target; melee: boolean; dmg: number }
   | { t: 'intentSkip'; unit: number }
   | { t: 'result'; result: 'win' | 'loss' };
+
+/** One side's initiative card: a results value and a suit (0 clubs, 1 diamonds, 2 hearts, 3 spades; spades beat hearts beat diamonds beat clubs on a tie). */
+export interface InitiativeDraw {
+  value: number;
+  suit: number;
+}
 
 export interface Battlefield {
   name: string;
@@ -166,6 +175,10 @@ export interface Game {
   eptr: number;
   results: number[];
   result: 'win' | 'loss' | null;
+  /** how a fight ended: lanes taken, the board cleared, a boss killed, or a hold-out survived */
+  how: 'lanes' | 'cleared' | 'boss' | 'held' | null;
+  /** which side takes the first action of each round (the initiative winner; the squad until a roll says otherwise) */
+  first: Side;
   nextId: number;
   nextIid: number;
   arrivals: number;

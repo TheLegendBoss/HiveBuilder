@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from '../sim/actions';
+import { chooseAction } from '../sim/autoplay';
 import { enemyAct } from '../sim/enemy';
 import { createGame } from '../sim/state';
 import { beginTurn } from '../sim/turn';
 import type { Game } from '../sim/types';
-import { nextStep, pickActor, pickTarget, type Sel } from './selection';
+import { needsConfirm, nextStep, pickActor, pickTarget, resolve, type Sel } from './selection';
 
 function afterSetup(seed: number): Game {
   const g = createGame(tscVsScavvers, seed);
@@ -73,3 +74,71 @@ describe('selection steps', () => {
     expect(s2.step).toBe('ready');
   });
 });
+
+describe('resolve: choices with one answer are made for you', () => {
+  it('puts a unit into the last empty lane without asking', () => {
+    const g = createGame(tscVsScavvers, 4);
+    const lanes: Record<string, number> = { 'Line A': 0, Vanguard: 1, 'Line B': 2 };
+    for (let i = 0; i < 2; i++) {
+      beginTurn(g);
+      perform(g, listActions(g).find((x) => lanes[g.units.find((u) => u.id === x.unit)!.name] === x.lane)!);
+      enemyAct(g);
+    }
+    beginTurn(g);
+    const acts = listActions(g);
+    const unit = g.units.find((u) => u.side === 'P' && u.lane === null)!;
+    const empty = [0, 1, 2].find((L) => !g.units.some((u) => u.side === 'P' && u.lane === L))!;
+    const r = resolve(acts, { item: { kind: 'deploy', unit: unit.id }, targets: [] });
+    expect(r.step.step).toBe('ready');
+    expect(r.sel.lane).toBe(empty);
+  });
+
+  it('still asks which lane while there is a choice', () => {
+    const g = createGame(tscVsScavvers, 4);
+    beginTurn(g);
+    const r = resolve(listActions(g), { item: { kind: 'deploy', unit: g.units[0]!.id }, targets: [] });
+    expect(r.step.step).toBe('lane');
+  });
+
+  it('picks a lone target, and stops when there are two', () => {
+    let one = false;
+    let many = false;
+    for (let seed = 1; seed <= 30 && !(one && many); seed++) {
+      const g = afterSetup(seed);
+      for (let round = 0; round < 25 && !g.result && !(one && many); round++) {
+        const acts = listActions(g);
+        for (const actor of new Set(acts.filter((a) => a.label === 'Single shot').map((a) => a.actor!))) {
+          const n = acts.filter((a) => a.label === 'Single shot' && a.actor === actor).length;
+          const r = resolve(acts, { item: { kind: 'gear', label: 'Single shot' }, actor, targets: [] });
+          if (n === 1) {
+            expect(r.step.step).toBe('ready');
+            expect(r.sel.targets).toHaveLength(1);
+            one = true;
+          } else {
+            expect(r.step.step).toBe('target');
+            many = true;
+          }
+        }
+        const c = chooseAction(g);
+        if (!c) break;
+        perform(g, c.action, c.cards);
+        if (g.result) break;
+        enemyAct(g);
+        beginTurn(g);
+      }
+    }
+    expect(one).toBe(true);
+    expect(many).toBe(true);
+  });
+
+  it('only wants a button press for the optional second target or a discard', () => {
+    const g = afterSetup(1);
+    const acts = listActions(g);
+    const cycle: Sel = { item: { kind: 'cycle' }, targets: [] };
+    expect(needsConfirm(nextStep(acts, cycle), cycle)).toBe(true);
+    const sel: Sel = { item: { kind: 'gear', label: 'Single shot' }, targets: [] };
+    const r = resolve(acts, { ...sel, actor: acts.find((a) => a.label === 'Single shot')!.actor! });
+    if (r.step.step === 'ready') expect(needsConfirm(r.step, r.sel)).toBe(false);
+  });
+});
+

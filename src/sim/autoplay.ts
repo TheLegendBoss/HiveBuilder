@@ -3,7 +3,7 @@ import { deadCards, listActions, perform, suggestBurn } from './actions';
 import { enemyAct } from './enemy';
 import { nextRandom } from './rng';
 import { inLane, totalSoakHp, unitById } from './state';
-import { beginTurn } from './turn';
+import { beginEnemyTurn, beginTurn } from './turn';
 import type { Action, Game, Target, Unit } from './types';
 
 /**
@@ -187,12 +187,17 @@ export function chooseAction(g: Game): Choice | null {
 /** Play a whole fight with the stand-in player. Returns the result, or 'timeout'. */
 export function autoPlay(g: Game, maxRounds = 80): 'win' | 'loss' | 'timeout' {
   while (!g.result && g.round < maxRounds) {
+    if (g.first === 'E') {
+      beginEnemyTurn(g);
+      enemyAct(g);
+      if (g.result) break;
+    }
     beginTurn(g);
     const c = chooseAction(g);
     if (!c) return 'timeout';
     perform(g, c.action, c.cards);
     if (g.result) break;
-    enemyAct(g);
+    if (g.first === 'P') enemyAct(g);
   }
   return g.result ?? 'timeout';
 }

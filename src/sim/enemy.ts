@@ -2,8 +2,8 @@ import {
   adjacent,
   bodiesInLane,
   checkResult,
+  closeRound,
   deployUnit,
-  endRound,
   hitLane,
   hitUnit,
   inLane,
@@ -110,15 +110,17 @@ function applyEffects(t: Unit, burn: number | undefined, stun: boolean | undefin
 
 /** What the enemy will do on its next action. Nothing here changes the game. */
 export function enemyPlan(g: Game): EnemyPlan {
+  // When the enemy goes first the round counter has already moved on by the time the player looks ahead.
+  const round = g.first === 'E' && g.turn === 'P' ? g.round + 1 : g.round;
   const pass = (text: string): EnemyPlan => ({
     kind: 'pass', unit: null, name: 'Pass', dmg: 0, melee: false, victim: null, redirected: false,
     lane: null, nextPtr: g.eptr, nextPi: null, text
   });
-  if (g.round <= g.scenario.setupRounds) {
-    const id = g.enemyStart[g.round - 1];
+  if (round <= g.scenario.setupRounds) {
+    const id = g.enemyStart[round - 1];
     if (id === undefined) return pass('Nothing left to deploy');
     const u = unitById(g, id);
-    const lane = g.scenario.startLanes?.[g.round - 1] ?? g.round - 1;
+    const lane = g.scenario.startLanes?.[round - 1] ?? round - 1;
     return {
       kind: 'deploy', unit: u.id, name: 'Deploy', dmg: 0, melee: false, victim: null, redirected: false,
       lane, nextPtr: g.eptr, nextPi: null, text: `${u.name} takes lane ${lane + 1}`
@@ -244,6 +246,7 @@ export function enemyAct(g: Game): Ev[] {
         else {
           ev.push({ t: 'log', text: `${u!.name}: ${plan.name} sweeps lane ${lane + 1}` });
           for (const t of inLane(g, 'P', lane)) {
+            ev.push({ t: 'strike', from: u!.id, to: unitTarget(t), melee: plan.melee, dmg: plan.dmg });
             if (plan.dmg > 0) hitUnit(t, plan.dmg, ev);
             applyEffects(t, plan.burn, plan.stun, ev);
           }
@@ -252,6 +255,7 @@ export function enemyAct(g: Game): Ev[] {
         ev.push({ t: 'log', text: `${u!.name} has nothing to hit` });
       } else if (v.k === 'lane') {
         ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on your lane ${v.lane + 1} for ${plan.dmg}` });
+        ev.push({ t: 'strike', from: u!.id, to: v, melee: plan.melee, dmg: plan.dmg });
         hitLane(g, 'P', v.lane, plan.dmg, ev);
       } else {
         const t = unitById(g, v.id);
@@ -260,6 +264,7 @@ export function enemyAct(g: Game): Ev[] {
           ev.push({ t: 'log', text: `${t.name} takes the hit meant for a squadmate` });
         }
         ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on ${t.name}${plan.dmg > 0 ? ` for ${plan.dmg}` : ''}` });
+        ev.push({ t: 'strike', from: u!.id, to: v, melee: plan.melee, dmg: plan.dmg });
         if (plan.dmg > 0) hitUnit(t, plan.dmg, ev);
         applyEffects(t, plan.burn, plan.stun, ev);
         if (plan.suppress && !t.downed && !t.dead) {
@@ -271,10 +276,12 @@ export function enemyAct(g: Game): Ev[] {
           t.counter = false;
           ev.push({ t: 'status', unit: t.id, status: 'counter', on: false });
           ev.push({ t: 'log', text: `${t.name} counters for 2` });
+          ev.push({ t: 'strike', from: t.id, to: unitTarget(u!), melee: false, dmg: 2 });
           hitUnit(u!, 2, ev);
         }
         if (plan.melee && plan.dmg > 0 && !t.downed && !u!.dead) {
           ev.push({ t: 'log', text: `${t.name} fights back for 1` });
+          ev.push({ t: 'strike', from: t.id, to: unitTarget(u!), melee: true, dmg: 1 });
           hitUnit(u!, 1, ev);
         }
       }
@@ -287,14 +294,9 @@ export function enemyAct(g: Game): Ev[] {
 
   checkResult(g, ev);
   if (!g.result) {
-    endRound(g, ev);
-    const hold = g.scenario.surviveRounds;
-    if (hold !== undefined && g.round >= g.scenario.setupRounds + hold) {
-      g.result = 'win';
-      ev.push({ t: 'log', text: 'The reactor shuts down. The squad held.' });
-      ev.push({ t: 'result', result: 'win' });
-    }
-    g.turn = 'P';
+    // With the enemy first, the round closes after the squad's action instead (see perform).
+    if (g.first === 'P') closeRound(g, ev);
+    if (!g.result) g.turn = 'P';
   }
   return ev;
 }

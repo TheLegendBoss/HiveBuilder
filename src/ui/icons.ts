@@ -97,3 +97,34 @@ export function drawCardGlyph(g: Phaser.GameObjects.Graphics, kind: string, cx: 
       }
   }
 }
+
+/** Suit names in tie-break order, lowest first (0 clubs, 1 diamonds, 2 hearts, 3 spades). */
+export const SUIT_NAMES = ['Clubs', 'Diamonds', 'Hearts', 'Spades'] as const;
+
+/** A card suit, filled, centered on (cx, cy) and about `s` pixels across. */
+export function drawSuit(g: Phaser.GameObjects.Graphics, suit: number, cx: number, cy: number, s: number, color: number): void {
+  g.fillStyle(color, 1);
+  const r = s / 2;
+  switch (suit) {
+    case 1: // diamonds
+      g.fillTriangle(cx, cy - r, cx + r * 0.72, cy, cx - r * 0.72, cy);
+      g.fillTriangle(cx, cy + r, cx + r * 0.72, cy, cx - r * 0.72, cy);
+      break;
+    case 2: // hearts
+      g.fillCircle(cx - r * 0.45, cy - r * 0.28, r * 0.52);
+      g.fillCircle(cx + r * 0.45, cy - r * 0.28, r * 0.52);
+      g.fillTriangle(cx - r * 0.97, cy - r * 0.05, cx + r * 0.97, cy - r * 0.05, cx, cy + r);
+      break;
+    case 3: // spades
+      g.fillCircle(cx - r * 0.45, cy + r * 0.08, r * 0.52);
+      g.fillCircle(cx + r * 0.45, cy + r * 0.08, r * 0.52);
+      g.fillTriangle(cx - r * 0.97, cy - r * 0.1, cx + r * 0.97, cy - r * 0.1, cx, cy - r);
+      g.fillTriangle(cx, cy + r * 0.1, cx - r * 0.3, cy + r, cx + r * 0.3, cy + r);
+      break;
+    default: // clubs
+      g.fillCircle(cx, cy - r * 0.45, r * 0.42);
+      g.fillCircle(cx - r * 0.48, cy + r * 0.2, r * 0.42);
+      g.fillCircle(cx + r * 0.48, cy + r * 0.2, r * 0.42);
+      g.fillTriangle(cx, cy + r * 0.1, cx - r * 0.3, cy + r, cx + r * 0.3, cy + r);
+  }
+}

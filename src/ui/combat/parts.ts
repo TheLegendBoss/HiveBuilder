@@ -204,7 +204,7 @@ export interface CardOpts {
   selected: boolean;
   /** a hand card that has a legal play right now */
   playable: boolean;
-  tag: 'BURN' | 'DISCARD' | 'PLAYING' | null;
+  tag: 'BURN' | 'BURN?' | 'DISCARD' | 'PLAYING' | null;
   focus: boolean;
 }
 

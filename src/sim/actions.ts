@@ -13,6 +13,7 @@ import {
   bodiesInLane,
   bump,
   checkResult,
+  closeRound,
   deployUnit,
   inSetup,
   isLive,
@@ -230,6 +231,10 @@ export function perform(g: Game, action: Action, cards?: number[]): Ev[] {
   }
 
   checkResult(g, ev);
-  if (!g.result) g.turn = 'E';
+  if (!g.result) {
+    // With the enemy first, the squad's action is the one that closes the round.
+    if (g.first === 'E') closeRound(g, ev);
+    if (!g.result) g.turn = 'E';
+  }
   return ev;
 }

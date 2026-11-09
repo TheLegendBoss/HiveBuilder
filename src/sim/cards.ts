@@ -69,10 +69,12 @@ export function strike(g: Game, actor: Unit, t: Target, base: number, gear: stri
     const u = unitById(g, t.id);
     const d = base + bonus(g, actor, u, gear);
     ev.push({ t: 'log', text: `${actor.name} hits ${u.name} for ${d}` });
+    ev.push({ t: 'strike', from: actor.id, to: t, melee: false, dmg: d });
     hitUnit(u, d, ev);
   } else {
     const d = base + bonus(g, actor, null, gear);
     ev.push({ t: 'log', text: `${actor.name} hits their lane ${t.lane + 1} for ${d}` });
+    ev.push({ t: 'strike', from: actor.id, to: t, melee: false, dmg: d });
     hitLane(g, t.side, t.lane, d, ev);
   }
 }

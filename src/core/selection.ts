@@ -75,6 +75,31 @@ export function nextStep(actions: Action[], sel: Sel): Step {
   return { step: 'ready', action: exact[0]!, moreTargets: more };
 }
 
+/**
+ * Take every choice that has only one answer. A lone target, a lone open lane: nobody needs to click
+ * them. Stops at the first step with a real choice (or when the action is fully specified).
+ */
+export function resolve(actions: Action[], sel: Sel): { sel: Sel; step: Step } {
+  let cur = sel;
+  for (let i = 0; i < 8; i++) {
+    const step = nextStep(actions, cur);
+    if (step.step === 'target' && step.targets.length === 1) cur = pickTarget(cur, step.targets[0]!);
+    else if (step.step === 'lane' && step.lanes.length === 1) cur = pickLane(cur, step.lanes[0]!);
+    else if (step.step === 'actor' && step.actors.length === 1) cur = pickActor(cur, step.actors[0]!);
+    else return { sel: cur, step };
+  }
+  return { sel: cur, step: nextStep(actions, cur) };
+}
+
+/**
+ * Does this finished pick still want a button press? Only when the player may add another target
+ * (the optional second shot) or must name the cards to throw away.
+ */
+export function needsConfirm(step: Step, sel: Sel): boolean {
+  if (sel.item.kind === 'cycle') return true;
+  return step.step === 'ready' && step.moreTargets.length > 0;
+}
+
 /** Add a pick to the selection when it is a legal next choice; otherwise leave it as it was. */
 export function pickActor(sel: Sel, id: number): Sel {
   return { ...sel, actor: id };
