@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
-import { campaign, session } from '../core/session';
+import { autosave, campaign, session } from '../core/session';
 import { abandon, returnHome } from '../sim/campaign';
 import { forceById } from '../data/rooms';
 import { mix, palette } from '../data/palette';
 import {
   atCheckpoint, buyPack, canAffordGamble, canBuyPack, leaveMarket, sellItem, cashOutGamble, closeGamble, commitGamble, currentRoom, declineGamble, dropItem, leaveGate, leaveLoot,
-  move, moves, pushGamble, retreat, takeGate, takeLoot, tierOf, useItem, type Expedition, type GamblePending, type Room, type RoomType
+  move, moves, pushGamble, retreat, takeGate, takeLoot, tierAt, useItem, type Expedition, type GamblePending, type Room, type RoomType
 } from '../sim/expedition';
 import { Button } from '../ui/Button';
 import { drawHpBar } from '../ui/combat/parts';
@@ -70,6 +70,7 @@ export class ExpeditionMap extends ScreenScene {
   private onKey(e: KeyboardEvent): void {
     if (this.modal?.isOpen) return;
     const x = this.exp;
+    if (e.key.toLowerCase() === 'v') return this.openSaves();
     if (e.key === 'Escape') {
       if (this.exp.pending?.kind === 'market') {
         leaveMarket(this.exp);
@@ -116,6 +117,11 @@ export class ExpeditionMap extends ScreenScene {
       if (r) this.go(r);
       e.preventDefault();
     }
+  }
+
+  private openSaves(): void {
+    if (this.modal?.isOpen) return;
+    this.scene.start(SceneKeys.Saves, { from: SceneKeys.Expedition });
   }
 
   private openPause(): void {
@@ -171,12 +177,13 @@ export class ExpeditionMap extends ScreenScene {
   private buildAll(root: Phaser.GameObjects.Container): void {
     const x = this.exp;
     const signal = this.signal;
+    autosave();
     const title = stencilText(this, 40, 10, 'Sandbox expedition', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
     root.add(
       bodyText(
         this, 44, title.y + title.height + 2,
-        `Section ${x.section + 1} of ${x.cfg.sections} · tier ${tierOf(x.section)} · seed ${x.cfg.seed}`, 16, palette.textMuted
+        `Section ${x.section + 1} of ${x.cfg.sections} · tier ${tierAt(x.cfg, x.section)} · seed ${x.cfg.seed}`, 16, palette.textMuted
       )
     );
     const lamp = this.add.graphics();
@@ -186,6 +193,9 @@ export class ExpeditionMap extends ScreenScene {
       bodyText(this, 786, 38, x.status === 'running' ? (x.pending ? 'ROOM ACTIVE' : 'CHOOSE A DOOR') : x.status.toUpperCase(), 20, palette.text, { originY: 0.5, spacing: 0.1 })
     );
 
+    root.add(
+      new Button(this, { x: 1680, y: 12, w: 200, h: 56, label: 'Saves', size: 28, state: 'live', signal, key: 'V', onClick: () => this.openSaves() })
+    );
     root.add(makePanel(this, { ...MAP, fill: palette.panelDeep, bolts: true, border: signal, borderWidth: 3 }));
     this.drawMap(root, signal);
     root.add(makePanel(this, { ...SIDE, bolts: true }));
@@ -410,7 +420,7 @@ export class ExpeditionMap extends ScreenScene {
       title: last ? 'Way out' : 'Gate',
       body: last
         ? 'This gate leaves the floor. Take it to finish the expedition; the squad heals fully at home.'
-        : `This gate leads on to section ${x.section + 2}, tier ${tierOf(x.section + 1)}. The section behind you stays behind.`,
+        : `This gate leads on to section ${x.section + 2}, tier ${tierAt(x.cfg, x.section + 1)}. The section behind you stays behind.`,
       confirmLabel: last ? 'Leave floor' : 'Go through',
       cancelLabel: 'Stay here',
       signal: this.signal,

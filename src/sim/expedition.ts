@@ -60,6 +60,9 @@ export interface ExpeditionConfig {
   forceIds: string[];
   /** sections in this floor */
   sections: number;
+  /** the depth dial: the tier of section 0 (default 1) and sections per tier step (default 2) */
+  startTier?: number;
+  ramp?: number;
   rations: number;
   /** HP a Clinic restores across the squad */
   clinicHeal: number;
@@ -157,6 +160,10 @@ const CONNECT_CHANCE = 0.5;
 /** Two sections per tier step, capped at tier 8. Sections count from 0. */
 export const tierOf = (section: number): number => Math.min(8, 1 + Math.floor(section / 2));
 
+/** The tier of a section under this expedition's depth dial. */
+export const tierAt = (cfg: Pick<ExpeditionConfig, 'startTier' | 'ramp'>, section: number): number =>
+  Math.min(8, Math.max(1, (cfg.startTier ?? 1) + Math.floor(section / Math.max(1, cfg.ramp ?? 2))));
+
 /** Low (ace to 5) gives 1 door, mid (6 to 9) gives 2, high (10 to king) gives 3. */
 export const doorsFor = (card: number): number => (card <= 5 ? 1 : card <= 9 ? 2 : 3);
 
@@ -209,7 +216,7 @@ function startSection(x: Expedition): void {
   x.rooms.push(origin);
   x.at = 0;
   x.pending = null;
-  say(x, `Section ${x.section + 1} of ${x.cfg.sections}, tier ${tierOf(x.section)}`);
+  say(x, `Section ${x.section + 1} of ${x.cfg.sections}, tier ${tierAt(x.cfg, x.section)}`);
   openExits(x, origin);
 }
 
@@ -347,7 +354,7 @@ function resolveRoom(x: Expedition, room: Room): string {
         const ids = x.cfg.forceIds;
         room.force = ids[Math.floor(nextRandom(x) * ids.length)]!;
       }
-      x.pending = { kind: 'fight', room: room.id, force: room.force, step: tierOf(x.section) - 1 };
+      x.pending = { kind: 'fight', room: room.id, force: room.force, step: tierAt(x.cfg, x.section) - 1 };
       return 'Contact';
     }
     case 'Gate':
@@ -369,7 +376,7 @@ function resolveRoom(x: Expedition, room: Room): string {
     case 'Gamble': {
       if (room.gamble === null) room.gamble = x.cfg.gambles[Math.floor(nextRandom(x) * x.cfg.gambles.length)]!.id;
       const def = x.cfg.gambles.find((g) => g.id === room.gamble)!;
-      const ladder = x.cfg.ladders[def.id]![tierOf(x.section) - 1]!;
+      const ladder = x.cfg.ladders[def.id]![tierAt(x.cfg, x.section) - 1]!;
       x.pending = { kind: 'gamble', room: room.id, def, ladder, stage: 'offer', rung: 0, last: null, outcome: null, owedLoot: 0 };
       return def.name;
     }

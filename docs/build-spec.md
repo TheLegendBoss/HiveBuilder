@@ -61,6 +61,14 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - **Repairs:** a minor repair costs 1 Eagle and is instant; a major repair costs 3, and the droid sits out the next expedition. Unrepaired damage also sits out.
 - Tests: `campaign.test.ts` (23 cases: market, stash cap, launch and return, wipe, abandon, promotion, aftermath, repairs).
 
+## M5 as built
+
+- **Dials:** `src/data/sandbox.ts` holds `SandboxSetup` (faction, start tier 1 to 8, ramp 1 to 4 sections per step, sections 1 to 14, start Eagles 0 to 200 by 10, start items 0 to 12) with `clampSetup` and `stepDial`. The sim reads them through `ExpeditionConfig.startTier/ramp` and `tierAt(cfg, section)`.
+- **Saves:** `src/core/saves.ts` (no phaser): plain JSON in localStorage, keys `hivedeck.save.auto|1|2|3` and `hivedeck.quickstart`, `SAVE_VERSION` 1. Unreadable or hostile data reads as an empty slot. The campaign config is reattached from code on load; the expedition is saved whole.
+- **Screens:** Sandbox Setup now has steppers (mouse, or Up/Down to pick a dial and Left/Right or +/- to turn it), Save preset (P), Load preset (L), Quickstart (Q, loads the preset and goes straight to the HQ), Quick fight (F), Enter HQ (starts a new campaign; asks first if one is in memory). New Saves screen (autosave plus 3 slots: Load, Save, Delete). Main menu Continue loads the autosave; Load Game opens Saves. The HQ and the expedition map each have a Saves button (V).
+- **Autosave:** written whenever the HQ or the map redraws, so after every move, room and purchase. A fight in progress is not saved; reloading mid-contact shows the Contact prompt again and the fight restarts with the crew's HP as it stood.
+- Tests: `src/core/saves.test.ts`.
+
 ## M0 scope in detail
 
 Project: `package.json`, `vite.config.ts`, `tsconfig.json` (strict), `index.html` with a `#game` parent, Vitest.

@@ -5,6 +5,7 @@ export const SceneKeys = {
   Settings: 'Settings',
   Combat: 'Combat',
   Expedition: 'Expedition',
-  Hub: 'Hub'
+  Hub: 'Hub',
+  Saves: 'Saves'
 } as const;
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];

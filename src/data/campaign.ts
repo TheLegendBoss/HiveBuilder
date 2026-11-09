@@ -1,7 +1,9 @@
 import aftermathCsv from '../../data/aftermath_deck_droid.csv?raw';
 import { createCampaign, launch, type AftermathCard, type Campaign, type CampaignConfig, type Loadout } from '../sim/campaign';
 import { parseCsv } from '../sim/csv';
-import { createExpedition, type Expedition } from '../sim/expedition';
+import { createExpedition, type Expedition, type ExpeditionConfig } from '../sim/expedition';
+import { shuffleInPlace } from '../sim/rng';
+import type { SandboxSetup } from './sandbox';
 import { lootPool } from './loot';
 import { expeditionDefaults, tscExpedition } from './rooms';
 import { tscSquad } from './scenarios';
@@ -44,8 +46,23 @@ export const tscCampaignConfig: CampaignConfig = {
 
 export const newTscCampaign = (seed: number): Campaign => createCampaign(tscCampaignConfig, seed);
 
+/** A fresh sandbox campaign under the setup dials: Eagles in the bank and a few loot items already in the stash. */
+export function newSandboxCampaign(setup: SandboxSetup, seed: number): Campaign {
+  const c = createCampaign({ ...tscCampaignConfig, startEagles: setup.startEagles }, seed);
+  const deck = lootPool.slice();
+  shuffleInPlace(deck, c);
+  c.stash.push(...deck.slice(0, Math.min(setup.startItems, c.cfg.stashCap)));
+  return c;
+}
+
+/** Saves keep the campaign's data but not its config; put the live config back. */
+export const reattachConfig = (c: Campaign): Campaign => {
+  c.cfg = tscCampaignConfig;
+  return c;
+};
+
 /** Send the campaign's ready crew out with this loadout. */
-export function launchTsc(c: Campaign, l: Loadout, seed: number): Expedition {
+export function launchTsc(c: Campaign, l: Loadout, seed: number, dials: Partial<ExpeditionConfig> = {}): Expedition {
   const out = launch(c, l);
-  return createExpedition(tscExpedition(seed, out));
+  return createExpedition(tscExpedition(seed, { ...out, ...dials }));
 }

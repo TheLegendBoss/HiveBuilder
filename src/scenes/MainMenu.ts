@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { session } from '../core/session';
-import { menuItems, menuText, type MenuItemDef } from '../data/menu';
+import { loadFromSlot, session } from '../core/session';
+import { hasAutosave } from '../core/saves';
+import { menuItemsFor, menuText, type MenuItemDef } from '../data/menu';
 import { palette } from '../data/palette';
 import { Button } from '../ui/Button';
 import { drawCable } from '../ui/Cable';
@@ -11,6 +12,7 @@ import { Modal } from '../ui/Modal';
 import { makePanel } from '../ui/Panel';
 import { bodyText, stencilText } from '../ui/text';
 import { SceneKeys } from './keys';
+import { resumeKey } from './resume';
 import { ScreenScene } from './ScreenScene';
 
 const CONSOLE = { x: 1200, y: 165, w: 630, h: 810 };
@@ -19,14 +21,22 @@ const ITEM = { x: 1230, y: 276, w: 570, h: 90, step: 102 };
 export class MainMenu extends ScreenScene {
   private buttons: Button[] = [];
   private focus = 0;
+  private items: MenuItemDef[] = [];
+  private saved = false;
   private vox: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super(SceneKeys.MainMenu);
   }
 
+  private get idle(): string {
+    return this.saved ? menuText.voxSaved : menuText.vox;
+  }
+
   protected override onCreate(): void {
-    this.focus = Math.max(0, menuItems.findIndex((i) => i.primary));
+    this.saved = hasAutosave();
+    this.items = menuItemsFor(this.saved);
+    this.focus = Math.max(0, this.items.findIndex((i) => i.primary));
     this.input.keyboard?.on('keydown', this.onKey, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onKey, this));
   }
@@ -43,7 +53,7 @@ export class MainMenu extends ScreenScene {
     const hive = makeHiveCutaway(this, 60, 235, 960, signal);
     root.add(hive.container);
 
-    const primaryIndex = menuItems.findIndex((i) => i.primary);
+    const primaryIndex = this.items.findIndex((i) => i.primary);
     const cableFrom = { x: CONSOLE.x, y: ITEM.y + primaryIndex * ITEM.step + ITEM.h / 2 };
     const cable = this.add.graphics();
     drawCable(cable, cableFrom, hive.litAnchor, { color: signal, c1: { x: -150, y: 33 }, c2: { x: 150, y: -21 } });
@@ -61,7 +71,7 @@ export class MainMenu extends ScreenScene {
     }
     group.add(lamps);
 
-    const vox = bodyText(this, CONSOLE.x + 30, CONSOLE.y + CONSOLE.h - 27, menuText.vox, 16.5, palette.textMuted, {
+    const vox = bodyText(this, CONSOLE.x + 30, CONSOLE.y + CONSOLE.h - 27, this.idle, 16.5, palette.textMuted, {
       originY: 1,
       wrap: CONSOLE.w - 60,
       lineSpacing: 6
@@ -69,7 +79,7 @@ export class MainMenu extends ScreenScene {
     this.vox = vox;
     group.add(vox);
 
-    menuItems.forEach((item, i) => {
+    this.items.forEach((item, i) => {
       const b = new Button(this, {
         x: ITEM.x,
         y: ITEM.y + i * ITEM.step,
@@ -87,9 +97,9 @@ export class MainMenu extends ScreenScene {
       b.on('hovered', (over: boolean) => {
         if (over) {
           if (item.state === 'live') this.setFocus(i);
-          this.setVox(item.offlineReason ?? menuText.vox);
+          this.setVox(item.offlineReason ?? this.idle);
         } else {
-          this.setVox(menuText.vox);
+          this.setVox(this.idle);
         }
       });
       this.buttons.push(b);
@@ -147,10 +157,10 @@ export class MainMenu extends ScreenScene {
   }
 
   private nextLive(from: number, dir: 1 | -1): number {
-    const n = menuItems.length;
+    const n = this.items.length;
     for (let step = 1; step <= n; step++) {
       const idx = (from + dir * step + n * 2) % n;
-      if (menuItems[idx]!.state === 'live') return idx;
+      if (this.items[idx]!.state === 'live') return idx;
     }
     return from;
   }
@@ -158,6 +168,13 @@ export class MainMenu extends ScreenScene {
   private activateItem(item: MenuItemDef): void {
     if (this.modal?.isOpen) return;
     switch (item.id) {
+      case 'continue':
+        if (item.state === 'live' && loadFromSlot('auto')) this.scene.start(resumeKey());
+        else this.setVox(item.offlineReason ?? this.idle);
+        break;
+      case 'loadGame':
+        this.scene.start(SceneKeys.Saves, { from: SceneKeys.MainMenu });
+        break;
       case 'sandbox':
         this.scene.start(SceneKeys.SandboxSetup);
         break;
@@ -168,7 +185,7 @@ export class MainMenu extends ScreenScene {
         this.confirmQuit();
         break;
       default:
-        this.setVox(item.offlineReason ?? menuText.vox);
+        this.setVox(item.offlineReason ?? this.idle);
     }
   }
 
@@ -197,8 +214,8 @@ export class MainMenu extends ScreenScene {
     if (this.modal?.isOpen) return;
     const digit = '123456'.indexOf(e.key);
     if (digit >= 0) {
-      this.setFocus(menuItems[digit]!.state === 'live' ? digit : this.focus);
-      this.activateItem(menuItems[digit]!);
+      this.setFocus(this.items[digit]!.state === 'live' ? digit : this.focus);
+      this.activateItem(this.items[digit]!);
       return;
     }
     switch (e.key) {
@@ -210,7 +227,7 @@ export class MainMenu extends ScreenScene {
         break;
       case 'Enter':
       case ' ':
-        this.activateItem(menuItems[this.focus]!);
+        this.activateItem(this.items[this.focus]!);
         break;
       case 'Escape':
         this.confirmQuit();

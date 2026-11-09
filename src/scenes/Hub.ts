@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { campaign, launchExpedition, session } from '../core/session';
+import { autosave, campaign, launchExpedition, session } from '../core/session';
 import { mix, palette } from '../data/palette';
 import {
   buyPack, canBuyPack, canPromote, canRepair, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
@@ -131,14 +131,18 @@ export class Hub extends ScreenScene {
     this.scene.start(SceneKeys.Expedition);
   }
 
+  private openSaves(): void {
+    this.scene.start(SceneKeys.Saves, { from: SceneKeys.Hub });
+  }
+
   private back(): void {
     this.modal = new Modal(this, this.root, {
       title: 'Leave the HQ?',
-      body: 'Back to the sandbox setup. The campaign stays in memory until you close the game (saves arrive in a later build).',
+      body: 'Back to the main menu. The campaign is autosaved, so Continue picks it up here.',
       confirmLabel: 'Leave',
       cancelLabel: 'Stay',
       signal: this.signal,
-      onConfirm: () => this.scene.start(SceneKeys.SandboxSetup),
+      onConfirm: () => this.scene.start(SceneKeys.MainMenu),
       onCancel: () => {
         this.modal = null;
       }
@@ -150,6 +154,7 @@ export class Hub extends ScreenScene {
     const k = e.key;
     if (k === 'Enter') return this.start();
     if (k === 'Escape') return this.back();
+    if (k.toLowerCase() === 'v') return this.openSaves();
     if (k >= '1' && k <= '9') return this.crewAction(Number(k) - 1);
     const lower = k.toLowerCase();
     if (lower === 'b') return this.buy();
@@ -190,6 +195,7 @@ export class Hub extends ScreenScene {
   private buildAll(root: Phaser.GameObjects.Container): void {
     const c = this.c;
     const signal = this.signal;
+    autosave();
     this.cursor = Math.max(0, Math.min(this.cursor, Math.max(0, c.stash.length - 1)));
     const title = stencilText(this, 40, 10, 'Tenebrae HQ', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
@@ -200,6 +206,12 @@ export class Hub extends ScreenScene {
       root.add(bodyText(this, x, 14, label, 14, palette.textMuted, { spacing: 0.14 }));
       root.add(bodyText(this, x, 32, value, 36, hot ? signal : palette.text, { weight: '700' }));
     };
+    root.add(
+      new Button(this, { x: 640, y: 14, w: 200, h: 56, label: 'Saves', size: 28, state: 'live', signal, key: 'V', onClick: () => this.openSaves() })
+    );
+    root.add(
+      new Button(this, { x: 856, y: 14, w: 200, h: 56, label: 'Menu', size: 28, state: 'live', signal, key: 'Esc', onClick: () => this.back() })
+    );
     counter(1080, 'EAGLES', String(c.eagles), true);
     counter(1330, 'POWER', String(c.power));
     counter(1560, 'CREW FIT', `${readyCrew(c).length}/${c.crew.length}`);
@@ -394,7 +406,7 @@ export class Hub extends ScreenScene {
     );
     root.add(
       new Button(this, {
-        x: rx, y: LOAD.y + LOAD.h - 94, w: 424, h: 64, label: 'Back to setup', size: 28, state: 'live', signal, key: 'Esc', onClick: () => this.back()
+        x: rx, y: LOAD.y + LOAD.h - 94, w: 424, h: 64, label: 'Main menu', size: 28, state: 'live', signal, key: 'Esc', onClick: () => this.back()
       })
     );
   }
