@@ -138,7 +138,7 @@ Passive: Max soak - 3.
 - A card lists passives first, then activated rows, cheapest first. Rarity riders come last in a row group labelled RIDER, in the same grammar.
 - In plain text (data files, docs, tooltips) a row is `(N): Name - Effect` or `Passive: Name - Effect`. On the card the body is up to three sections, each opened by a small header and a rule in the frame color:
   - **PASSIVE** (header, rule): each entry is a bold-italic title and a period, then the text (`Max Soak. 3 Points`, `Ammo. 6 Shots`, `Akimbo. One action...`). A closing rule ends the section.
-  - **ACTIVATED** (header, rule): each entry is the cost hexagon, a colon and the bold name, with the description underneath lined up under the name. A closing rule appears only when a RIDER section follows.
+  - **ACTIVATED** (header, rule): each entry is the cost hexagon, then the bold name and a period with the description running on in the same line, wrapping beside the hexagon (`1  **Aimed Shot.** Deal 6 damage to one enemy.`). A closing rule appears only when a RIDER section follows.
   - **RIDER**: same pattern as PASSIVE.
   Enemy actions use an outlined rust square with the order number instead of a hexagon, since they cost no fuel.
 - Names are short (one or two words) and unique on the card.
