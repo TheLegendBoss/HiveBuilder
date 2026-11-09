@@ -259,7 +259,7 @@ export function enemyAct(g: Game): Ev[] {
           g.bulwark[t.lane!] = null;
           ev.push({ t: 'log', text: `${t.name} takes the hit meant for a squadmate` });
         }
-        ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on ${t.name} for ${plan.dmg}` });
+        ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on ${t.name}${plan.dmg > 0 ? ` for ${plan.dmg}` : ''}` });
         if (plan.dmg > 0) hitUnit(t, plan.dmg, ev);
         applyEffects(t, plan.burn, plan.stun, ev);
         if (plan.suppress && !t.downed && !t.dead) {
