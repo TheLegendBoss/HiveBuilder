@@ -62,7 +62,7 @@ Rules:
 
 ## 3. Typography and text size
 
-- Two bundled fonts, loaded before the first scene so every machine looks the same: Big Shoulders Stencil Display (700 and 900) for titles, names, buttons and stamps, always uppercase; IBM Plex Mono for body, numbers and labels. Both are open licence.
+- Two bundled fonts, loaded before the first scene so every machine looks the same: Big Shoulders Stencil Display (700 and 900) for titles, names, buttons and stamps, always uppercase; Saira Semi Condensed (400 to 700) for everything else: body, numbers, labels, type lines and rules text. Both are open licence. (Replaces IBM Plex Mono, which read poorly at card sizes. Chosen from five options in the card mockups. Saira has no italic, so bold-italic titles use a synthesized slant.)
 - Size scale at the 1080p reference (working): title 90 (menu lockup) or 60, heading 36, unit and card name 24 to 27, body 18, labels 16.
 - Floors at the reference: card effect text 18, labels and details 16, never below 14. (The mockups show these as 12 and 11 at 1280 by 720.)
 - The Settings text size option scales all of it: 100%, 125% and 150%. Layouts must reflow at 150% without clipping; text wraps instead of shrinking.
@@ -114,9 +114,9 @@ Every screen has Esc open a pause or back menu, and no screen is a dead end.
 
 ## 7. Card anatomy
 
-- Fixed card size at the reference resolution (working: 201 by 294, the mockup's 134 by 196), drawn as a Container: frame, fuel circle, name, type line, art slot, rules box, footer.
-- Frame color is the rarity. Top left: fuel value in a circle (a square for Pressmen) on action cards. Next to it: the name in stencil type. Below: the type line (see 7.2). Then a small art slot with a simple line icon, then the rules box (see 7.1). Footer: the rarity name with one notch per step on the left and the keyboard shortcut in a small box on the right.
-- Rarity names (decided): white **Basic**, green **Improved**, blue **Advanced**, purple **Enhanced**, orange **[name still to decide]**, red **Unique**, gold **Archeotech**. Anywhere the game names a rarity (card footer, reveal stamps, tooltips, pack summaries) it uses these words, never the color name. Frame color and notches repeat the same information, so rarity never relies on color alone.
+- Fixed card size at the reference resolution (working: 201 by 294, the mockup's 134 by 196), drawn as a Container: frame, burn hexagon, name, type line, art strip, rules box, footer stack.
+- Frame color is the rarity. Top left: the name in stencil type, with the type line below it (see 7.2). Top right: the burn value in a red hexagon, like mana on an MTG card, with no label. Buildings have none. Then an art strip (see 7.3), then the rules box (see 7.1). Footer, centered: the faction or restriction name when the card has one (name only), one star per rarity step, then the rarity name. The keyboard shortcut sits in a small box on hand cards.
+- Rarity names (decided): white **Basic**, green **Improved**, blue **Advanced**, purple **Enhanced**, orange **[name still to decide]**, red **Unique**, gold **Archeotech**. Anywhere the game names a rarity (card footer, reveal stamps, tooltips, pack summaries) it uses these words, never the color name. Frame color and stars repeat the same information, so rarity never relies on color alone.
 - Hand cards show all of the above. Hovering raises the card and shows the full text in a tooltip panel if it is clipped.
 - States: normal, hover (raised, panelRaised), selected (raised 36 px at the reference, signal outline plus a glow), disabled or unplayable (dim, with the reason in the tooltip), locked (small lock mark, so it can't be sold by accident), exhausted (turned dim and greyed).
 - Clog cards (burn and similar) use the panel color with a danger-red frame and show the discard damage on the card.
@@ -132,22 +132,37 @@ Passive: Max soak - 3.
 
 | Row | Leader | Meaning |
 | --- | --- | --- |
-| Activated | `(N)` in a circle: the fuel cost to use it. `(0)` is printed for free actions | You choose to use it. Gear actions, action cards, supplies |
-| Passive | `Passive` tag | Always on while the card is in play. Stat lines (ammo, max soak), drawbacks and standing triggers ("When ...") |
+| Activated | `(N)` in a red hexagon: the fuel cost to use it, same shape and color as the burn value. `(0)` is printed for free actions | You choose to use it. Gear actions, action cards, supplies |
+| Passive | Listed under a `PASSIVE` header | Always on while the card is in play. Stat lines (ammo, max soak), drawbacks and standing triggers ("When ...") |
 
 - A card lists passives first, then activated rows, cheapest first. Rarity riders come last in a row group labelled RIDER, in the same grammar.
-- In plain text (data files, docs, tooltips) a row is `(N): Name - Effect` or `Passive: Name - Effect`. On the card the leader is drawn as the cost circle or the PASSIVE tag, the name is bold, and the effect is regular weight.
+- In plain text (data files, docs, tooltips) a row is `(N): Name - Effect` or `Passive: Name - Effect`. On the card the body is up to three sections, each opened by a small header and a rule in the frame color:
+  - **PASSIVE** (header, rule): each entry is a bold-italic title and a period, then the text (`Max Soak. 3 Points`, `Ammo. 6 Shots`, `Akimbo. One action...`). A closing rule ends the section.
+  - **ACTIVATED** (header, rule): each entry is the cost hexagon, a colon and the bold name, with the description underneath lined up under the name. A closing rule appears only when a RIDER section follows.
+  - **RIDER**: same pattern as PASSIVE.
+  Enemy actions use an outlined rust square with the order number instead of a hexagon, since they cost no fuel.
 - Names are short (one or two words) and unique on the card.
 - The effect is one or two short sentences, imperative, in this vocabulary: **Deal** N damage, **Restore** N HP or soak, **Gain** N soak, **Refill** N ammo, **Draw**, **Remove** a status, **Apply** a status. Targets: "one enemy", "two enemies", "every enemy in the lane", "one unit in this lane", "this unit", "the attached gear".
 - Numbers are digits. A card prints final numbers only: a green Scrap cleaver says "Deal 3", never "+1 damage". Deltas between rarities live in tooltips and the Codex.
 - Limits come last, as a short sentence: "Once per fight." "Once per expedition." **Consumed.** (the item is destroyed after use, as in the Fate table).
 - Keywords are capitalized and defined once in the glossary: Wind-up N, Ranged, Exposed, Stunned, Suppressed, Slowed, Burning, Consumed. Reminder text appears in the hover tooltip. The Settings option **Keyword reminders** switches between **On hover** (default) and **Always** (small italic text under the row).
-- Row budget: at most 4 rows on a hand card. Anything longer is cut in design, not shrunk.
+- Row budget: at most 4 rows on a hand card. Anything longer is cut in design, not shrunk. Mockup space budget for an item card: about 14 lines of 35 characters including headers, so a full card is two activated abilities with 2-line descriptions (about 70 characters) plus one rider.
 
 ### 7.2 Type line and card kinds
 
 - Format: `KIND · CLASS, SIZE`. Kinds: GEAR, ACTION, SUPPLY, DISPOSABLE, ATTACHMENT, ACCESSORY, PERK, SKILL, UNIT, CLOG. Example: `GEAR · MELEE, LIGHT`.
-- Each kind also gets a frame cue so the silhouette reads before the text does (working, to be reviewed in a card-kinds pass): gear with a notched corner, action cards plain, supplies with a taped edge, disposables with a hazard stripe on the footer, attachments with a socket mark on the frame, units with a wider header plate.
+- Each kind also gets a frame cue so the silhouette reads before the text does (working, to be reviewed in a card-kinds pass): gear with a cut top-left corner, action cards plain with a faint stripe down the left edge, supplies with a taped edge, disposables with a hazard stripe on the footer, attachments with a socket mark on the frame, perks with a cut bottom-right corner, skills with a cut bottom-left corner, buildings with both bottom corners cut.
+
+### 7.3 Art on cards
+
+- Every card keeps a short **art strip** (270 by 52 in the mockup, about 180 by 35 in game). Cards do not trade rules space for bigger art. Art has to work as a banner: gear shots and scenes, with faces cropped to a focus point.
+- The **character screen** (gear up, level up, promotions) and the card **inspect** view show the full, uncropped art. That is where portraits are shown large.
+- Commission one master image per card at 5 to 7 portrait (900 by 1260). The strip is a crop with a focus point set per card, and the inspect view shows it whole.
+- Crew cards lay their meters over the foot of a taller portrait window (270 by 132 in the mockup) to keep the art visible. Working, to be revisited with the character screen.
+
+### 7.4 Meter colors
+
+- On crew and enemy cards: **HP red** (#d9473b, track #4a1814), **Soak blue** (#4a9be0, built-in soak #2b5b8c) and **Stress yellow** (#e2b93b). Working values, to move into `palette.ts` when the cards are built. They sit near the fuel red, the Advanced blue and the Archeotech gold, so they only ever appear as bars on unit cards, never as frames, and enemy order markers use rust instead of red.
 
 ## 8. Faction skins
 
