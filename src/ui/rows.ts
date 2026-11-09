@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { mix, palette, toCss } from '../data/palette';
 import { makeStamp } from './Stamp';
-import { monoText, stencilText } from './text';
+import { bodyText, stencilText } from './text';
 
 export interface RowBase {
   label: string;
@@ -87,7 +87,7 @@ export class ToggleRow extends Row {
     super(scene, o);
     this.value = o.value;
     this.box = scene.add.graphics();
-    this.valueText = monoText(scene, 0, 0, '', 24, palette.text, { originX: 1, originY: 0.5 });
+    this.valueText = bodyText(scene, 0, 0, '', 24, palette.text, { originX: 1, originY: 0.5 });
     this.add([this.box, this.valueText]);
     this.draw();
     if (!o.disabled) {
@@ -158,7 +158,7 @@ export class SliderRow extends Row {
     super(scene, o);
     this.value = o.value;
     this.g = scene.add.graphics();
-    this.valueText = monoText(scene, 0, 0, '', 24, palette.text, { originX: 1, originY: 0.5 });
+    this.valueText = bodyText(scene, 0, 0, '', 24, palette.text, { originX: 1, originY: 0.5 });
     this.add([this.g, this.valueText]);
     this.draw();
     this.setInteractive({ useHandCursor: true });
@@ -241,7 +241,7 @@ export class ChoiceRow<T extends number | string> extends Row {
     this.g = scene.add.graphics();
     this.add(this.g);
     o.options.forEach(() => {
-      const t = monoText(scene, 0, 0, '', 24, palette.text, { originX: 0.5, originY: 0.5 });
+      const t = bodyText(scene, 0, 0, '', 24, palette.text, { originX: 0.5, originY: 0.5 });
       this.texts.push(t);
       this.add(t);
     });

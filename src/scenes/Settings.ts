@@ -6,7 +6,7 @@ import { animSpeedOptions, textScaleOptions } from '../data/settings';
 import { Button } from '../ui/Button';
 import { makePanel } from '../ui/Panel';
 import { ChoiceRow, SliderRow, ToggleRow, type Row } from '../ui/rows';
-import { monoText, stencilText } from '../ui/text';
+import { bodyText, stencilText } from '../ui/text';
 import { SceneKeys, type SceneKey } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -79,7 +79,7 @@ export class Settings extends ScreenScene {
       if (!r.isDisabled) r.on('hovered', () => this.setFocus(i));
     });
 
-    this.vox = monoText(this, ROW.x + 6, PANEL.y + PANEL.h - 36, '', 16.5, palette.textMuted, { originY: 1, wrap: ROW.w - 12 });
+    this.vox = bodyText(this, ROW.x + 6, PANEL.y + PANEL.h - 36, '', 16.5, palette.textMuted, { originY: 1, wrap: ROW.w - 12 });
     root.add(this.vox);
 
     this.back = new Button(this, {

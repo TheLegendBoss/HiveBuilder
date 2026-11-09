@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { mix, palette } from '../data/palette';
 import { makeStamp, type StampHandle } from './Stamp';
-import { monoText, stencilText } from './text';
+import { bodyText, stencilText } from './text';
 
 export interface ButtonOpts {
   /** top-left corner in the parent's space */
@@ -53,7 +53,7 @@ export class Button extends Phaser.GameObjects.Container {
 
     let cursor = opts.w / 2 - 27;
     if (opts.key) {
-      const k = monoText(scene, 0, 0, opts.key, 16.5, palette.textMuted, { originX: 0.5, originY: 0.5 });
+      const k = bodyText(scene, 0, 0, opts.key, 16.5, palette.textMuted, { originX: 0.5, originY: 0.5 });
       const kw = Math.max(36, k.width + 18);
       const kh = k.height + 6;
       const kg = scene.add.graphics();

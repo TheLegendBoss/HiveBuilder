@@ -118,6 +118,7 @@ Numbers and rules the M4 build had to invent. All are in `src/data/campaign.ts` 
 
 - **Card layout (mockup, decided after review):** burn is a red hexagon top right with no label, and the fuel cost on an ability uses the same hexagon and red. The footer is a centered stack (faction or restriction name, stars, rarity name). The body is PASSIVE, ACTIVATED and RIDER sections with headers and rules in the frame color; passives read `Max Soak. 3 Points`; activated entries are cost hexagon, colon, name, with the description lined up under the name. Everything on a card except the title is Saira Semi Condensed (Big Shoulders Stencil stays on titles). Crew and enemy meters are HP red, Soak blue, Stress yellow. See ui-guide sections 3 and 7.
 - **Art on cards:** cards keep a short art strip, and full art is shown on the character screen (gear up, level up) and in an inspect view. One 5 to 7 portrait master image per card, cropped for the strip.
+- **Build update:** the game now uses the reviewed card layout on hand cards (red burn hexagon, art strip, PASSIVE check and ACTIVATED sections with a cost hexagon, inline bold ability name, centered stars and rarity name), Saira Semi Condensed for all non-title text (replacing IBM Plex Mono), and the HP red / Soak blue meter colors (`palette.meter`). The starting deck is all Basic; rarity names and star counts live in `palette.ts`. Not yet in the game: item, unit, enemy, room, result and status cards, which are still mockup only, and the Stress meter (no stress in the sim yet).
 
 ## Open questions
 

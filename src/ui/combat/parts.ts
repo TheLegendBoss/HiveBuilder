@@ -1,20 +1,30 @@
 import Phaser from 'phaser';
 import type { CardDef } from '../../data/cards';
-import { mix, palette } from '../../data/palette';
+import { mix, palette, rarityInfo } from '../../data/palette';
 import type { Unit } from '../../sim/types';
 import { drawCardGlyph } from '../icons';
-import { monoText, stencilText } from '../text';
+import { bodyText, stencilText } from '../text';
 
-/** HP bar with the blood treatment: dried blood background, remaining HP in text color, a drip when hurt. */
-export function drawHpBar(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, hp: number, max: number): void {
-  g.fillStyle(palette.bloodDry, 1);
+/** HP bar with the blood treatment: dark track, remaining HP in the HP red, a drip when hurt. `fill` and `track` let progress bars reuse it. */
+export function drawHpBar(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  hp: number,
+  max: number,
+  fill: number = palette.meter.hp,
+  track: number = palette.meter.hpTrack
+): void {
+  g.fillStyle(track, 1);
   g.fillRect(x, y, w, h);
-  const fill = max > 0 ? Math.round((w * Math.max(0, hp)) / max) : 0;
-  g.fillStyle(palette.text, 1);
-  g.fillRect(x, y, fill, h);
-  if (hp < max && fill < w) {
+  const filled = max > 0 ? Math.round((w * Math.max(0, hp)) / max) : 0;
+  g.fillStyle(fill, 1);
+  g.fillRect(x, y, filled, h);
+  if (hp < max && filled < w) {
     g.fillStyle(palette.danger, 1);
-    const edge = Math.max(x, Math.min(x + w - 2, x + fill - 1));
+    const edge = Math.max(x, Math.min(x + w - 2, x + filled - 1));
     g.fillRect(edge, y + h, 2, 9);
     g.fillRect(Math.max(x, edge - 6), y + h, 2, 5);
   }
@@ -43,7 +53,7 @@ export function drawChips(
   parent.add(g);
   const left: ChipSpec[] = [];
   chips.forEach((c, i) => {
-    const t = monoText(scene, 0, 0, c.label, size, c.filled ? palette.bg : (c.color ?? palette.textMuted), { originY: 0.5 });
+    const t = bodyText(scene, 0, 0, c.label, size, c.filled ? palette.bg : (c.color ?? palette.textMuted), { originY: 0.5 });
     const w = t.width + 12;
     if (cx + w > x + maxW) {
       t.destroy();
@@ -111,7 +121,7 @@ export function makePlate(scene: Phaser.Scene, o: PlateOpts): Phaser.GameObjects
   let tagW = 0;
   if (o.mark) {
     const col = o.mark === 'OUT OF RANGE' ? palette.textMuted : o.mark === 'NEXT' ? palette.danger : o.signal;
-    const tg = monoText(scene, hx + o.w - 8, hy + 10, o.mark, 14, col, { originX: 1, spacing: 0.06 });
+    const tg = bodyText(scene, hx + o.w - 8, hy + 10, o.mark, 14, col, { originX: 1, spacing: 0.06 });
     const tw = tg.width + 10;
     tagW = tw + 6;
     const bg = scene.add.graphics();
@@ -129,12 +139,12 @@ export function makePlate(scene: Phaser.Scene, o: PlateOpts): Phaser.GameObjects
   const bar = scene.add.graphics();
   drawHpBar(bar, hx + 10, barY, o.w - 20 - textW, 14, u.hp, u.maxHp);
   c.add(bar);
-  if (!o.compact) c.add(monoText(scene, hx + o.w - 10, barY + 7, `${u.hp}/${u.maxHp}`, 16, palette.text, { originX: 1, originY: 0.5 }));
+  if (!o.compact) c.add(bodyText(scene, hx + o.w - 10, barY + 7, `${u.hp}/${u.maxHp}`, 16, palette.text, { originX: 1, originY: 0.5 }));
 
   const chips: ChipSpec[] = [];
   const soak = u.armor + u.builtin;
   if (u.downed) chips.push({ label: 'DOWNED', color: palette.danger, filled: true });
-  if (soak > 0) chips.push({ label: `SOAK ${soak}`, color: palette.bone });
+  if (soak > 0) chips.push({ label: `SOAK ${soak}`, color: palette.meter.soak });
   if (u.ammoMax > 0) chips.push({ label: `AMMO ${u.ammo}`, color: palette.bone });
   if (u.stunned) chips.push({ label: 'STUN', color: palette.danger });
   if (u.exposed) chips.push({ label: 'EXPOSED', color: palette.danger });
@@ -143,7 +153,7 @@ export function makePlate(scene: Phaser.Scene, o: PlateOpts): Phaser.GameObjects
   if (u.sight) chips.push({ label: 'SIGHT', color: o.signal });
   const rest = drawChips(scene, c, hx + 10, hy + o.h - 20, o.w - 20, chips);
   if (rest.length) {
-    c.add(monoText(scene, hx + o.w - 10, hy + o.h - 20, `+${rest.length}`, 14, palette.textMuted, { originX: 1, originY: 0.5 }));
+    c.add(bodyText(scene, hx + o.w - 10, hy + o.h - 20, `+${rest.length}`, 14, palette.textMuted, { originX: 1, originY: 0.5 }));
   }
 
   c.setAlpha(o.dim ? 0.45 : u.downed ? 0.7 : 1);
@@ -177,7 +187,7 @@ export function makeIntentBadge(
   g.fillTriangle(10, 3, 18, 11, 10, 19);
   g.fillTriangle(10, 3, 2, 11, 10, 19);
   c.add(g);
-  const t = monoText(scene, 26, 11, label, 15, col, { originY: 0.5, spacing: 0.04 });
+  const t = bodyText(scene, 26, 11, label, 15, col, { originY: 0.5, spacing: 0.04 });
   if (t.width > w - 32) t.setScale((w - 32) / t.width);
   c.add(t);
   return c;
@@ -197,14 +207,120 @@ export interface CardOpts {
   focus: boolean;
 }
 
+/** A six-sided marker, pointy top. Used for the burn value and for ability fuel costs. */
+export function drawHex(g: Phaser.GameObjects.Graphics, cx: number, cy: number, w: number, h: number, color: number): void {
+  const hw = w / 2;
+  const hh = h / 2;
+  g.fillStyle(color, 1);
+  g.beginPath();
+  g.moveTo(cx, cy - hh);
+  g.lineTo(cx + hw, cy - hh / 2);
+  g.lineTo(cx + hw, cy + hh / 2);
+  g.lineTo(cx, cy + hh);
+  g.lineTo(cx - hw, cy + hh / 2);
+  g.lineTo(cx - hw, cy - hh / 2);
+  g.closePath();
+  g.fillPath();
+}
+
+const STAR_POINTS: [number, number][] = [[50, 0], [61, 35], [98, 35], [68, 57], [79, 91], [50, 70], [21, 91], [32, 57], [2, 35], [39, 35]];
+
+/** A five-point star `s` pixels across, centered on (cx, cy). One per rarity step. */
+export function drawStar(g: Phaser.GameObjects.Graphics, cx: number, cy: number, s: number, color: number): void {
+  g.fillStyle(color, 1);
+  g.beginPath();
+  STAR_POINTS.forEach(([px, py], i) => {
+    const x = cx + ((px - 50) / 100) * s;
+    const y = cy + ((py - 50) / 100) * s;
+    if (i === 0) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  });
+  g.closePath();
+  g.fillPath();
+}
+
+export interface InlineFlow {
+  /** total height used, in pixels */
+  height: number;
+  lines: number;
+}
+
+/**
+ * Lay out "Name. description" the way cards print an ability: the name in bold, then the description running on in the
+ * same line and wrapping under it. Phaser text has one style per object, so the name and each description line are
+ * separate objects. `maxLines` trims the description with an ellipsis when it would run past.
+ */
+export function flowInline(
+  scene: Phaser.Scene,
+  parent: Phaser.GameObjects.Container,
+  x: number,
+  y: number,
+  width: number,
+  name: string,
+  desc: string,
+  size: number,
+  nameColor: number,
+  textColor: number,
+  opts: { italicName?: boolean; maxLines?: number; dry?: boolean } = {}
+): InlineFlow {
+  const nameStyle = opts.italicName ? 'italic 700' : '700';
+  const nameObj = bodyText(scene, x, y, name + '.', size, nameColor, { weight: nameStyle, full: true });
+  const probe = bodyText(scene, 0, 0, '', size, textColor, { full: true });
+  const measure = (t: string): number => {
+    probe.setText(t);
+    return probe.width;
+  };
+  const spaceW = measure('a a') - measure('aa');
+  const lineH = nameObj.height + 1;
+  const lines: string[] = [];
+  let avail = width - nameObj.width - spaceW;
+  let cur = '';
+  for (const word of desc.split(' ')) {
+    const test = cur ? `${cur} ${word}` : word;
+    if (cur && measure(test) > avail) {
+      lines.push(cur);
+      cur = word;
+      avail = width;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  if (opts.maxLines && lines.length > opts.maxLines) {
+    lines.length = opts.maxLines;
+    lines[opts.maxLines - 1] = lines[opts.maxLines - 1]!.replace(/[ .,;:]+$/, '') + '…';
+  }
+  const total = Math.max(1, lines.length) * lineH;
+  probe.destroy();
+  if (opts.dry) {
+    nameObj.destroy();
+    return { height: total, lines: lines.length };
+  }
+  parent.add(nameObj);
+  lines.forEach((ln, i) => {
+    const off = i === 0 ? nameObj.width + spaceW : 0;
+    parent.add(bodyText(scene, x + off, y + i * lineH, ln, size, textColor, { full: true }));
+  });
+  return { height: total, lines: lines.length };
+}
+
+function sentence(t: string): string {
+  const s = t.trim();
+  return s ? s[0]!.toUpperCase() + s.slice(1) + (/[.!?]$/.test(s) ? '' : '.') : s;
+}
+
 /** A hand card's visuals. Container centered on the card; the caller adds the hit area so hover motion never moves it. */
 export function makeCard(scene: Phaser.Scene, o: CardOpts): Phaser.GameObjects.Container {
   const { def } = o;
   const c = scene.add.container(0, 0);
   const hx = -CARD_W / 2;
   const hy = -CARD_H / 2;
+  const rarity = palette.rarity[def.rarity];
+  const info = rarityInfo[def.rarity];
+  const frame = o.playable ? rarity : palette.line;
+  const ink = o.playable ? palette.text : palette.textMuted;
+  const inkSoft = o.playable ? palette.textMuted : palette.boneDim;
   const g = scene.add.graphics();
-  const frame = o.playable ? palette.rarity.white : palette.line;
   g.fillStyle(palette.panelDeep, 1);
   g.fillRect(hx, hy, CARD_W, CARD_H);
   if (o.selected) {
@@ -218,67 +334,100 @@ export function makeCard(scene: Phaser.Scene, o: CardOpts): Phaser.GameObjects.C
   }
   g.lineStyle(o.selected ? 4.5 : 3, o.selected ? o.signal : o.tag === 'BURN' ? palette.danger : frame, 1);
   g.strokeRect(hx + 1.5, hy + 1.5, CARD_W - 3, CARD_H - 3);
-  // Fuel value circle (what burning this card pays).
-  g.lineStyle(2, palette.bone, 1);
-  g.strokeCircle(hx + 28, hy + 36, 17);
-  // Art slot with a glyph.
+
+  // Burn value: a red hexagon, top right, no label.
+  const burnX = hx + CARD_W - 26;
+  const burnY = hy + 26;
+  drawHex(g, burnX, burnY, 26, 29, o.playable ? palette.danger : palette.meter.hpTrack);
+
+  // Art strip with the kind glyph.
+  const artX = hx + 12;
+  const artY = hy + 62;
+  const artW = CARD_W - 24;
+  const artH = 34;
+  g.fillStyle(palette.bg, 1);
+  g.fillRect(artX, artY, artW, artH);
   g.lineStyle(1.5, palette.line, 1);
-  g.strokeRect(hx + 12, hy + 74, 54, 54);
-  drawCardGlyph(g, def.sourceType, hx + 39, hy + 101, 34, o.playable ? palette.bone : palette.textMuted);
+  g.strokeRect(artX, artY, artW, artH);
+  drawCardGlyph(g, def.sourceType, artX + artW / 2, artY + artH / 2, 22, o.playable ? palette.bone : palette.textMuted);
   c.add(g);
 
-  c.add(monoText(scene, hx + 28, hy + 36, String(def.fuelValue), 20, palette.text, { originX: 0.5, originY: 0.5, weight: 'bold' }));
-  const nm = stencilText(scene, hx + 54, hy + 18, def.name, 22, o.playable ? palette.text : palette.textMuted, {
-    wrap: CARD_W - 64,
-    lineSpacing: -4
-  });
+  c.add(bodyText(scene, burnX, burnY + 1, String(def.fuelValue), 18, palette.text, { originX: 0.5, originY: 0.5, weight: '700' }));
+  const nm = stencilText(scene, hx + 14, hy + 11, def.name, 22, ink);
+  const maxName = CARD_W - 14 - 50;
+  if (nm.width > maxName) nm.setScale(maxName / nm.width);
   c.add(nm);
+  const typeLine = bodyText(scene, hx + 14, hy + 40, `${def.sourceType} · ${def.source}`.toUpperCase(), 14, inkSoft, { spacing: 0.08 });
+  if (typeLine.width > CARD_W - 28) typeLine.setScale((CARD_W - 28) / typeLine.width);
+  c.add(typeLine);
 
-  const typeY = hy + 76;
-  c.add(monoText(scene, hx + 74, typeY, def.sourceType.toUpperCase(), 14, palette.textMuted, { spacing: 0.08 }));
-  const costs: string[] = [];
-  if (def.playFuel > 0) costs.push(`FUEL ${def.playFuel}`);
-  if (def.ammoCost > 0) costs.push(`AMMO ${def.ammoCost}`);
-  c.add(monoText(scene, hx + 74, typeY + 22, costs.length ? costs.join(' ') : 'FREE', 14, costs.length ? palette.text : palette.textMuted));
+  // Body: PASSIVE (the check), then ACTIVATED (the play), each under a header and a rule in the frame color.
+  const left = hx + 12;
+  const colW = CARD_W - 24;
+  const ruleCol = o.playable ? rarity : palette.line;
+  const section = (y: number, label: string, right?: string): number => {
+    c.add(bodyText(scene, left, y, label, 12, inkSoft, { spacing: 0.2 }));
+    if (right) c.add(bodyText(scene, left + colW, y, right, 12, inkSoft, { originX: 1, spacing: 0.12 }));
+    const rule = scene.add.graphics();
+    rule.fillStyle(ruleCol, 1);
+    rule.fillRect(left, y + 16, colW, 2);
+    c.add(rule);
+    return y + 22;
+  };
+  const closeRule = (y: number): number => {
+    const rule = scene.add.graphics();
+    rule.fillStyle(ruleCol, 1);
+    rule.fillRect(left, y, colW, 2);
+    c.add(rule);
+    return y + 6;
+  };
 
-  // Effect text: biggest size that fits, never below the 14 px floor. Past that it is trimmed with an ellipsis.
-  const maxH = CARD_H - 136 - 40;
-  const body = (txt: string, size: number): Phaser.GameObjects.Text =>
-    monoText(scene, hx + 12, hy + 136, txt, size, o.playable ? palette.text : palette.textMuted, { wrap: CARD_W - 24, lineSpacing: 3, full: true });
-  let placed = false;
-  for (const size of [18, 16, 14]) {
-    const t = body(def.text, size);
-    if (t.height <= maxH) {
-      c.add(t);
-      placed = true;
-      break;
-    }
-    t.destroy();
-  }
-  if (!placed) {
-    const words = def.text.split(' ');
-    let n = words.length;
-    let t = body(words.slice(0, n).join(' ') + '…', 14);
-    while (t.height > maxH && n > 1) {
-      t.destroy();
-      n -= 1;
-      t = body(words.slice(0, n).join(' ') + '…', 14);
-    }
-    c.add(t);
+  let y = hy + 104;
+  if (def.checkBonus > 0) {
+    y = section(y, 'PASSIVE');
+    const f = flowInline(scene, c, left, y, colW, 'Check', `+${def.checkBonus} ${def.checkAttribute}`, 14, ink, ink, { italicName: true });
+    y = closeRule(y + f.height + 3) + 4;
   }
 
-  const foot = monoText(scene, hx + 12, hy + CARD_H - 22, def.source, 14, palette.textMuted, { originY: 0.5 });
-  if (foot.width > 130) foot.setScale(130 / foot.width);
-  c.add(foot);
+  // The footer stack (stars, rarity name) takes the bottom; the effect gets the room between.
+  const footTop = hy + CARD_H - 40;
+  y = section(y, 'ACTIVATED', def.ammoCost > 0 ? `AMMO ${def.ammoCost}` : undefined);
+  const hexW = 22;
+  const textX = left + hexW + 8;
+  const textW = colW - hexW - 8;
+  const room = footTop - y - 2;
+  let size = 16;
+  let flow = flowInline(scene, c, textX, y, textW, def.name, sentence(def.text), size, ink, ink, { dry: true });
+  if (flow.height > room) {
+    size = 14;
+    flow = flowInline(scene, c, textX, y, textW, def.name, sentence(def.text), size, ink, ink, { dry: true });
+  }
+  const maxLines = flow.height > room ? Math.max(1, Math.floor(room / (flow.height / flow.lines))) : undefined;
+  const hg = scene.add.graphics();
+  drawHex(hg, left + hexW / 2, y + 11, hexW, 24, o.playable ? palette.danger : palette.meter.hpTrack);
+  c.add(hg);
+  c.add(bodyText(scene, left + hexW / 2, y + 12, String(def.playFuel), 15, palette.text, { originX: 0.5, originY: 0.5, weight: '700' }));
+  flowInline(scene, c, textX, y + 2, textW, def.name, sentence(def.text), size, ink, ink, { maxLines });
+
+  // Footer: stars, then the rarity name, centered.
+  const sg = scene.add.graphics();
+  const starS = 12;
+  const starsW = info.stars * starS + (info.stars - 1) * 3;
+  for (let i = 0; i < info.stars; i++) {
+    drawStar(sg, -starsW / 2 + starS / 2 + i * (starS + 3), hy + CARD_H - 30, starS, frame);
+  }
+  c.add(sg);
+  c.add(bodyText(scene, 0, hy + CARD_H - 14, info.name.toUpperCase(), 12, o.playable ? rarity : palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.2, weight: '700' }));
+
   const kg = scene.add.graphics();
   kg.lineStyle(1.5, o.selected ? o.signal : palette.line, 1);
-  kg.strokeRect(hx + CARD_W - 40, hy + CARD_H - 36, 28, 28);
+  kg.strokeRect(hx + CARD_W - 36, hy + CARD_H - 30, 24, 24);
   c.add(kg);
-  c.add(monoText(scene, hx + CARD_W - 26, hy + CARD_H - 22, o.key, 16, palette.textMuted, { originX: 0.5, originY: 0.5 }));
+  c.add(bodyText(scene, hx + CARD_W - 24, hy + CARD_H - 18, o.key, 15, palette.textMuted, { originX: 0.5, originY: 0.5 }));
 
   if (o.tag) {
     const col = o.tag === 'BURN' ? palette.danger : o.signal;
-    const tg = monoText(scene, 0, hy, o.tag, 15, palette.bg, { originX: 0.5, originY: 0.5, spacing: 0.08 });
+    const tg = bodyText(scene, 0, hy, o.tag, 15, palette.bg, { originX: 0.5, originY: 0.5, spacing: 0.08 });
     const bg = scene.add.graphics();
     bg.fillStyle(col, 1);
     bg.fillRect(-tg.width / 2 - 8, hy - 11, tg.width + 16, 22);
@@ -301,6 +450,6 @@ export function makePile(scene: Phaser.Scene, x: number, y: number, label: strin
   }
   c.add(g);
   c.add(stencilText(scene, 56, 66, String(count), 54, count > 0 ? palette.text : palette.textMuted, { originX: 0.5, originY: 0.5, fixed: true }));
-  c.add(monoText(scene, 56, 176, label, 16, palette.textMuted, { originX: 0.5, spacing: 0.14 }));
+  c.add(bodyText(scene, 56, 176, label, 16, palette.textMuted, { originX: 0.5, spacing: 0.14 }));
   return c;
 }

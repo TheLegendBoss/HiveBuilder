@@ -13,6 +13,14 @@ export const palette = {
   textMuted: 0x8a8174,
   danger: 0xc93a2e,
   bloodDry: 0x4a1410,
+  // Unit meters: HP red, Soak blue, Stress yellow (card mockup review).
+  meter: {
+    hp: 0xd9473b,
+    hpTrack: 0x4a1814,
+    soak: 0x4a9be0,
+    soakBuilt: 0x2b5b8c,
+    stress: 0xe2b93b
+  },
   hazardA: 0x4a3818,
   hazardB: 0x14110e,
   bone: 0xb8ab8f,
@@ -30,6 +38,19 @@ export const palette = {
     gold: 0xe5c04a
   }
 } as const;
+
+export type RarityId = keyof typeof palette.rarity;
+
+/** The name printed on a card for each rarity, and its step on the star ladder. Orange is a placeholder name. */
+export const rarityInfo: Record<RarityId, { name: string; stars: number }> = {
+  white: { name: 'Basic', stars: 1 },
+  green: { name: 'Improved', stars: 2 },
+  blue: { name: 'Advanced', stars: 3 },
+  purple: { name: 'Enhanced', stars: 4 },
+  orange: { name: 'Masterwork', stars: 5 },
+  red: { name: 'Unique', stars: 5 },
+  gold: { name: 'Archeotech', stars: 5 }
+};
 
 // Faction accents (working). The player's faction accent is the "signal" color.
 export const factionAccent: Record<FactionId, number> = {

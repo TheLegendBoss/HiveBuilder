@@ -9,7 +9,7 @@ import { SKULL_W, drawSkull } from '../ui/icons';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import { makePanel } from '../ui/Panel';
-import { monoText, stencilText } from '../ui/text';
+import { bodyText, stencilText } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -37,7 +37,7 @@ export class MainMenu extends ScreenScene {
 
     // Title lockup
     root.add(stencilText(this, 84, 36, menuText.title, 138, palette.text, { spacing: 0.06, fixed: true }));
-    root.add(monoText(this, 90, 190, menuText.subtitle.toUpperCase(), 18, palette.textMuted, { spacing: 0.16 }));
+    root.add(bodyText(this, 90, 190, menuText.subtitle.toUpperCase(), 18, palette.textMuted, { spacing: 0.16 }));
 
     // Hive cutaway and the cable from the Sandbox item to its lit floor
     const hive = makeHiveCutaway(this, 60, 235, 960, signal);
@@ -61,7 +61,7 @@ export class MainMenu extends ScreenScene {
     }
     group.add(lamps);
 
-    const vox = monoText(this, CONSOLE.x + 30, CONSOLE.y + CONSOLE.h - 27, menuText.vox, 16.5, palette.textMuted, {
+    const vox = bodyText(this, CONSOLE.x + 30, CONSOLE.y + CONSOLE.h - 27, menuText.vox, 16.5, palette.textMuted, {
       originY: 1,
       wrap: CONSOLE.w - 60,
       lineSpacing: 6
@@ -113,7 +113,7 @@ export class MainMenu extends ScreenScene {
   private buildLossBlock(root: Phaser.GameObjects.Container): void {
     const x = 84;
     const y = 896;
-    const label = monoText(this, x, y, menuText.expeditionsLost.toUpperCase(), 16.5, palette.textMuted, { spacing: 0.14 });
+    const label = bodyText(this, x, y, menuText.expeditionsLost.toUpperCase(), 16.5, palette.textMuted, { spacing: 0.14 });
     const count = stencilText(this, x, y + 30, '0000', 66, palette.text, { spacing: 0.06, fixed: true });
     root.add([label, count]);
     const skullScale = 1.0;
@@ -132,7 +132,7 @@ export class MainMenu extends ScreenScene {
     const plaqueH = 20 + 10 + 20 + 18 * 1.4 * (session.settings.textScale / 100) + 21 * 1.4 * (session.settings.textScale / 100);
     const plaque = makePanel(this, { x: blockRight + 36, y: y + 6, w: 405, h: Math.max(96, plaqueH), bolts: true });
     const head = stencilText(this, 27, 20, menuText.memorialHeader, 21, palette.textMuted, { spacing: 0.14 });
-    const body = monoText(this, 27, 20 + head.height + 10, menuText.memorialEmpty, 18, palette.text);
+    const body = bodyText(this, 27, 20 + head.height + 10, menuText.memorialEmpty, 18, palette.text);
     plaque.add([head, body]);
     root.add(plaque);
   }

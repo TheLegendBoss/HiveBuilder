@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import '@fontsource/big-shoulders-stencil-display/latin-700';
 import '@fontsource/big-shoulders-stencil-display/latin-900';
-import '@fontsource/ibm-plex-mono/latin-400';
-import '@fontsource/ibm-plex-mono/latin-500';
-import '@fontsource/ibm-plex-mono/latin-700';
+import '@fontsource/saira-semi-condensed/latin-400';
+import '@fontsource/saira-semi-condensed/latin-500';
+import '@fontsource/saira-semi-condensed/latin-600';
+import '@fontsource/saira-semi-condensed/latin-700';
 import { palette } from './data/palette';
 import { Boot } from './scenes/Boot';
 import { Combat } from './scenes/Combat';

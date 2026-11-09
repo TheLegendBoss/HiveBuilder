@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { hiveFloors, hiveGeometry } from '../data/hive';
 import { mix, palette } from '../data/palette';
 import type { Pt } from './geometry';
-import { monoText } from './text';
+import { bodyText } from './text';
 
 export interface HiveCutaway {
   container: Phaser.GameObjects.Container;
@@ -26,7 +26,7 @@ export function makeHiveCutaway(scene: Phaser.Scene, x: number, y: number, width
   const labels: Array<{ t: Phaser.GameObjects.Text; floorIndex: number }> = [];
   hiveFloors.forEach((f, i) => {
     const fy = geo.topPad + i * geo.floorStep;
-    const t = monoText(scene, cx, fy + geo.floorHeight / 2, f.name.toUpperCase(), f.lit ? 19.5 : 16.5, f.lit ? palette.text : palette.textMuted, {
+    const t = bodyText(scene, cx, fy + geo.floorHeight / 2, f.name.toUpperCase(), f.lit ? 19.5 : 16.5, f.lit ? palette.text : palette.textMuted, {
       originX: 0.5,
       originY: 0.5,
       weight: f.lit ? 'bold' : undefined,

@@ -13,7 +13,7 @@ import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import type { LootItem } from '../sim/expedition';
 import { makePanel } from '../ui/Panel';
-import { monoText, stencilText, textContext } from '../ui/text';
+import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -174,7 +174,7 @@ export class ExpeditionMap extends ScreenScene {
     const title = stencilText(this, 40, 10, 'Sandbox expedition', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
     root.add(
-      monoText(
+      bodyText(
         this, 44, title.y + title.height + 2,
         `Section ${x.section + 1} of ${x.cfg.sections} · tier ${tierOf(x.section)} · seed ${x.cfg.seed}`, 16, palette.textMuted
       )
@@ -183,7 +183,7 @@ export class ExpeditionMap extends ScreenScene {
     drawLamp(lamp, 760, 38, 9, x.status === 'running' ? signal : palette.danger);
     root.add(lamp);
     root.add(
-      monoText(this, 786, 38, x.status === 'running' ? (x.pending ? 'ROOM ACTIVE' : 'CHOOSE A DOOR') : x.status.toUpperCase(), 20, palette.text, { originY: 0.5, spacing: 0.1 })
+      bodyText(this, 786, 38, x.status === 'running' ? (x.pending ? 'ROOM ACTIVE' : 'CHOOSE A DOOR') : x.status.toUpperCase(), 20, palette.text, { originY: 0.5, spacing: 0.1 })
     );
 
     root.add(makePanel(this, { ...MAP, fill: palette.panelDeep, bolts: true, border: signal, borderWidth: 3 }));
@@ -252,10 +252,10 @@ export class ExpeditionMap extends ScreenScene {
       c.add(stencilText(this, 0, -4, label, fit, dim ? palette.textMuted : palette.text, { originX: 0.5, originY: 0.5, spacing: 0.05 }));
       const sub = isHere ? 'SQUAD' : r.cleared && !r.entrance ? 'DONE' : r.entered ? '' : 'UNSEEN';
       if (r.entered || r.cleared || isHere) {
-        if (sub) c.add(monoText(this, 0, box / 2 - 20, sub, 14, isHere ? signal : palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
+        if (sub) c.add(bodyText(this, 0, box / 2 - 20, sub, 14, isHere ? signal : palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
       }
       if (canGo) {
-        const k = monoText(this, -box / 2 + 8, -box / 2 + 6, String(idx + 1), 16, signal, { weight: '700' });
+        const k = bodyText(this, -box / 2 + 8, -box / 2 + 6, String(idx + 1), 16, signal, { weight: '700' });
         c.add(k);
       }
       root.add(c);
@@ -270,21 +270,21 @@ export class ExpeditionMap extends ScreenScene {
   private drawSide(root: Phaser.GameObjects.Container): void {
     const x = this.exp;
     const px = SIDE.x + 28;
-    root.add(monoText(this, px, SIDE.y + 24, 'SQUAD', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, px, SIDE.y + 24, 'SQUAD', 16, palette.textMuted, { spacing: 0.14 }));
     const bars = this.add.graphics();
     root.add(bars);
     x.cfg.squad.forEach((u, i) => {
       const y = SIDE.y + 58 + i * 74;
       const hp = x.hp[i]!;
       const low = hp <= Math.ceil(u.hp / 3);
-      root.add(monoText(this, px, y, u.name.toUpperCase(), 20, palette.text));
-      root.add(monoText(this, SIDE.x + SIDE.w - 28, y, `${hp}/${u.hp}${low ? ' LOW' : ''}`, 18, low ? palette.danger : palette.textMuted, { originX: 1 }));
+      root.add(bodyText(this, px, y, u.name.toUpperCase(), 20, palette.text));
+      root.add(bodyText(this, SIDE.x + SIDE.w - 28, y, `${hp}/${u.hp}${low ? ' LOW' : ''}`, 18, low ? palette.danger : palette.textMuted, { originX: 1 }));
       drawHpBar(bars, px, y + 32, SIDE.w - 56, 14, hp, u.hp);
     });
 
     const ry = SIDE.y + 58 + 5 * 74 + 18;
-    root.add(monoText(this, px, ry, 'RATIONS', 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(monoText(this, SIDE.x + SIDE.w - 28, ry - 6, `${x.rations}`, 40, x.rations <= 4 ? palette.danger : palette.text, { originX: 1, weight: '700' }));
+    root.add(bodyText(this, px, ry, 'RATIONS', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, SIDE.x + SIDE.w - 28, ry - 6, `${x.rations}`, 40, x.rations <= 4 ? palette.danger : palette.text, { originX: 1, weight: '700' }));
     const pips = this.add.graphics();
     root.add(pips);
     const per = 12;
@@ -304,16 +304,16 @@ export class ExpeditionMap extends ScreenScene {
         pips.strokeRect(bx + 0.75, by + 0.75, sz - 1.5, sz - 1.5);
       }
     }
-    root.add(monoText(this, px, ry + 36 + 2 * 26 + 6, x.rations === 0 ? 'OUT: -1 HP EACH MOVE' : 'MOVING COSTS 1. FIGHTS COST 0.', 14, x.rations === 0 ? palette.danger : palette.textMuted));
+    root.add(bodyText(this, px, ry + 36 + 2 * 26 + 6, x.rations === 0 ? 'OUT: -1 HP EACH MOVE' : 'MOVING COSTS 1. FIGHTS COST 0.', 14, x.rations === 0 ? palette.danger : palette.textMuted));
 
     const ey = SIDE.y + 590;
-    root.add(monoText(this, px, ey + 8, 'EAGLES', 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(monoText(this, SIDE.x + SIDE.w - 28, ey, `${x.eagles}`, 32, palette.text, { originX: 1, weight: '700' }));
+    root.add(bodyText(this, px, ey + 8, 'EAGLES', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, SIDE.x + SIDE.w - 28, ey, `${x.eagles}`, 32, palette.text, { originX: 1, weight: '700' }));
     const s = x.stats;
-    root.add(monoText(this, px, ey + 48, `FIGHTS ${s.fights}  ROOMS ${s.rooms}  MOVES ${s.moves}  XP ${s.xp}`, 14, palette.textMuted));
+    root.add(bodyText(this, px, ey + 48, `FIGHTS ${s.fights}  ROOMS ${s.rooms}  MOVES ${s.moves}  XP ${s.xp}`, 14, palette.textMuted));
     x.log.slice(-3).reverse().forEach((l, i) => {
       const t = l.length > 34 ? l.slice(0, 32) + '…' : l;
-      root.add(monoText(this, px, ey + 76 + i * 22, '> ' + t, 14, i === 0 ? palette.text : palette.textMuted));
+      root.add(bodyText(this, px, ey + 76 + i * 22, '> ' + t, 14, i === 0 ? palette.text : palette.textMuted));
     });
   }
 
@@ -321,12 +321,12 @@ export class ExpeditionMap extends ScreenScene {
     const x = this.exp;
     const here = currentRoom(x);
     root.add(stencilText(this, FOOT.x + 32, FOOT.y + 22, here.entrance ? 'Section entrance' : `${roomName[here.type]} room`, 36, palette.text, { spacing: 0.05 }));
-    root.add(monoText(this, FOOT.x + 34, FOOT.y + 74, this.note, 18, palette.textMuted, { wrap: 440, full: true }));
-    root.add(monoText(this, FOOT.x + 34, FOOT.y + FOOT.h - 30, '1-3 OR ARROWS: MOVE   R: RETREAT   ESC: LEAVE', 14, palette.textMuted, { originY: 0.5 }));
+    root.add(bodyText(this, FOOT.x + 34, FOOT.y + 74, this.note, 18, palette.textMuted, { wrap: 440, full: true }));
+    root.add(bodyText(this, FOOT.x + 34, FOOT.y + FOOT.h - 30, '1-3 OR ARROWS: MOVE   R: RETREAT   ESC: LEAVE', 14, palette.textMuted, { originY: 0.5 }));
 
     const px = FOOT.x + 540;
-    root.add(monoText(this, px, FOOT.y + 20, `PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(monoText(this, px + 830, FOOT.y + 20, 'CLICK AN ITEM', 14, palette.textMuted, { originX: 1 }));
+    root.add(bodyText(this, px, FOOT.y + 20, `PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, px + 830, FOOT.y + 20, 'CLICK AN ITEM', 14, palette.textMuted, { originX: 1 }));
     const g = this.add.graphics();
     root.add(g);
     for (let i = 0; i < x.cfg.packSize; i++) {
@@ -339,8 +339,8 @@ export class ExpeditionMap extends ScreenScene {
       g.strokeRect(sx + 0.75, sy + 0.75, 198.5, 54.5);
       if (!item) continue;
       const size = Math.max(12, Math.min(16, Math.floor(180 / (item.name.length * 0.62))));
-      root.add(monoText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
-      root.add(monoText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));
+      root.add(bodyText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
+      root.add(bodyText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));
       const hit = this.add.rectangle(sx + 100, sy + 28, 200, 56, palette.bg, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerup', () => this.openItem(i));
       root.add(hit);
@@ -436,9 +436,9 @@ export class ExpeditionMap extends ScreenScene {
     const P = { x: 300, y: 150, w: 1320, h: 790 };
     layer.add([dim, makePanel(this, { ...P, bolts: true, border: signal, borderWidth: 3 })]);
     layer.add(stencilText(this, P.x + 40, P.y + 26, `Loot: ${from}`, 48, palette.text, { spacing: 0.05 }));
-    layer.add(monoText(this, P.x + 42, P.y + 96, 'TAKE WHAT YOU CAN CARRY. THE REST IS LEFT BEHIND.', 16, palette.textMuted, { spacing: 0.08 }));
+    layer.add(bodyText(this, P.x + 42, P.y + 96, 'TAKE WHAT YOU CAN CARRY. THE REST IS LEFT BEHIND.', 16, palette.textMuted, { spacing: 0.08 }));
     const full = x.pack.length >= x.cfg.packSize;
-    layer.add(monoText(this, P.x + 42, P.y + 140, 'OFFERED', 16, palette.textMuted, { spacing: 0.14 }));
+    layer.add(bodyText(this, P.x + 42, P.y + 140, 'OFFERED', 16, palette.textMuted, { spacing: 0.14 }));
     offers.slice(0, 6).forEach((o, i) => {
       const y = P.y + 172 + i * 98;
       const row = this.add.graphics();
@@ -449,8 +449,8 @@ export class ExpeditionMap extends ScreenScene {
       layer.add(row);
       const nm = stencilText(this, P.x + 56, y + 8, o.name, 27, palette.text, { spacing: 0.04 });
       layer.add(nm);
-      layer.add(monoText(this, P.x + 56 + nm.width + 14, y + 16, o.cls.toUpperCase(), 13, palette.textMuted));
-      layer.add(monoText(this, P.x + 56, y + 44, o.text, 14, palette.textMuted, { wrap: 520 }));
+      layer.add(bodyText(this, P.x + 56 + nm.width + 14, y + 16, o.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(bodyText(this, P.x + 56, y + 44, o.text, 14, palette.textMuted, { wrap: 520 }));
       layer.add(
         new Button(this, {
           x: P.x + 580, y: y + 16, w: 150, h: 58, label: 'Take', size: 27, state: full ? 'offline' : 'live', signal, accent: !full,
@@ -458,7 +458,7 @@ export class ExpeditionMap extends ScreenScene {
         })
       );
     });
-    layer.add(monoText(this, P.x + 780, P.y + 140, `PACK ${x.pack.length}/${x.cfg.packSize}${full ? ' (FULL: DROP SOMETHING)' : ''}`, 16, full ? palette.danger : palette.textMuted, { spacing: 0.14 }));
+    layer.add(bodyText(this, P.x + 780, P.y + 140, `PACK ${x.pack.length}/${x.cfg.packSize}${full ? ' (FULL: DROP SOMETHING)' : ''}`, 16, full ? palette.danger : palette.textMuted, { spacing: 0.14 }));
     x.pack.forEach((it, i) => {
       const y = P.y + 172 + i * 56;
       const row = this.add.graphics();
@@ -467,8 +467,8 @@ export class ExpeditionMap extends ScreenScene {
       row.lineStyle(1.5, palette.line, 1);
       row.strokeRect(P.x + 780.75, y + 0.75, 498.5, 48.5);
       layer.add(row);
-      layer.add(monoText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
-      layer.add(monoText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(bodyText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
+      layer.add(bodyText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
       layer.add(
         new Button(this, {
           x: P.x + 1140, y: y + 5, w: 128, h: 40, label: 'Drop', size: 21, state: 'live', signal, onClick: () => {
@@ -498,9 +498,9 @@ export class ExpeditionMap extends ScreenScene {
     const P = { x: 300, y: 150, w: 1320, h: 790 };
     layer.add([dim, makePanel(this, { ...P, bolts: true, border: signal, borderWidth: 3 })]);
     layer.add(stencilText(this, P.x + 40, P.y + 26, 'Market', 48, palette.text, { spacing: 0.05 }));
-    layer.add(monoText(this, P.x + 42, P.y + 96, 'TRADE WITH A LOCAL STALL. PRICES ARE WORKING NUMBERS.', 16, palette.textMuted, { spacing: 0.08 }));
-    layer.add(monoText(this, P.x + 42, P.y + 140, 'FOR SALE', 16, palette.textMuted, { spacing: 0.14 }));
-    layer.add(monoText(this, P.x + 740, P.y + 140, `YOUR EAGLES ${x.eagles}`, 16, palette.text, { originX: 1, spacing: 0.1 }));
+    layer.add(bodyText(this, P.x + 42, P.y + 96, 'TRADE WITH A LOCAL STALL. PRICES ARE WORKING NUMBERS.', 16, palette.textMuted, { spacing: 0.08 }));
+    layer.add(bodyText(this, P.x + 42, P.y + 140, 'FOR SALE', 16, palette.textMuted, { spacing: 0.14 }));
+    layer.add(bodyText(this, P.x + 740, P.y + 140, `YOUR EAGLES ${x.eagles}`, 16, palette.text, { originX: 1, spacing: 0.1 }));
     const can = canBuyPack(x);
     const row = this.add.graphics();
     row.fillStyle(palette.panelDeep, 1);
@@ -510,8 +510,8 @@ export class ExpeditionMap extends ScreenScene {
     layer.add(row);
     const nm = stencilText(this, P.x + 56, P.y + 180, 'Basic pack', 27, palette.text, { spacing: 0.04 });
     layer.add(nm);
-    layer.add(monoText(this, P.x + 56 + nm.width + 14, P.y + 188, `${x.cfg.packPrice} EAGLES`, 13, palette.textMuted));
-    layer.add(monoText(this, P.x + 56, P.y + 216, `${x.cfg.packDraws} loot draws. Pick what you can carry.`, 14, palette.textMuted, { wrap: 520 }));
+    layer.add(bodyText(this, P.x + 56 + nm.width + 14, P.y + 188, `${x.cfg.packPrice} EAGLES`, 13, palette.textMuted));
+    layer.add(bodyText(this, P.x + 56, P.y + 216, `${x.cfg.packDraws} loot draws. Pick what you can carry.`, 14, palette.textMuted, { wrap: 520 }));
     layer.add(
       new Button(this, {
         x: P.x + 580, y: P.y + 188, w: 150, h: 58, label: 'Buy', size: 27, state: can ? 'live' : 'offline', signal, accent: can, key: 'B',
@@ -522,7 +522,7 @@ export class ExpeditionMap extends ScreenScene {
         }
       })
     );
-    layer.add(monoText(this, P.x + 780, P.y + 140, `SELL SPARES (${x.cfg.sellValue} EAGLE EACH)   PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.1 }));
+    layer.add(bodyText(this, P.x + 780, P.y + 140, `SELL SPARES (${x.cfg.sellValue} EAGLE EACH)   PACK ${x.pack.length}/${x.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.1 }));
     x.pack.forEach((it, i) => {
       const y = P.y + 172 + i * 56;
       const r = this.add.graphics();
@@ -531,8 +531,8 @@ export class ExpeditionMap extends ScreenScene {
       r.lineStyle(1.5, palette.line, 1);
       r.strokeRect(P.x + 780.75, y + 0.75, 498.5, 48.5);
       layer.add(r);
-      layer.add(monoText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
-      layer.add(monoText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
+      layer.add(bodyText(this, P.x + 796, y + 5, it.name.toUpperCase(), 16, palette.text));
+      layer.add(bodyText(this, P.x + 796, y + 28, it.cls.toUpperCase(), 13, palette.textMuted));
       layer.add(
         new Button(this, {
           x: P.x + 1140, y: y + 5, w: 128, h: 40, label: 'Sell', size: 21, state: 'live', signal, onClick: () => {

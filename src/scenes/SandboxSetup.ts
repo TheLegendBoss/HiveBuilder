@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { drawLamp } from '../ui/Lamp';
 import { makePanel } from '../ui/Panel';
 import { makeStamp } from '../ui/Stamp';
-import { monoText, stencilText } from '../ui/text';
+import { bodyText, stencilText } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -25,7 +25,7 @@ export class SandboxSetup extends ScreenScene {
   protected build(root: Phaser.GameObjects.Container): void {
     const signal = this.signal;
     root.add(stencilText(this, 84, 36, setupText.title, 90, palette.text, { spacing: 0.06, fixed: true }));
-    root.add(monoText(this, 90, 160, setupText.factionHeader.toUpperCase(), 18, palette.textMuted, { spacing: 0.16 }));
+    root.add(bodyText(this, 90, 160, setupText.factionHeader.toUpperCase(), 18, palette.textMuted, { spacing: 0.16 }));
 
     factionOrder.forEach((id, i) => {
       root.add(this.factionCard(id, CARD.x + i * (CARD.w + CARD.gap), CARD.y, i));
@@ -34,7 +34,7 @@ export class SandboxSetup extends ScreenScene {
     // Depth dial (placeholder)
     const dial = makePanel(this, { x: CARD.x, y: 650, w: 3 * CARD.w + 2 * CARD.gap, h: 210, bolts: true, scan: true });
     dial.add(stencilText(this, 36, 24, setupText.dialsHeader, 27, palette.textMuted, { spacing: 0.12 }));
-    setupText.dials.forEach((line, i) => dial.add(monoText(this, 36, 78 + i * 38, line, 22, palette.text)));
+    setupText.dials.forEach((line, i) => dial.add(bodyText(this, 36, 78 + i * 38, line, 22, palette.text)));
     const stamp = makeStamp(this, 'Coming', 21, palette.textMuted);
     stamp.container.setPosition(3 * CARD.w + 2 * CARD.gap - 36 - stamp.width / 2, 48);
     dial.add(stamp.container);
@@ -78,8 +78,8 @@ export class SandboxSetup extends ScreenScene {
     drawLamp(g, hx + 42, hy + 66, 9, selected ? accent : null);
     c.add(g);
     c.add(stencilText(this, hx + 72, hy + 66, factionNames[id], 66, selected ? palette.text : palette.textMuted, { spacing: 0.06, originY: 0.5 }));
-    c.add(monoText(this, hx + 36, hy + 140, factionBlurbs[id], 22, palette.text, { wrap: CARD.w - 72, lineSpacing: 6 }));
-    c.add(monoText(this, hx + 36, hy + CARD.h - 60, selected ? 'SELECTED' : `PRESS ${index + 1}`, 18, selected ? accent : palette.textMuted, { spacing: 0.14 }));
+    c.add(bodyText(this, hx + 36, hy + 140, factionBlurbs[id], 22, palette.text, { wrap: CARD.w - 72, lineSpacing: 6 }));
+    c.add(bodyText(this, hx + 36, hy + CARD.h - 60, selected ? 'SELECTED' : `PRESS ${index + 1}`, 18, selected ? accent : palette.textMuted, { spacing: 0.14 }));
     c.setSize(CARD.w, CARD.h);
     c.setInteractive({ useHandCursor: true });
     c.on('pointerup', () => this.choose(id));

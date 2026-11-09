@@ -3,7 +3,7 @@ import { session } from '../core/session';
 import { toCss } from '../data/palette';
 
 export const FONT_STENCIL = "'Big Shoulders Stencil Display', Impact, sans-serif";
-export const FONT_MONO = "'IBM Plex Mono', monospace";
+export const FONT_BODY = "'Saira Semi Condensed', sans-serif";
 
 /** Set by ScreenScene on every rebuild so text stays crisp inside the scaled root. */
 export const textContext = { res: 1, dense: false };
@@ -72,8 +72,8 @@ export function stencilText(
   return build(scene, FONT_STENCIL, x, y, str.toUpperCase(), size, color, { weight: '900', ...o });
 }
 
-/** Mono body type. */
-export function monoText(
+/** Body type: everything that is not a title. */
+export function bodyText(
   scene: Phaser.Scene,
   x: number,
   y: number,
@@ -82,5 +82,5 @@ export function monoText(
   color: number,
   o: TextOpts = {}
 ): Phaser.GameObjects.Text {
-  return build(scene, FONT_MONO, x, y, str, size, color, o);
+  return build(scene, FONT_BODY, x, y, str, size, color, o);
 }

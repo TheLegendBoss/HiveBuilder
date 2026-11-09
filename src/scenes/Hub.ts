@@ -10,7 +10,7 @@ import { drawHpBar } from '../ui/combat/parts';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import { makePanel } from '../ui/Panel';
-import { monoText, stencilText, textContext } from '../ui/text';
+import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -194,11 +194,11 @@ export class Hub extends ScreenScene {
     const title = stencilText(this, 40, 10, 'Tenebrae HQ', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
     root.add(
-      monoText(this, 44, title.y + title.height + 2, `Sandbox campaign · expedition ${c.expeditions + 1}${c.fallen.length ? ` · ${c.fallen.length} lost` : ''}`, 16, palette.textMuted)
+      bodyText(this, 44, title.y + title.height + 2, `Sandbox campaign · expedition ${c.expeditions + 1}${c.fallen.length ? ` · ${c.fallen.length} lost` : ''}`, 16, palette.textMuted)
     );
     const counter = (x: number, label: string, value: string, hot = false): void => {
-      root.add(monoText(this, x, 14, label, 14, palette.textMuted, { spacing: 0.14 }));
-      root.add(monoText(this, x, 32, value, 36, hot ? signal : palette.text, { weight: '700' }));
+      root.add(bodyText(this, x, 14, label, 14, palette.textMuted, { spacing: 0.14 }));
+      root.add(bodyText(this, x, 32, value, 36, hot ? signal : palette.text, { weight: '700' }));
     };
     counter(1080, 'EAGLES', String(c.eagles), true);
     counter(1330, 'POWER', String(c.power));
@@ -217,8 +217,8 @@ export class Hub extends ScreenScene {
 
   private drawCrew(root: Phaser.GameObjects.Container, signal: number): void {
     const c = this.c;
-    root.add(monoText(this, CREW.x + 28, CREW.y + 22, 'CREW', 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(monoText(this, CREW.x + CREW.w - 28, CREW.y + 22, '1-5: PROMOTE OR REPAIR', 14, palette.textMuted, { originX: 1 }));
+    root.add(bodyText(this, CREW.x + 28, CREW.y + 22, 'CREW', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, CREW.x + CREW.w - 28, CREW.y + 22, '1-5: PROMOTE OR REPAIR', 14, palette.textMuted, { originX: 1 }));
     const bars = this.add.graphics();
     c.crew.forEach((m, i) => {
       const x0 = CREW.x + 24;
@@ -232,15 +232,15 @@ export class Hub extends ScreenScene {
       row.strokeRect(x0 + 0.75, y0 + 0.75, CREW.w - 49.5, 86.5);
       root.add(row);
       root.add(stencilText(this, x0 + 16, y0 + 8, m.name, 30, palette.text, { spacing: 0.04 }));
-      root.add(monoText(this, x0 + 16, y0 + 54, `TIER ${m.tier} · PERK SLOTS ${perkSlots(m)}`, 14, palette.textMuted));
-      root.add(monoText(this, x0 + 250, y0 + 12, `HP ${t.hp}`, 22, palette.text, { weight: '700' }));
-      root.add(monoText(this, x0 + 250, y0 + 54, `SOAK ${t.builtin} · ARM ${t.armor}`, 14, palette.textMuted));
+      root.add(bodyText(this, x0 + 16, y0 + 54, `TIER ${m.tier} · PERK SLOTS ${perkSlots(m)}`, 14, palette.textMuted));
+      root.add(bodyText(this, x0 + 250, y0 + 12, `HP ${t.hp}`, 22, palette.text, { weight: '700' }));
+      root.add(bodyText(this, x0 + 250, y0 + 54, `SOAK ${t.builtin} · ARM ${t.armor}`, 14, palette.textMuted));
 
       const cost = promoCost(c, m);
-      root.add(monoText(this, x0 + 440, y0 + 10, cost === null ? 'XP MAX TIER' : `XP ${m.xp}/${cost}`, 14, palette.textMuted));
-      if (cost !== null) drawHpBar(bars, x0 + 440, y0 + 34, 200, 12, Math.min(m.xp, cost), cost);
+      root.add(bodyText(this, x0 + 440, y0 + 10, cost === null ? 'XP MAX TIER' : `XP ${m.xp}/${cost}`, 14, palette.textMuted));
+      if (cost !== null) drawHpBar(bars, x0 + 440, y0 + 34, 200, 12, Math.min(m.xp, cost), cost, palette.text, palette.bloodDry);
       const status = m.repairing ? 'ON THE BENCH' : hurt ? m.damage!.name.toUpperCase() : 'READY';
-      const statusText = monoText(this, x0 + 440, y0 + 54, status, 14, m.repairing ? palette.bone : hurt ? palette.danger : signal, { weight: '700' });
+      const statusText = bodyText(this, x0 + 440, y0 + 54, status, 14, m.repairing ? palette.bone : hurt ? palette.danger : signal, { weight: '700' });
       root.add(statusText);
 
       let label = 'Max tier';
@@ -263,16 +263,16 @@ export class Hub extends ScreenScene {
     root.add(bars);
     if (c.crew.length < 5) {
       const gone = 5 - c.crew.length;
-      root.add(monoText(this, CREW.x + 28, CREW.y + 56 + c.crew.length * 96 + 10, `${gone} station${gone === 1 ? '' : 's'} empty: recruiting arrives in a later build.`, 15, palette.textMuted));
+      root.add(bodyText(this, CREW.x + 28, CREW.y + 56 + c.crew.length * 96 + 10, `${gone} station${gone === 1 ? '' : 's'} empty: recruiting arrives in a later build.`, 15, palette.textMuted));
     }
     root.add(
-      monoText(this, CREW.x + 28, CREW.y + CREW.h - 30, 'DAMAGED CREW SIT OUT. MINOR REPAIR: INSTANT. MAJOR: PAID NOW, BACK AFTER THE NEXT RUN.', 13, palette.textMuted)
+      bodyText(this, CREW.x + 28, CREW.y + CREW.h - 30, 'DAMAGED CREW SIT OUT. MINOR REPAIR: INSTANT. MAJOR: PAID NOW, BACK AFTER THE NEXT RUN.', 13, palette.textMuted)
     );
   }
 
   private drawTrade(root: Phaser.GameObjects.Container, signal: number): void {
     const c = this.c;
-    root.add(monoText(this, TRADE.x + 28, TRADE.y + 22, 'MARKET AND STASH', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, TRADE.x + 28, TRADE.y + 22, 'MARKET AND STASH', 16, palette.textMuted, { spacing: 0.14 }));
     const buyOk = canBuyPack(c);
     root.add(
       new Button(this, {
@@ -291,13 +291,13 @@ export class Hub extends ScreenScene {
       })
     );
     root.add(
-      monoText(this, TRADE.x + 28, TRADE.y + 128, this.note, 14, palette.text, { wrap: TRADE.w - 56 })
+      bodyText(this, TRADE.x + 28, TRADE.y + 128, this.note, 14, palette.text, { wrap: TRADE.w - 56 })
     );
     root.add(
-      monoText(this, TRADE.x + 28, TRADE.y + 158, `STASH ${c.stash.length}/${c.cfg.stashCap}`, 14, palette.textMuted, { spacing: 0.12 })
+      bodyText(this, TRADE.x + 28, TRADE.y + 158, `STASH ${c.stash.length}/${c.cfg.stashCap}`, 14, palette.textMuted, { spacing: 0.12 })
     );
     root.add(
-      monoText(
+      bodyText(
         this, TRADE.x + TRADE.w - 28, TRADE.y + 158,
         this.sellMode ? `CLICK TO SELL FOR ${c.cfg.sellValue}` : 'CLICK TO PACK  ARROWS + SPACE', 14, this.sellMode ? palette.danger : palette.textMuted, { originX: 1 }
       )
@@ -316,9 +316,9 @@ export class Hub extends ScreenScene {
       g.lineStyle(inPack || cur ? 3 : 1.5, inPack ? signal : cur ? palette.bone : palette.line, 1);
       g.strokeRect(cx + 0.75, cy + 0.75, CELL.w - 1.5, CELL.h - 1.5);
       if (!item) continue;
-      root.add(monoText(this, cx + 8, cy + 8, item.name.toUpperCase(), 12, palette.text, { wrap: CELL.w - 14 }));
+      root.add(bodyText(this, cx + 8, cy + 8, item.name.toUpperCase(), 12, palette.text, { wrap: CELL.w - 14 }));
       const tag = inPack ? 'IN PACK' : item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase();
-      root.add(monoText(this, cx + 8, cy + CELL.h - 22, tag, 12, inPack ? signal : item.use ? signal : palette.textMuted));
+      root.add(bodyText(this, cx + 8, cy + CELL.h - 22, tag, 12, inPack ? signal : item.use ? signal : palette.textMuted));
       const hit = this.add.rectangle(cx + CELL.w / 2, cy + CELL.h / 2, CELL.w, CELL.h, palette.bg, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerup', () => this.stashTap(i));
       root.add(hit);
@@ -328,7 +328,7 @@ export class Hub extends ScreenScene {
   private drawLoad(root: Phaser.GameObjects.Container, signal: number): void {
     const c = this.c;
     const px = LOAD.x + 32;
-    root.add(monoText(this, px, LOAD.y + 22, `PACK ${this.pack.size}/${c.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, px, LOAD.y + 22, `PACK ${this.pack.size}/${c.cfg.packSize}`, 16, palette.textMuted, { spacing: 0.14 }));
     const g = this.add.graphics();
     root.add(g);
     const picked = [...this.pack].sort((a, b) => a - b).map((i) => c.stash[i]!);
@@ -342,8 +342,8 @@ export class Hub extends ScreenScene {
       g.strokeRect(sx + 0.75, sy + 0.75, 198.5, 54.5);
       if (!item) continue;
       const size = Math.max(12, Math.min(16, Math.floor(180 / (item.name.length * 0.62))));
-      root.add(monoText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
-      root.add(monoText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));
+      root.add(bodyText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
+      root.add(bodyText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));
     }
     root.add(
       new Button(this, {
@@ -356,13 +356,13 @@ export class Hub extends ScreenScene {
       })
     );
     root.add(
-      monoText(this, px, LOAD.y + 288, 'THE PACK HOLDS WHAT YOU CARRY. ANYTHING IN IT IS LOST IF THE SQUAD IS WIPED.', 14, palette.textMuted, { wrap: 820 })
+      bodyText(this, px, LOAD.y + 288, 'THE PACK HOLDS WHAT YOU CARRY. ANYTHING IN IT IS LOST IF THE SQUAD IS WIPED.', 14, palette.textMuted, { wrap: 820 })
     );
 
     const qx = LOAD.x + 960;
-    root.add(monoText(this, qx, LOAD.y + 22, 'PURSE', 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(monoText(this, qx, LOAD.y + 52, `${this.purse}`, 64, palette.text, { weight: '700' }));
-    root.add(monoText(this, qx + 130, LOAD.y + 92, `OF ${c.eagles} EAGLES`, 16, palette.textMuted));
+    root.add(bodyText(this, qx, LOAD.y + 22, 'PURSE', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, qx, LOAD.y + 52, `${this.purse}`, 64, palette.text, { weight: '700' }));
+    root.add(bodyText(this, qx + 130, LOAD.y + 92, `OF ${c.eagles} EAGLES`, 16, palette.textMuted));
     root.add(
       new Button(this, {
         x: qx, y: LOAD.y + 150, w: 150, h: 60, label: `-${c.cfg.purseStep}`, size: 28, state: this.purse > 0 ? 'live' : 'offline', signal, key: '-', onClick: () => this.stepPurse(-1)
@@ -374,7 +374,7 @@ export class Hub extends ScreenScene {
       })
     );
     root.add(
-      monoText(this, qx, LOAD.y + 232, 'EAGLES CARRIED ONTO THE FLOOR, FOR MARKETS AND GAMBLES. A WIPE LOSES THEM; EVERYTHING ELSE STAYS HOME.', 14, palette.textMuted, { wrap: 340 })
+      bodyText(this, qx, LOAD.y + 232, 'EAGLES CARRIED ONTO THE FLOOR, FOR MARKETS AND GAMBLES. A WIPE LOSES THEM; EVERYTHING ELSE STAYS HOME.', 14, palette.textMuted, { wrap: 340 })
     );
 
     const rx = LOAD.x + 1380;
@@ -390,7 +390,7 @@ export class Hub extends ScreenScene {
     drawLamp(lamp, rx + 10, LOAD.y + 160, 8, problem ? palette.danger : signal);
     root.add(lamp);
     root.add(
-      monoText(this, rx + 32, LOAD.y + 160, problem ?? `${fit} CREW GO · RATIONS 24 · SECTIONS 3`, 15, problem ? palette.danger : palette.text, { originY: 0.5, wrap: 390 })
+      bodyText(this, rx + 32, LOAD.y + 160, problem ?? `${fit} CREW GO · RATIONS 24 · SECTIONS 3`, 15, problem ? palette.danger : palette.text, { originY: 0.5, wrap: 390 })
     );
     root.add(
       new Button(this, {

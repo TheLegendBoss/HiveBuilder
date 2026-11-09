@@ -3,7 +3,7 @@ import { palette } from '../data/palette';
 import { REF_H, REF_W } from './layout';
 import { makePanel } from './Panel';
 import { Button } from './Button';
-import { monoText, stencilText } from './text';
+import { bodyText, stencilText } from './text';
 
 export interface ModalOpts {
   title: string;
@@ -36,18 +36,18 @@ export class Modal {
     c.add(dim);
 
     const w = 840;
-    const bodyText = monoText(scene, 0, 0, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 });
+    const bodyProbe = bodyText(scene, 0, 0, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 });
     const titleProbe = stencilText(scene, 0, 0, o.title, 54, palette.text, { spacing: 0.06 });
     const bodyDy = Math.max(138, 54 + titleProbe.height + 30);
     titleProbe.destroy();
-    const h = Math.max(360, bodyDy + bodyText.height + 42 + 78 + 42);
-    bodyText.destroy();
+    const h = Math.max(360, bodyDy + bodyProbe.height + 42 + 78 + 42);
+    bodyProbe.destroy();
     const x = (REF_W - w) / 2;
     const y = (REF_H - h) / 2;
     const panel = makePanel(scene, { x, y, w, h, bolts: true, hazard: true, scan: true, border: o.signal, borderWidth: 3 });
     c.add(panel);
     c.add(stencilText(scene, x + 48, y + 54, o.title, 54, palette.text, { spacing: 0.06 }));
-    c.add(monoText(scene, x + 48, y + bodyDy, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 }));
+    c.add(bodyText(scene, x + 48, y + bodyDy, o.body, 24, palette.textMuted, { wrap: w - 96, lineSpacing: 6 }));
 
     const bw = 300;
     const bh = 78;

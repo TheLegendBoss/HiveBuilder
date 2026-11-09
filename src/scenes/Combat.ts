@@ -19,7 +19,7 @@ import { makeCard, makeIntentBadge, makePile, makePlate, drawHpBar, CARD_H, CARD
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import { drawHazardStrip, makePanel } from '../ui/Panel';
-import { monoText, stencilText, textContext } from '../ui/text';
+import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
 
@@ -479,7 +479,7 @@ export class Combat extends ScreenScene {
     const g = this.sim;
     const title = stencilText(this, 40, 10, g.scenario.battlefield.name, 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
-    root.add(monoText(this, 44, title.y + title.height + 2, `${g.scenario.enemyName} · lane HP ${g.scenario.battlefield.laneHp.join('/')}`, 16, palette.textMuted));
+    root.add(bodyText(this, 44, title.y + title.height + 2, `${g.scenario.enemyName} · lane HP ${g.scenario.battlefield.laneHp.join('/')}`, 16, palette.textMuted));
     const lamp = this.add.graphics();
     drawLamp(lamp, 760, 38, 9, this.busy ? palette.danger : signal);
     root.add(lamp);
@@ -494,10 +494,10 @@ export class Combat extends ScreenScene {
           : 'YOUR ACTION';
     const round = stencilText(this, 784, 8, `Round ${g.round}`, 36, palette.text, { spacing: 0.06 });
     root.add(round);
-    root.add(monoText(this, 784, round.y + round.height, phase, 18, this.busy ? palette.danger : signal, { spacing: 0.1 }));
-    const r1 = monoText(this, 1880, 10, `RESULTS DECK ${g.results.length}/52`, 18, palette.textMuted, { originX: 1, spacing: 0.06 });
+    root.add(bodyText(this, 784, round.y + round.height, phase, 18, this.busy ? palette.danger : signal, { spacing: 0.1 }));
+    const r1 = bodyText(this, 1880, 10, `RESULTS DECK ${g.results.length}/52`, 18, palette.textMuted, { originX: 1, spacing: 0.06 });
     root.add(r1);
-    root.add(monoText(this, 1880, r1.y + r1.height + 4, `SEED ${this.seed} · DEPTH 1 · MIDDLE HIVE`, 16, palette.textMuted, { originX: 1, spacing: 0.06 }));
+    root.add(bodyText(this, 1880, r1.y + r1.height + 4, `SEED ${this.seed} · DEPTH 1 · MIDDLE HIVE`, 16, palette.textMuted, { originX: 1, spacing: 0.06 }));
   }
 
   private drawLaneBg(root: Phaser.GameObjects.Container, L: number): void {
@@ -547,7 +547,7 @@ export class Combat extends ScreenScene {
       z.lineStyle(isFocus ? 4.5 : 3, signal, 1);
       z.strokeRect(x0 + 4, PLAYER_ZONE_Y - 4, LANE_W - 8, 214);
       root.add(z);
-      root.add(monoText(this, x0 + LANE_W / 2, PLAYER_ZONE_Y + 100, `DEPLOY HERE (${L + 1})`, 22, signal, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
+      root.add(bodyText(this, x0 + LANE_W / 2, PLAYER_ZONE_Y + 100, `DEPLOY HERE (${L + 1})`, 22, signal, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
       const hit = this.add.zone(x0 + LANE_W / 2, PLAYER_ZONE_Y + 102, LANE_W - 8, 212).setInteractive({ useHandCursor: true });
       hit.on('pointerup', () => this.pickOption({ k: 'lane', lane: L }));
       root.add(hit);
@@ -583,8 +583,8 @@ export class Combat extends ScreenScene {
       color = palette.bone;
     }
     const x0 = LANE_X[L]!;
-    root.add(monoText(this, labelX, cy, label, 14, color, { originY: 0.5, spacing: 0.08 }));
-    const count = monoText(this, x0 + LANE_W - 14, cy, `${hp}/${max}`, 16, palette.text, { originX: 1, originY: 0.5 });
+    root.add(bodyText(this, labelX, cy, label, 14, color, { originY: 0.5, spacing: 0.08 }));
+    const count = bodyText(this, x0 + LANE_W - 14, cy, `${hp}/${max}`, 16, palette.text, { originX: 1, originY: 0.5 });
     root.add(count);
     const bar: Box = { x: count.x - count.width - 10 - 120, y: cy - 8, w: 120, h: 16 };
     const gfx = this.add.graphics();
@@ -688,14 +688,14 @@ export class Combat extends ScreenScene {
 
   private drawLog(root: Phaser.GameObjects.Container, signal: number): void {
     const text = this.logLine.length > 150 ? this.logLine.slice(0, 147) + '…' : this.logLine;
-    root.add(monoText(this, 56, LOG_Y + 17, '> ' + text, 18, palette.text, { originY: 0.5 }));
-    root.add(monoText(this, 1864, LOG_Y + 17, 'L = LOG', 14, signal, { originX: 1, originY: 0.5, spacing: 0.08 }));
+    root.add(bodyText(this, 56, LOG_Y + 17, '> ' + text, 18, palette.text, { originY: 0.5 }));
+    root.add(bodyText(this, 1864, LOG_Y + 17, 'L = LOG', 14, signal, { originX: 1, originY: 0.5, spacing: 0.08 }));
   }
 
   private drawTray(root: Phaser.GameObjects.Container, signal: number): void {
     const g = this.sim;
     // Reserve row.
-    const resLabel = monoText(this, HAND_X0, TRAY.y + 14, 'RESERVE', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 });
+    const resLabel = bodyText(this, HAND_X0, TRAY.y + 14, 'RESERVE', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 });
     root.add(resLabel);
     let rx = HAND_X0 + resLabel.width + 16;
     const selDeploy = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
@@ -709,7 +709,7 @@ export class Combat extends ScreenScene {
       gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.line, 1);
       gg.strokeRect(-w / 2, -12, w, 24);
       chip.add(gg);
-      const t = monoText(this, 0, 0, u.name.toUpperCase(), 16, palette.text, { originX: 0.5, originY: 0.5 });
+      const t = bodyText(this, 0, 0, u.name.toUpperCase(), 16, palette.text, { originX: 0.5, originY: 0.5 });
       if (t.width > w - 14) t.setScale((w - 14) / t.width);
       chip.add(t);
       chip.setSize(w, 24);
@@ -718,8 +718,8 @@ export class Combat extends ScreenScene {
       root.add(chip);
       rx += w + 12;
     }
-    if (!this.reserve().length) root.add(monoText(this, rx, TRAY.y + 14, 'ALL DEPLOYED', 16, palette.textMuted, { originY: 0.5 }));
-    root.add(monoText(this, HAND_X0 + HAND_W, TRAY.y + 14, `HAND ${g.hand.length}/${g.scenario.handSize}`, 16, palette.textMuted, { originX: 1, originY: 0.5, spacing: 0.12 }));
+    if (!this.reserve().length) root.add(bodyText(this, rx, TRAY.y + 14, 'ALL DEPLOYED', 16, palette.textMuted, { originY: 0.5 }));
+    root.add(bodyText(this, HAND_X0 + HAND_W, TRAY.y + 14, `HAND ${g.hand.length}/${g.scenario.handSize}`, 16, palette.textMuted, { originX: 1, originY: 0.5, spacing: 0.12 }));
 
     root.add(makePile(this, TRAY.x + 26, CARD_TOP + 10, 'DECK', g.deck.length, signal));
     root.add(makePile(this, TRAY.x + TRAY.w - 138, CARD_TOP + 10, 'DISCARD', g.discard.length, palette.bone));
@@ -770,12 +770,12 @@ export class Combat extends ScreenScene {
     const lines = [`${def.sourceType.toUpperCase()} · ${def.source}`, def.text, `BURN VALUE ${def.fuelValue} FUEL`];
     const c = this.add.container(0, 0);
     const title = stencilText(this, 18, 12, def.name, 34, palette.text);
-    const body = monoText(this, 18, 58, lines[0]! + '\n' + lines[1]!, 18, palette.text, { wrap: w - 36, lineSpacing: 6 });
-    const foot = monoText(this, 18, 0, lines[2]!, 16, palette.textMuted, { spacing: 0.06 });
+    const body = bodyText(this, 18, 58, lines[0]! + '\n' + lines[1]!, 18, palette.text, { wrap: w - 36, lineSpacing: 6 });
+    const foot = bodyText(this, 18, 0, lines[2]!, 16, palette.textMuted, { spacing: 0.06 });
     const cost = [def.playFuel ? `PLAY COST ${def.playFuel} FUEL` : '', def.ammoCost ? `${def.ammoCost} AMMO` : ''].filter(Boolean).join(' · ');
     const reason = playable ? '' : this.reasonFor(name, iid).toUpperCase();
     const extra = [cost, reason].filter(Boolean).join('\n');
-    const ex = monoText(this, 18, 0, extra, 16, reason ? palette.danger : palette.text, { wrap: w - 36 });
+    const ex = bodyText(this, 18, 0, extra, 16, reason ? palette.danger : palette.text, { wrap: w - 36 });
     const h = 58 + body.height + 14 + (extra ? ex.height + 8 : 0) + foot.height + 16;
     foot.y = h - foot.height - 12;
     ex.y = 58 + body.height + 12;
@@ -793,7 +793,7 @@ export class Combat extends ScreenScene {
     const lamp = this.add.graphics();
     drawLamp(lamp, 24, 22, 7, signal);
     p.add(lamp);
-    p.add(monoText(this, 42, 22, 'ACTING UNIT', 16, palette.textMuted, { originY: 0.5, spacing: 0.14 }));
+    p.add(bodyText(this, 42, 22, 'ACTING UNIT', 16, palette.textMuted, { originY: 0.5, spacing: 0.14 }));
 
     const aid = this.stepActor();
     const deployId = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
@@ -807,7 +807,7 @@ export class Combat extends ScreenScene {
     const W = PANEL.w - 44;
     let y = 42;
     const line = (str: string, size: number, color: number, gapAfter = 6, extra: { wrap?: boolean } = {}): Phaser.GameObjects.Text => {
-      const t = monoText(this, 22, y, str, size, color, extra.wrap === false ? {} : { wrap: W });
+      const t = bodyText(this, 22, y, str, size, color, extra.wrap === false ? {} : { wrap: W });
       p.add(t);
       y += t.height + gapAfter;
       return t;
@@ -822,7 +822,7 @@ export class Combat extends ScreenScene {
       const bar = this.add.graphics();
       drawHpBar(bar, 22, y, W - 70, 20, unit.hp, unit.maxHp);
       p.add(bar);
-      p.add(monoText(this, 22 + W, y + 10, `${unit.hp}/${unit.maxHp}`, 20, palette.text, { originX: 1, originY: 0.5 }));
+      p.add(bodyText(this, 22 + W, y + 10, `${unit.hp}/${unit.maxHp}`, 20, palette.text, { originX: 1, originY: 0.5 }));
       y += 34;
       line(`SOAK ${unit.armor + unit.builtin} (ARMOR ${unit.armor}/${unit.armorMax} + BUILT-IN ${unit.builtin})`, 16, palette.bone, 4);
       if (unit.ammoMax > 0) line(`AMMO ${unit.ammo}/${unit.ammoMax}`, 16, palette.bone, 4);
@@ -873,8 +873,8 @@ export class Combat extends ScreenScene {
         gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.line, 1);
         gg.strokeRect(-W / 2, -bh / 2, W, bh);
         b.add(gg);
-        const nameT = monoText(this, -W / 2 + 12, 0, lab.toUpperCase(), 18, palette.text, { originY: 0.5 });
-        const costT = monoText(this, W / 2 - 12, 0, `FUEL ${first.fuel}${first.ammo ? ` · AMMO ${first.ammo}` : ''}`, 16, palette.textMuted, { originX: 1, originY: 0.5 });
+        const nameT = bodyText(this, -W / 2 + 12, 0, lab.toUpperCase(), 18, palette.text, { originY: 0.5 });
+        const costT = bodyText(this, W / 2 - 12, 0, `FUEL ${first.fuel}${first.ammo ? ` · AMMO ${first.ammo}` : ''}`, 16, palette.textMuted, { originX: 1, originY: 0.5 });
         b.add([nameT, costT]);
         b.setSize(W, bh);
         b.setInteractive({ useHandCursor: true });
@@ -890,7 +890,7 @@ export class Combat extends ScreenScene {
     const limit = PANEL.h - 14 - 46 - 10;
     const text = this.prompt(opts, focus);
     for (const size of [18, 16, 14]) {
-      const t = monoText(this, 22, y, text, size, palette.text, { wrap: W, lineSpacing: 4 });
+      const t = bodyText(this, 22, y, text, size, palette.text, { wrap: W, lineSpacing: 4 });
       if (y + t.height <= limit || size === 14) {
         p.add(t);
         y += t.height + 8;
@@ -1014,14 +1014,14 @@ export class Combat extends ScreenScene {
     root.add(p);
     p.add(stencilText(this, 36, 36, 'Vox log', 44, palette.text));
     const rows = this.logHistory.slice(-16);
-    rows.forEach((l, i) => p.add(monoText(this, 36, 100 + i * 31, l.length > 80 ? l.slice(0, 77) + '…' : l, 18, i === rows.length - 1 ? palette.text : palette.textMuted)));
-    p.add(monoText(this, w - 36, h - 30, 'L or Esc to close', 16, palette.textMuted, { originX: 1 }));
+    rows.forEach((l, i) => p.add(bodyText(this, 36, 100 + i * 31, l.length > 80 ? l.slice(0, 77) + '…' : l, 18, i === rows.length - 1 ? palette.text : palette.textMuted)));
+    p.add(bodyText(this, w - 36, h - 30, 'L or Esc to close', 16, palette.textMuted, { originX: 1 }));
   }
 
   // ---------- feedback
 
   private floater(root: Phaser.GameObjects.Container, text: string, x: number, y: number, color: number, size = 28): void {
-    const t = monoText(this, x, y, text, size, color, { originX: 0.5, originY: 0.5, weight: 'bold' });
+    const t = bodyText(this, x, y, text, size, color, { originX: 0.5, originY: 0.5, weight: 'bold' });
     t.setStroke(toCss(palette.bg), 6);
     root.add(t);
     this.tweens.add({
