@@ -2,7 +2,7 @@
 
 A grim-dark deckbuilding campaign game. You lead a gang through a procedurally generated hive city and claim it district by district. Your crew, gear, perks and skills all feed one shared squad deck, and every card can be played for its effect or burned as fuel.
 
-**Status:** design phase, with the first build started. Milestones M0 (Phaser 4 scaffold and main menu), M1 (data-driven sim core), M2 (playable combat screen) M3 (the expedition: generated floors, room screens, rations, retreat) and M4 (the HQ: crew, promotion, repairs, market, loadout, and the loop home) are in `src/`. Everything is placeholder numbers and placeholder names.
+**Status:** the sandbox MVP is built (TSC crew only). Milestones M0 to M7 are in `src/`: scaffold and menu, data-driven sim, combat screen, the expedition, the HQ and economy, sandbox setup with the depth dial and saves, aftermath effects and Burning, and the five section functions with control rooms, bosses and footholds. The humanoid aftermath (stress, afflictions, virtues) is built and tested but dormant until a humanoid faction is playable. Everything is placeholder numbers and placeholder names; `docs/build-spec.md` has an "as built" note for each milestone.
 
 ## Repo layout
 

@@ -34,6 +34,18 @@ export interface EnemyActionDef {
   tag?: string;
   /** buff: built-in soak never grows past this (working rule, stops runaway stacking) */
   soakCap?: number;
+  /** attack: the unit hit catches fire for this many rounds */
+  burn?: number;
+  /** attack: the unit hit is Stunned */
+  stun?: boolean;
+  /** attack: hits every live unit in the lane with the most live squad members, instead of one unit */
+  area?: boolean;
+  /** attack: the victim can stand in any lane (the healthiest live unit that is not already stunned) */
+  anyLane?: boolean;
+  /** the unit spends one action charging before this fires */
+  windup?: boolean;
+  /** rally: units deployed in one go (default 1) */
+  count?: number;
 }
 
 export interface Unit {
@@ -55,6 +67,12 @@ export interface Unit {
   exposed: boolean;
   /** rounds left; player units pay +1 fuel while it lasts */
   suppressed: number;
+  /** rounds left on fire; the unit takes 1 damage at the end of each round (working: stands in for the burn cards) */
+  burning: number;
+  /** squad units only: rounds a stun outlasts the round it landed in */
+  stunWait: number;
+  /** enemy only: the action it is winding up, if any */
+  charging: string | null;
   counter: boolean;
   /** Sight Alignment is armed */
   sight: boolean;
@@ -81,7 +99,7 @@ export type Ev =
   | { t: 'heal'; unit: number; hp: number; revived: boolean }
   | { t: 'soakGain'; unit: number; amount: number }
   | { t: 'ammoGain'; unit: number; amount: number }
-  | { t: 'status'; unit: number; status: 'stunned' | 'exposed' | 'suppressed' | 'counter' | 'sight'; on: boolean }
+  | { t: 'status'; unit: number; status: 'stunned' | 'exposed' | 'suppressed' | 'burning' | 'counter' | 'sight'; on: boolean }
   | { t: 'deploy'; unit: number; lane: number }
   | { t: 'draw'; count: number; reshuffled: boolean }
   | { t: 'discard'; names: string[] }
@@ -101,8 +119,16 @@ export interface Scenario {
   deck: Array<{ name: string; count: number }>;
   handSize: number;
   enemyName: string;
-  /** deployed in order into lanes 1, 2, 3 during setup */
+  /** deployed in order during setup, into lanes 1, 2, 3 unless `startLanes` says otherwise */
   enemyStart: UnitTemplate[];
+  /** lane index for each enemyStart unit */
+  startLanes?: number[];
+  /** win once this many rounds have passed after setup (the reactor shuts down) */
+  surviveRounds?: number;
+  /** win when every enemy with this tag is dead */
+  bossTag?: string;
+  /** when a unit with the leader tag dies, every unit with the follower tag dies too */
+  linked?: Array<{ leader: string; followers: string }>;
   /** waiting units, drawn from the front */
   enemyDeck: UnitTemplate[];
   /** extra units that land in a lane in the same setup round as that lane's first unit */
@@ -174,7 +200,7 @@ export interface Action {
 }
 
 export interface EnemyPlan {
-  kind: 'deploy' | 'attack' | 'rally' | 'buff' | 'stunned' | 'pass';
+  kind: 'deploy' | 'attack' | 'rally' | 'buff' | 'stunned' | 'windup' | 'pass';
   unit: number | null;
   name: string;
   dmg: number;
@@ -185,6 +211,10 @@ export interface EnemyPlan {
   redirected: boolean;
   /** attack: Suppressed rounds put on the unit hit */
   suppress?: number;
+  burn?: number;
+  stun?: boolean;
+  /** attack: the lane whose live units all take the hit */
+  areaLane?: number | null;
   /** buff: the friendly unit that gains the soak, and how much */
   ally?: number | null;
   soak?: number;

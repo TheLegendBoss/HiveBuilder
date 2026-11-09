@@ -22,6 +22,9 @@ export function makeUnit(g: Game, side: Side, t: UnitTemplate): Unit {
     stunned: false,
     exposed: false,
     suppressed: 0,
+    burning: 0,
+    stunWait: 0,
+    charging: null,
     counter: false,
     sight: false,
     ammo,
@@ -37,6 +40,8 @@ export function makeUnit(g: Game, side: Side, t: UnitTemplate): Unit {
 export interface GameOptions {
   /** squad hit points carried in from the expedition, in squad order; armor, built-in soak and ammo start full */
   squadHp?: number[];
+  /** statuses a squad slot starts this fight with (from the aftermath deck) */
+  squadFx?: Array<{ suppressed?: number; stunned?: boolean } | null | undefined>;
 }
 
 export function createGame(scenario: Scenario, seed: number, opts: GameOptions = {}): Game {
@@ -69,6 +74,9 @@ export function createGame(scenario: Scenario, seed: number, opts: GameOptions =
     const u = makeUnit(g, 'P', t);
     const hp = opts.squadHp?.[i];
     if (hp !== undefined) u.hp = Math.max(1, Math.min(u.maxHp, hp));
+    const fx = opts.squadFx?.[i];
+    if (fx?.suppressed) u.suppressed = fx.suppressed;
+    if (fx?.stunned) u.stunned = true;
   });
   g.enemyStart = scenario.enemyStart.map((t) => makeUnit(g, 'E', t).id);
   g.enemyAlso = (scenario.enemyAlso ?? []).map((a) => ({ id: makeUnit(g, 'E', a.unit).id, lane: a.lane }));
@@ -206,9 +214,28 @@ export function drawUp(g: Game, ev: Ev[]): void {
   if (drawn > 0 || reshuffled) ev.push({ t: 'draw', count: drawn, reshuffled });
 }
 
+/** A leader dying takes its followers with it (the Brood Queen and her Rats). */
+function reapLinked(g: Game, ev: Ev[]): void {
+  for (const link of g.scenario.linked ?? []) {
+    const leaders = g.units.filter((u) => u.side === 'E' && u.tags.includes(link.leader));
+    if (leaders.length === 0 || leaders.some((u) => !u.dead)) continue;
+    for (const f of g.units.filter((u) => u.side === 'E' && !u.dead && u.tags.includes(link.followers))) {
+      f.dead = true;
+      f.hp = 0;
+      ev.push({ t: 'damage', unit: f.id, hp: 0, soaked: 0, downed: false, killed: true, exposed: false });
+    }
+  }
+}
+
 export function checkResult(g: Game, ev: Ev[]): void {
   if (g.result) return;
-  const result = capturedCount(g, 'E') >= 2 ? 'win' : capturedCount(g, 'P') >= 2 ? 'loss' : null;
+  reapLinked(g, ev);
+  let result: 'win' | 'loss' | null = capturedCount(g, 'E') >= 2 ? 'win' : capturedCount(g, 'P') >= 2 ? 'loss' : null;
+  const boss = g.scenario.bossTag;
+  if (!result && boss) {
+    const mine = g.units.filter((u) => u.side === 'E' && u.tags.includes(boss));
+    if (mine.length > 0 && mine.every((u) => u.dead)) result = 'win';
+  }
   if (result) {
     g.result = result;
     ev.push({ t: 'result', result });
@@ -218,6 +245,22 @@ export function checkResult(g: Game, ev: Ev[]): void {
 /** End of a full round: timers count down, Counter wears off. */
 export function endRound(g: Game, ev: Ev[]): void {
   for (const u of g.units) {
+    if (u.burning > 0 && !u.dead && !u.downed) {
+      ev.push({ t: 'log', text: `${u.name} burns for 1` });
+      hitUnit(u, 1, ev);
+      u.burning -= 1;
+      if (u.burning === 0 || u.dead || u.downed) {
+        u.burning = 0;
+        ev.push({ t: 'status', unit: u.id, status: 'burning', on: false });
+      }
+    }
+    if (u.side === 'P' && u.stunned) {
+      if (u.stunWait > 0) u.stunWait -= 1;
+      else {
+        u.stunned = false;
+        ev.push({ t: 'status', unit: u.id, status: 'stunned', on: false });
+      }
+    }
     if (u.suppressed > 0) {
       u.suppressed -= 1;
       if (u.suppressed === 0) ev.push({ t: 'status', unit: u.id, status: 'suppressed', on: false });

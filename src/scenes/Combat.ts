@@ -674,13 +674,19 @@ export class Combat extends ScreenScene {
       const def = g.scenario.enemyActions[u.pattern[u.pi]!]!;
       if (def.kind === 'rally') label = 'RALLY';
       else if (def.kind === 'buff') label = `+${def.soak ?? 1} SOAK`;
-      else label = `${def.melee ? 'MELEE' : 'ATK'} ${def.dmg}${def.suppress ? ' +SUP' : ''}`;
+      else {
+        const kind = def.area ? 'AREA' : def.melee ? 'MELEE' : 'ATK';
+        label = `${kind}${def.dmg > 0 ? ` ${def.dmg}` : ''}${def.burn ? ' +FIRE' : ''}${def.stun ? ' +STUN' : ''}${def.suppress ? ' +SUP' : ''}`;
+        if (def.windup && u.charging !== def.id) label = `WIND-UP ${label}`;
+      }
     }
     if (next && !g.result) {
       const plan = enemyPlan(g);
       if (plan.kind === 'attack' && plan.victim) {
         const name = plan.victim.k === 'unit' ? unitById(g, plan.victim.id).name : `LANE ${plan.victim.lane + 1}`;
         label = `${label} ▸ ${name}`.toUpperCase();
+      } else if (plan.kind === 'attack' && plan.areaLane !== undefined && plan.areaLane !== null) {
+        label = `${label} ▸ LANE ${plan.areaLane + 1}`;
       }
     }
     return makeIntentBadge(this, x, y, w, (next ? 'NEXT ' : '') + label, next);
@@ -831,6 +837,8 @@ export class Combat extends ScreenScene {
       if (unit.stunned) st.push('STUNNED');
       if (unit.exposed) st.push('EXPOSED');
       if (unit.suppressed > 0) st.push(`SUPPRESSED ${unit.suppressed}`);
+      if (unit.burning > 0) st.push(`BURNING ${unit.burning}`);
+      if (unit.charging) st.push('WINDING UP');
       if (unit.counter) st.push('COUNTER READY');
       if (unit.sight) st.push('SIGHT ALIGNED');
       line(st.length ? st.join(' · ') : 'NO STATUS', 16, st.length ? palette.danger : palette.textMuted, 12);

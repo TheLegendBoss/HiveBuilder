@@ -149,6 +149,7 @@ export function makePlate(scene: Phaser.Scene, o: PlateOpts): Phaser.GameObjects
   if (u.stunned) chips.push({ label: 'STUN', color: palette.danger });
   if (u.exposed) chips.push({ label: 'EXPOSED', color: palette.danger });
   if (u.suppressed > 0) chips.push({ label: `SUPP ${u.suppressed}`, color: palette.danger });
+  if (u.burning > 0) chips.push({ label: `BURN ${u.burning}`, color: palette.danger });
   if (u.counter) chips.push({ label: 'COUNTER', color: o.signal });
   if (u.sight) chips.push({ label: 'SIGHT', color: o.signal });
   const rest = drawChips(scene, c, hx + 10, hy + o.h - 20, o.w - 20, chips);

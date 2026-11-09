@@ -173,3 +173,17 @@ Numbers and rules the M4 build had to invent. All are in `src/data/campaign.ts` 
 3. Crafting numbers: pitch values, upgrade costs, pack odds and prices.
 4. Claimed rooms, buildings and downtime: room traits, building requirements, income, and XP for members left behind.
 5. Build a full starter faction and run a worked fight to test everything together.
+
+## M5 to M7 build notes (sandbox)
+
+- **Burning is a tick, not burn cards (working).** A burning unit takes 1 damage through its soak at the end of each round while the timer lasts. The design's burn clog cards are not built.
+- **Stun on a squad member outlasts the round it lands in** (it misses its next action, then clears). A stun on an enemy cancels any wind-up.
+- **Enemy wind-up** costs the unit one action; the attack fires on its next action. Area attacks hit the squad lane with the most live units (lowest lane on a tie).
+- **Boss win conditions (working):** capture two lanes as usual, or kill every unit tagged boss. The Dynamo also ends by itself after 6 rounds past setup. The Brood Queen's death kills every Rat in play.
+- **Boss scaling:** +2 HP and +1 damage per two tier steps (tier 1 numbers from the draft table). At tier 1 the stand-in player wins all four; at tier 7 with an unpromoted squad it almost never does, so the table needs DJ's pass.
+- **Control room placement:** one Control card is shuffled into the next 3 to 8 draws of a section's room deck, so it is findable by exploring but not on the first door. A function already held has none.
+- **Storehouse key:** dropped as an extra loot offer by the first guarded fight or scavenge in a Supply section. The Market route is not built.
+- **First-capture rewards:** loot draws, filtered by kind where the design names one (weapon or armor, supplies, medical). The Secure recruit is not built, so it pays 2 plain draws. "One rarity higher" waits for rarity on loot.
+- **Footholds:** a control room counts only if the squad gets home. Claim cost is one power per three rooms in the section, at least 2. Income per expedition is 1, 1, 2, 2, 3, 3, 4, 4 by tier.
+- **Ash cult cell** stays out of the Fight pool until a stressable crew is playable. The humanoid injury, affliction and virtue engine is built (`src/sim/afflictions.ts`) and not yet called by the game.
+- **Saves:** localStorage only (autosave, three slots, one quickstart preset). A fight in progress is not saved; reloading mid-contact restarts that fight.

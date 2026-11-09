@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { starterRoomDeck, tscExpedition } from '../data/rooms';
 import {
   MAX_DOORS, bandOf, canAffordGamble, cashOutGamble, closeGamble, commitGamble, createExpedition, currentRoom, declineGamble, doorsFor,
-  dropItem, finishFight, healSquad, leaveGate, leaveLoot, move, moves, pushGamble, queueLoot, retreat, takeGate, takeLoot, tierOf,
-  useItem, buyPack, canBuyPack, sellItem, leaveMarket, type Expedition, type GamblePending
+  dropItem, finishFight, healSquad, leaveControl, leaveGate, leaveLoot, move, moves, pushGamble, queueLoot, retreat, takeGate, takeLoot, tierOf,
+  useItem, buyPack, canBuyPack, sellItem, leaveMarket, hasKey, openStorehouse, sectionFn, type Expedition, type GamblePending
 } from './expedition';
 
 /** Path of room ids from here to the nearest room matching `want`, over doors. */
@@ -40,6 +40,7 @@ function settle(x: Expedition): void {
     else if (p.kind === 'loot') leaveLoot(x);
     else if (p.kind === 'market') leaveMarket(x);
     else if (p.kind === 'gamble') declineGamble(x);
+    else if (p.kind === 'control') leaveControl(x);
     else leaveGate(x);
   }
 }
@@ -103,7 +104,7 @@ describe('section generation', () => {
     }
     const avg = sizes.reduce((a, b) => a + b, 0) / sizes.length;
     expect(avg).toBeGreaterThan(6);
-    expect(Math.max(...sizes)).toBeLessThanOrEqual(22);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(23);
   });
 });
 
@@ -411,5 +412,140 @@ describe('market', () => {
     x.eagles = x.cfg.packPrice - 1;
     expect(canBuyPack(x)).toBe(false);
     expect(() => buyPack(x)).toThrow();
+  });
+});
+
+describe('control rooms', () => {
+  /** Walk to the first room matching `want`, settling everything on the way. Fights are won, so control fights capture. */
+  const find = (x: Expedition, want: (r: Expedition['rooms'][number]) => boolean): boolean => {
+    for (let guard = 0; guard < 80; guard++) {
+      if (x.rooms.some((r) => want(r) && r.entered)) return true;
+      const p = pathTo(x, (id) => want(x.rooms[id]!) || !x.rooms[id]!.entered);
+      if (!p) return false;
+      for (const id of p) {
+        if (x.pending) return false;
+        move(x, id);
+        if (x.rooms[id]!.type === 'Control') return true;
+        settle(x);
+      }
+    }
+    return false;
+  };
+
+  it('every section function cycles through the five, from a seeded start', () => {
+    const fns = [0, 1, 2, 3, 4, 5].map((s) => sectionFn({ fnOffset: 2 }, s));
+    expect(fns.slice(0, 5)).toEqual(['supply', 'secure', 'medical', 'power', 'industrial']);
+    expect(fns[5]).toBe(fns[0]);
+  });
+
+  it('a section holds one control room, reachable by exploring, and the rest of the deck is untouched', () => {
+    let found = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999 }));
+      exploreAll(x);
+      const controls = x.rooms.filter((r) => r.type === 'Control');
+      expect(controls.length).toBeLessThanOrEqual(1);
+      found += controls.length;
+    }
+    expect(found).toBeGreaterThan(40);
+  });
+
+  it('winning a boss room takes the section, once, and pays the force loot plus the first-capture draw', () => {
+    let done = 0;
+    for (let seed = 1; seed <= 80 && done < 5; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999 }));
+      const fn = sectionFn(x.cfg, 0);
+      if (fn === 'supply') continue;
+      if (!find(x, (r) => r.type === 'Control')) continue;
+      const p = x.pending;
+      if (!p || p.kind !== 'fight' || !p.control) continue;
+      expect(p.control).toBe(fn);
+      finishFight(x, true, x.hp, { eagles: 5, loot: 1 });
+      expect(x.captures).toEqual([{ fn, section: 0, tier: 1, rooms: x.rooms.length }]);
+      const loot = x.pending as Extract<NonNullable<Expedition['pending']>, { kind: 'loot' }>;
+      expect(loot.kind).toBe('loot');
+      expect(loot.offers.length).toBeGreaterThanOrEqual(2);
+      leaveLoot(x);
+      expect(x.rooms.filter((r) => r.type === 'Control').every((r) => r.cleared)).toBe(true);
+      done++;
+    }
+    expect(done).toBeGreaterThan(0);
+  });
+
+  it('a fight in a control room that is lost wipes the squad and takes nothing', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999 }));
+      if (sectionFn(x.cfg, 0) === 'supply' || !find(x, (r) => r.type === 'Control')) continue;
+      finishFight(x, false, x.hp.map(() => 0), { eagles: 0, loot: 0 });
+      expect(x.status).toBe('wiped');
+      expect(x.captures).toHaveLength(0);
+      return;
+    }
+    throw new Error('no control fight found');
+  });
+
+  it('a function that is already held has no control room', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999, skipFns: ['power', 'industrial', 'supply', 'secure', 'medical'] }));
+      exploreAll(x);
+      expect(x.rooms.some((r) => r.type === 'Control')).toBe(false);
+    }
+  });
+
+  it('the Storehouse needs the key: a first guarded room or scavenge drops it, and using it takes the section', () => {
+    let tried = 0;
+    for (let seed = 1; seed <= 200 && tried < 3; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999, fnOffset: 2 }));
+      expect(sectionFn(x.cfg, 0)).toBe('supply');
+      // explore everything but the control room, taking all loot on offer
+      for (let guard = 0; guard < 80; guard++) {
+        const p = pathTo(x, (id) => !x.rooms[id]!.entered && x.rooms[id]!.type !== 'Control');
+        if (!p) break;
+        for (const id of p) {
+          move(x, id);
+          while (x.pending?.kind === 'loot' && x.pending.offers.length && x.pack.length < x.cfg.packSize) takeLoot(x, 0);
+          settle(x);
+        }
+      }
+      const door = x.rooms.find((r) => r.type === 'Control');
+      if (!door || !hasKey(x)) continue;
+      const p = pathTo(x, (id) => id === door.id)!;
+      for (const id of p) {
+        move(x, id);
+        if (x.pending?.kind === 'control') break;
+        settle(x);
+      }
+      expect(x.pending?.kind).toBe('control');
+      const packBefore = x.pack.length;
+      openStorehouse(x);
+      expect(x.pack.length).toBe(packBefore - 1);
+      expect(hasKey(x)).toBe(false);
+      expect(x.captures.map((c) => c.fn)).toEqual(['supply']);
+      tried++;
+    }
+    expect(tried).toBeGreaterThan(0);
+  });
+
+  it('without the key the Storehouse stays locked', () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      const x = createExpedition(tscExpedition(seed, { rations: 999, fnOffset: 2 }));
+      let guard = 0;
+      while (!x.rooms.some((r) => r.type === 'Control' && r.entered) && guard++ < 60) {
+        const p = pathTo(x, (id) => !x.rooms[id]!.entered);
+        if (!p) break;
+        for (const id of p) {
+          move(x, id);
+          if (x.pending?.kind === 'control') break;
+          settle(x);
+        }
+      }
+      if (x.pending?.kind !== 'control' || hasKey(x)) continue;
+      expect(() => openStorehouse(x)).toThrow();
+      leaveControl(x);
+      expect(x.pending).toBeNull();
+      expect(x.captures).toHaveLength(0);
+      return;
+    }
+    throw new Error('never reached the locked door without a key');
   });
 });

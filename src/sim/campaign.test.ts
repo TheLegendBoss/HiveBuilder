@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newTscCampaign, launchTsc } from '../data/campaign';
 import {
-  abandon, buyPack, canPromote, launch, launchProblem, maxPurse, promote, readyCrew, repair, repairCost, returnHome, sellStash, templateOf,
+  abandon, buyPack, canPromote, claimFoothold, claimProblem, launch, launchProblem, maxPurse, promote, readyCrew, repair, repairCost, returnHome, sellStash, templateOf,
   type Campaign
 } from './campaign';
 import { fightXp, type Expedition } from './expedition';
@@ -288,5 +288,82 @@ describe('aftermath and repairs', () => {
     c.aftermath = [card('Optics Damaged', 'lasting', 'minor'), card('Frame Damage', 'lasting', 'major')];
     returnHome(c, x);
     expect(c.crew[0]!.damage!.severity).toBe('major');
+  });
+});
+
+describe('short-term results that ride into the next fight', () => {
+  const card = (name: string) => ({ name, cards: 1, kind: 'short-term' as const, repair: 'free reboot' as const, effect: '' });
+
+  it('Glitching starts the next fight Suppressed and Rebooting starts it Stunned, then they are used up', () => {
+    const c = newTscCampaign(31);
+    const x = go(c, 0);
+    x.downs[0] = 1;
+    x.downs[1] = 1;
+    x.status = 'retreated';
+    c.aftermath = [card('Glitching'), card('Rebooting')];
+    const d = returnHome(c, x);
+    expect(d.lines.join(' ')).toMatch(/Glitching.*Suppressed for 2 rounds/);
+    expect(c.crew[0]!.nextFight).toEqual({ stunned: true });
+    expect(c.crew[1]!.nextFight).toEqual({ suppressed: 2 });
+    const y = go(c, 0);
+    expect(y.cfg.startFx).toEqual([{ stunned: true }, { suppressed: 2 }, null, null, null]);
+    expect(y.fx).toEqual([{ stunned: true }, { suppressed: 2 }, null, null, null]);
+    expect(c.crew[0]!.nextFight).toBeNull();
+    expect(c.crew[1]!.nextFight).toBeNull();
+  });
+});
+
+describe('footholds', () => {
+  const take = (c: Campaign, fn: 'power' | 'supply', tier = 1, rooms = 9, status: Expedition['status'] = 'retreated'): void => {
+    const x = go(c, 0);
+    x.captures.push({ fn, section: 0, tier, rooms });
+    x.status = status;
+    returnHome(c, x);
+  };
+
+  it('a control room won and brought home is recorded and costs power to claim', () => {
+    const c = newTscCampaign(40);
+    take(c, 'power', 3, 9);
+    expect(c.footholds).toEqual([{ fn: 'power', tier: 3, rooms: 9, cost: 3, claimed: false }]);
+    expect(claimProblem(c, 'power')).toBe('Needs 3 power');
+    c.power = 5;
+    claimFoothold(c, 'power');
+    expect(c.power).toBe(2);
+    expect(c.footholds[0]!.claimed).toBe(true);
+    expect(claimProblem(c, 'power')).toBe('Already claimed');
+  });
+
+  it('a wipe loses the capture', () => {
+    const c = newTscCampaign(41);
+    take(c, 'power', 1, 9, 'wiped');
+    expect(c.footholds).toHaveLength(0);
+  });
+
+  it('a claimed foothold pays power every expedition, scaled by its tier', () => {
+    const c = newTscCampaign(42);
+    take(c, 'supply', 7, 6);
+    c.power = 10;
+    claimFoothold(c, 'supply');
+    const before = c.power;
+    const x = go(c, 0);
+    x.status = 'retreated';
+    returnHome(c, x);
+    expect(c.power).toBe(before + 4);
+  });
+
+  it('claimed and unclaimed functions do not spawn control rooms again', () => {
+    const c = newTscCampaign(43);
+    take(c, 'power');
+    const x = go(c, 0);
+    expect(x.cfg.skipFns).toEqual(['power']);
+  });
+
+  it('cannot claim a foothold you do not hold, or while the crew are out', () => {
+    const c = newTscCampaign(44);
+    expect(claimProblem(c, 'secure')).toBe('Not taken yet');
+    take(c, 'power');
+    c.power = 9;
+    go(c, 0);
+    expect(claimProblem(c, 'power')).toBe('The crew are out');
   });
 });

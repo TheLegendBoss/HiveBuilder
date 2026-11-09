@@ -46,6 +46,29 @@ function victimFor(g: Game, u: Unit): { target: Target; redirected: boolean } | 
   return null;
 }
 
+/** The lane with the most live squad members: where an area attack lands. Ties go to the lowest lane. */
+function crowdedLane(g: Game): number | null {
+  let best: number | null = null;
+  let most = 0;
+  for (let L = 0; L < 3; L++) {
+    const n = inLane(g, 'P', L).length;
+    if (n > most) {
+      most = n;
+      best = L;
+    }
+  }
+  return best;
+}
+
+/** The squad member a reaching attack picks: the healthiest live unit that is not already stunned. */
+function anyLaneVictim(g: Game): Unit | null {
+  const pool = g.units.filter((u) => u.side === 'P' && u.lane !== null && !u.downed && !u.dead);
+  const open = pool.filter((u) => !u.stunned);
+  const from = open.length ? open : pool;
+  from.sort((a, b) => b.hp - a.hp || a.arrived - b.arrived);
+  return from[0] ?? null;
+}
+
 function canBreed(g: Game, u: Unit, def: EnemyActionDef): boolean {
   if (g.enemyDeck.length === 0) return false;
   return def.cap !== undefined ? bodiesInLane(g, 'E', u.lane!) < def.cap : laneHasRoom(g, 'E', u.lane!);
@@ -68,6 +91,23 @@ function enemyUnitsInOrder(g: Game): Unit[] {
   return out;
 }
 
+/** Burning and Stun riders on a hit. A stun cancels any wind-up and, on a squad member, outlasts one round. */
+function applyEffects(t: Unit, burn: number | undefined, stun: boolean | undefined, ev: Ev[]): void {
+  if (t.downed || t.dead) return;
+  if (burn && burn > t.burning) {
+    t.burning = burn;
+    ev.push({ t: 'status', unit: t.id, status: 'burning', on: true });
+    ev.push({ t: 'log', text: `${t.name} catches fire for ${burn} rounds` });
+  }
+  if (stun && !t.stunned) {
+    t.stunned = true;
+    t.stunWait = t.side === 'P' ? 1 : 0;
+    t.charging = null;
+    ev.push({ t: 'status', unit: t.id, status: 'stunned', on: true });
+    ev.push({ t: 'log', text: `${t.name} is stunned` });
+  }
+}
+
 /** What the enemy will do on its next action. Nothing here changes the game. */
 export function enemyPlan(g: Game): EnemyPlan {
   const pass = (text: string): EnemyPlan => ({
@@ -78,9 +118,10 @@ export function enemyPlan(g: Game): EnemyPlan {
     const id = g.enemyStart[g.round - 1];
     if (id === undefined) return pass('Nothing left to deploy');
     const u = unitById(g, id);
+    const lane = g.scenario.startLanes?.[g.round - 1] ?? g.round - 1;
     return {
       kind: 'deploy', unit: u.id, name: 'Deploy', dmg: 0, melee: false, victim: null, redirected: false,
-      lane: g.round - 1, nextPtr: g.eptr, nextPi: null, text: `${u.name} takes lane ${g.round}`
+      lane, nextPtr: g.eptr, nextPi: null, text: `${u.name} takes lane ${lane + 1}`
     };
   }
   const units = enemyUnitsInOrder(g);
@@ -114,9 +155,29 @@ export function enemyPlan(g: Game): EnemyPlan {
           ally: ally.id, soak: def.soak ?? 1, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
         };
       }
+      if (def.windup && u.charging !== def.id) {
+        return {
+          kind: 'windup', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, victim: null, redirected: false,
+          lane: u.lane, nextPtr: ptr, nextPi: u.pi, text: `${u.name} winds up ${def.name}`
+        };
+      }
+      if (def.area) {
+        const lane = crowdedLane(g);
+        return {
+          kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, burn: def.burn, stun: def.stun,
+          victim: null, areaLane: lane, redirected: false, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
+        };
+      }
+      if (def.anyLane) {
+        const t = anyLaneVictim(g);
+        return {
+          kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, burn: def.burn, stun: def.stun,
+          victim: t ? unitTarget(t) : null, redirected: false, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
+        };
+      }
       const v = victimFor(g, u);
       return {
-        kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, suppress: def.suppress,
+        kind: 'attack', unit: u.id, name: def.name, dmg: def.dmg, melee: def.melee, suppress: def.suppress, burn: def.burn, stun: def.stun,
         victim: v?.target ?? null, redirected: v?.redirected ?? false, lane: u.lane, nextPtr: ptr, nextPi, text: def.text
       };
     }
@@ -146,14 +207,25 @@ export function enemyAct(g: Game): Ev[] {
       break;
     case 'stunned':
       u!.stunned = false;
+      u!.charging = null;
       ev.push({ t: 'status', unit: u!.id, status: 'stunned', on: false });
       ev.push({ t: 'intentSkip', unit: u!.id });
       ev.push({ t: 'log', text: `${u!.name} is stunned and loses its action` });
       break;
+    case 'windup': {
+      const def = g.scenario.enemyActions[u!.pattern[u!.pi]!]!;
+      u!.charging = def.id;
+      ev.push({ t: 'log', text: plan.text });
+      break;
+    }
     case 'rally': {
-      const next = unitById(g, g.enemyDeck.shift()!);
-      deployUnit(g, next, plan.lane!, ev);
-      ev.push({ t: 'log', text: `${u!.name} rallies: ${next.name} joins lane ${plan.lane! + 1}` });
+      const def = g.scenario.enemyActions[u!.pattern[(plan.nextPi === 0 ? u!.pattern.length : plan.nextPi!) - 1]!]!;
+      for (let k = 0; k < (def.count ?? 1); k++) {
+        if (k > 0 && !canBreed(g, u!, def)) break;
+        const next = unitById(g, g.enemyDeck.shift()!);
+        deployUnit(g, next, plan.lane!, ev);
+        ev.push({ t: 'log', text: `${u!.name} rallies: ${next.name} joins lane ${plan.lane! + 1}` });
+      }
       break;
     }
     case 'buff': {
@@ -165,7 +237,18 @@ export function enemyAct(g: Game): Ev[] {
     }
     case 'attack': {
       const v = plan.victim;
-      if (!v) {
+      u!.charging = null;
+      if (plan.areaLane !== undefined) {
+        const lane = plan.areaLane;
+        if (lane === null) ev.push({ t: 'log', text: `${u!.name} has nothing to hit` });
+        else {
+          ev.push({ t: 'log', text: `${u!.name}: ${plan.name} sweeps lane ${lane + 1}` });
+          for (const t of inLane(g, 'P', lane)) {
+            if (plan.dmg > 0) hitUnit(t, plan.dmg, ev);
+            applyEffects(t, plan.burn, plan.stun, ev);
+          }
+        }
+      } else if (!v) {
         ev.push({ t: 'log', text: `${u!.name} has nothing to hit` });
       } else if (v.k === 'lane') {
         ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on your lane ${v.lane + 1} for ${plan.dmg}` });
@@ -177,7 +260,8 @@ export function enemyAct(g: Game): Ev[] {
           ev.push({ t: 'log', text: `${t.name} takes the hit meant for a squadmate` });
         }
         ev.push({ t: 'log', text: `${u!.name}: ${plan.name} on ${t.name} for ${plan.dmg}` });
-        hitUnit(t, plan.dmg, ev);
+        if (plan.dmg > 0) hitUnit(t, plan.dmg, ev);
+        applyEffects(t, plan.burn, plan.stun, ev);
         if (plan.suppress && !t.downed && !t.dead) {
           t.suppressed = Math.max(t.suppressed, plan.suppress);
           ev.push({ t: 'status', unit: t.id, status: 'suppressed', on: true });
@@ -189,7 +273,7 @@ export function enemyAct(g: Game): Ev[] {
           ev.push({ t: 'log', text: `${t.name} counters for 2` });
           hitUnit(u!, 2, ev);
         }
-        if (plan.melee && !t.downed && !u!.dead) {
+        if (plan.melee && plan.dmg > 0 && !t.downed && !u!.dead) {
           ev.push({ t: 'log', text: `${t.name} fights back for 1` });
           hitUnit(u!, 1, ev);
         }
@@ -204,6 +288,12 @@ export function enemyAct(g: Game): Ev[] {
   checkResult(g, ev);
   if (!g.result) {
     endRound(g, ev);
+    const hold = g.scenario.surviveRounds;
+    if (hold !== undefined && g.round >= g.scenario.setupRounds + hold) {
+      g.result = 'win';
+      ev.push({ t: 'log', text: 'The reactor shuts down. The squad held.' });
+      ev.push({ t: 'result', result: 'win' });
+    }
     g.turn = 'P';
   }
   return ev;

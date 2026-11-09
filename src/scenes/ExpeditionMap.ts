@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { autosave, campaign, session } from '../core/session';
 import { abandon, returnHome } from '../sim/campaign';
+import { controlRooms, fnInfo } from '../data/control';
 import { forceById } from '../data/rooms';
 import { mix, palette } from '../data/palette';
 import {
   atCheckpoint, buyPack, canAffordGamble, canBuyPack, leaveMarket, sellItem, cashOutGamble, closeGamble, commitGamble, currentRoom, declineGamble, dropItem, leaveGate, leaveLoot,
-  move, moves, pushGamble, retreat, takeGate, takeLoot, tierAt, useItem, type Expedition, type GamblePending, type Room, type RoomType
+  hasKey, leaveControl, move, moves, openStorehouse, pushGamble, retreat, sectionFn, takeGate, takeLoot, tierAt, useItem, type Expedition, type GamblePending, type Pending, type Room, type RoomType
 } from '../sim/expedition';
 import { Button } from '../ui/Button';
 import { drawHpBar } from '../ui/combat/parts';
@@ -22,7 +23,7 @@ const SIDE = { x: 1470, y: 92, w: 410, h: 740 };
 const FOOT = { x: 40, y: 852, w: 1840, h: 200 };
 
 const roomName: Record<RoomType, string> = {
-  Fight: 'Fight', Scavenge: 'Scavenge', Gamble: 'Gamble', Hazard: 'Hazard', Market: 'Market', Rest: 'Rest', Clinic: 'Clinic', Gate: 'Gate'
+  Fight: 'Fight', Scavenge: 'Scavenge', Gamble: 'Gamble', Hazard: 'Hazard', Market: 'Market', Rest: 'Rest', Clinic: 'Clinic', Gate: 'Gate', Control: 'Control'
 };
 
 /** The floor map: walk room to room, spend rations, and hand fights over to the combat screen. */
@@ -183,7 +184,7 @@ export class ExpeditionMap extends ScreenScene {
     root.add(
       bodyText(
         this, 44, title.y + title.height + 2,
-        `Section ${x.section + 1} of ${x.cfg.sections} · tier ${tierAt(x.cfg, x.section)} · seed ${x.cfg.seed}`, 16, palette.textMuted
+        `Section ${x.section + 1} of ${x.cfg.sections} · tier ${tierAt(x.cfg, x.section)} · ${fnInfo[sectionFn(x.cfg, x.section)].name} section · seed ${x.cfg.seed}`, 16, palette.textMuted
       )
     );
     const lamp = this.add.graphics();
@@ -242,7 +243,8 @@ export class ExpeditionMap extends ScreenScene {
       const canGo = idx >= 0;
       const c = this.add.container(cx, cy);
       const g = this.add.graphics();
-      const danger = r.type === 'Fight' && !r.cleared && !r.entrance;
+      const isControl = r.type === 'Control';
+      const danger = (r.type === 'Fight' || isControl) && !r.cleared && !r.entrance;
       let fill: number = r.entered ? palette.panelRaised : palette.panel;
       if (r.cleared && !r.entrance) fill = palette.panelDeep;
       g.fillStyle(fill, 1);
@@ -256,11 +258,12 @@ export class ExpeditionMap extends ScreenScene {
         g.fillTriangle(box / 2 - 22, -box / 2, box / 2, -box / 2, box / 2, -box / 2 + 22);
       }
       c.add(g);
-      const label = r.entrance ? 'Entry' : r.type === 'Gate' ? (x.section + 1 >= x.cfg.sections ? 'Out' : 'Gate') : roomName[r.type];
+      const controlName = isControl ? controlRooms.find((q) => q.fn === r.control)?.room : undefined;
+      const label = r.entrance ? 'Entry' : r.type === 'Gate' ? (x.section + 1 >= x.cfg.sections ? 'Out' : 'Gate') : controlName ?? roomName[r.type];
       const dim = r.cleared && !r.entrance && !isHere;
       const fit = Math.max(14, Math.min(27, Math.floor((box - 14) / (label.length * 0.56))));
       c.add(stencilText(this, 0, -4, label, fit, dim ? palette.textMuted : palette.text, { originX: 0.5, originY: 0.5, spacing: 0.05 }));
-      const sub = isHere ? 'SQUAD' : r.cleared && !r.entrance ? 'DONE' : r.entered ? '' : 'UNSEEN';
+      const sub = isHere ? 'SQUAD' : r.cleared && !r.entrance ? (isControl ? 'TAKEN' : 'DONE') : r.entered ? (isControl ? 'CONTROL ROOM' : '') : 'UNSEEN';
       if (r.entered || r.cleared || isHere) {
         if (sub) c.add(bodyText(this, 0, box / 2 - 20, sub, 14, isHere ? signal : palette.textMuted, { originX: 0.5, originY: 0.5, spacing: 0.1 }));
       }
@@ -397,11 +400,13 @@ export class ExpeditionMap extends ScreenScene {
     if (x.status !== 'running') return this.showSummary();
     const p = x.pending;
     if (!p) return;
+    if (p.kind === 'control') return this.showStorehouse(p);
     if (p.kind === 'fight') {
       const f = forceById(p.force);
+      const def = p.control ? controlRooms.find((q) => q.fn === p.control) : undefined;
       this.modal = new Modal(this, this.root, {
-        title: 'Contact',
-        body: `${f.name} ahead. ${p.step === 0 ? 'Tier 1, standard strength.' : `Tier ${p.step + 1}: each enemy has ${p.step} extra HP and every attack ${p.step} extra damage.`}\nThere is no backing out of a fight. Your crew's HP carries in as it stands.`,
+        title: def ? def.room : 'Contact',
+        body: `${def ? `Control room. ${fnInfo[def.fn].job}\n` : ''}${f.name} ahead. ${p.step === 0 ? 'Tier 1, standard strength.' : `Tier ${p.step + 1}: each enemy has ${p.step} extra HP and every attack ${p.step} extra damage.`}\nThere is no backing out of a fight. Your crew's HP carries in as it stands.`,
         confirmLabel: 'Fight',
         signal: this.signal,
         onConfirm: () => {
@@ -630,6 +635,32 @@ export class ExpeditionMap extends ScreenScene {
     }
   }
 
+  private showStorehouse(p: Extract<Pending, { kind: 'control' }>): void {
+    const x = this.exp;
+    const def = controlRooms.find((q) => q.fn === p.fn)!;
+    const key = hasKey(x);
+    this.modal = new Modal(this, this.root, {
+      title: def.room,
+      body: key
+        ? `Control room. The door is locked and you are holding the Storehouse key. Using it takes the section.\nFirst capture pays ${def.reward.note}.`
+        : `Control room. ${fnInfo[def.fn].job}\nYou have no key. Come back with one; it stays locked.`,
+      confirmLabel: key ? 'Use the key' : 'Leave',
+      cancelLabel: key ? 'Not yet' : undefined,
+      signal: this.signal,
+      onConfirm: () => {
+        if (key) {
+          openStorehouse(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+        } else leaveControl(x);
+        this.rebuild();
+      },
+      onCancel: () => {
+        leaveControl(x);
+        this.rebuild();
+      }
+    });
+  }
+
   private showSummary(): void {
     const x = this.exp;
     const title = x.status === 'done' ? 'Floor complete' : x.status === 'wiped' ? 'Squad overwhelmed' : 'Retreated';
@@ -639,7 +670,12 @@ export class ExpeditionMap extends ScreenScene {
       x.status === 'wiped'
         ? `Two lanes fell and the downed are left behind. The purse (${x.eagles} Eagles) and the pack (${x.pack.length} items) are lost.`
         : `Coming home with ${x.eagles} Eagles and ${x.pack.length} items. ${x.xpEach} XP each${x.status === 'done' ? ', plus 5 for the floor' : ''}.`,
-      x.status === 'retreated' && x.groundLost ? 'Ground lost on the floor (not wired yet).' : x.status === 'done' ? 'The squad heals fully at home.' : ''
+      x.status === 'retreated' && x.groundLost ? 'Ground lost on the floor (not wired yet).' : x.status === 'done' ? 'The squad heals fully at home.' : '',
+      x.captures.length && x.status !== 'wiped'
+        ? `Control rooms taken: ${x.captures.map((c) => controlRooms.find((q) => q.fn === c.fn)!.room).join(', ')}. Claim them at the HQ with power.`
+        : x.captures.length
+          ? 'The control rooms you took are lost with the squad.'
+          : ''
     ].filter(Boolean);
     this.modal = new Modal(this, this.root, {
       title,

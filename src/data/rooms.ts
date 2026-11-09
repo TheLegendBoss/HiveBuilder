@@ -4,7 +4,8 @@ import { ROOM_TYPES, finishFight, type Expedition, type ExpeditionConfig, type R
 import { nextRandom } from '../sim/rng';
 import { createGame } from '../sim/state';
 import type { Game } from '../sim/types';
-import { forces, type Force } from './forces';
+import { bosses, forces, type Force } from './forces';
+import { controlRooms } from './control';
 import { gambleDefs, gambleLadders } from './gambles';
 import { lootPool } from './loot';
 import { tscSquad, tscVsForce } from './scenarios';
@@ -22,6 +23,8 @@ export const expeditionDefaults = { sections: 3, rations: 24, clinicHeal: 3, sta
 export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}): ExpeditionConfig {
   return {
     seed,
+    controlRooms,
+    fnOffset: Math.floor((seed % 5 + 5) % 5),
     squad: tscSquad,
     roomDeck: starterRoomDeck,
     forceIds: forces.map((f) => f.id),
@@ -33,7 +36,7 @@ export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}
   };
 }
 
-export const forceById = (id: string): Force => forces.find((f) => f.id === id) ?? forces[0]!;
+export const forceById = (id: string): Force => [...forces, ...bosses].find((f) => f.id === id) ?? forces[0]!;
 
 /** Build the fight the expedition is waiting on: this room's force at this tier, with the squad's current HP. */
 export function startFight(x: Expedition): { game: Game; force: Force } {
@@ -41,7 +44,9 @@ export function startFight(x: Expedition): { game: Game; force: Force } {
   if (!p || p.kind !== 'fight') throw new Error('no fight pending');
   const force = forceById(p.force);
   const seed = Math.floor(nextRandom(x) * 0x7fffffff);
-  return { game: createGame(tscVsForce(force, p.step, x.cfg.squad), seed, { squadHp: x.hp }), force };
+  const squadFx = x.fx;
+  x.fx = x.fx.map(() => null);
+  return { game: createGame(tscVsForce(force, p.step, x.cfg.squad), seed, { squadHp: x.hp, squadFx }), force };
 }
 
 /** Carry a finished fight back into the expedition. */

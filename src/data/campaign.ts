@@ -4,6 +4,7 @@ import { parseCsv } from '../sim/csv';
 import { createExpedition, type Expedition, type ExpeditionConfig } from '../sim/expedition';
 import { shuffleInPlace } from '../sim/rng';
 import type { SandboxSetup } from './sandbox';
+import { claimCost, incomeAtTier } from './control';
 import { lootPool } from './loot';
 import { expeditionDefaults, tscExpedition } from './rooms';
 import { tscSquad } from './scenarios';
@@ -29,7 +30,9 @@ export const campaignDefaults = {
   floorBonusXp: 5,
   patchXp: 3,
   powerPerSection: 1,
-  purseStep: 5
+  purseStep: 5,
+  footholdIncome: incomeAtTier,
+  claimCost
 };
 
 export const tscCampaignConfig: CampaignConfig = {
@@ -58,6 +61,7 @@ export function newSandboxCampaign(setup: SandboxSetup, seed: number): Campaign 
 /** Saves keep the campaign's data but not its config; put the live config back. */
 export const reattachConfig = (c: Campaign): Campaign => {
   c.cfg = tscCampaignConfig;
+  c.footholds ??= [];
   return c;
 };
 

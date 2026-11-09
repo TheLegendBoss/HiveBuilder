@@ -23,9 +23,9 @@ A desktop game in Phaser 4 (TypeScript, Vite) that opens on a main menu and lets
 | M2 | Combat screen (built) | The v5 combat layout plays one fight against a Tier 1 force with mouse and keyboard, cables, intent badges, blood bars, vox log |
 | M3 | Expedition (built, with stub rooms) | Generate a floor section by section; room screens (Fight, Scavenge, Gamble, Hazard, Market, Rest, Clinic, Gate); supplies clock; retreat |
 | M4 | Hub and economy (built) | Packs, selling, promotion, repairs, Start Expedition; Eagles and power counters |
-| M5 | Sandbox setup and saves | Sandbox Setup screen, depth dial, autosave, manual slots, quickstart preset |
-| M6 | Aftermath and pressure | Injuries, afflictions, stress breaks, virtues, loot rewards |
-| M7 | Control rooms and bosses | Five section functions and the drafted boss table |
+| M5 | Sandbox setup and saves (built) | Sandbox Setup screen, depth dial, autosave, manual slots, quickstart preset |
+| M6 | Aftermath and pressure (built for TSC; humanoid side dormant) | Injuries, afflictions, stress breaks, virtues, loot rewards |
+| M7 | Control rooms and bosses (built) | Five section functions and the drafted boss table |
 
 Work one milestone at a time. Each ends with a commit and a short note of what to try.
 
@@ -68,6 +68,29 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - **Screens:** Sandbox Setup now has steppers (mouse, or Up/Down to pick a dial and Left/Right or +/- to turn it), Save preset (P), Load preset (L), Quickstart (Q, loads the preset and goes straight to the HQ), Quick fight (F), Enter HQ (starts a new campaign; asks first if one is in memory). New Saves screen (autosave plus 3 slots: Load, Save, Delete). Main menu Continue loads the autosave; Load Game opens Saves. The HQ and the expedition map each have a Saves button (V).
 - **Autosave:** written whenever the HQ or the map redraws, so after every move, room and purchase. A fight in progress is not saved; reloading mid-contact shows the Contact prompt again and the fight restarts with the crew's HP as it stood.
 - Tests: `src/core/saves.test.ts`.
+
+## M6 as built
+
+- **What is live for the TSC crew.** Aftermath results that ride into the next fight: Glitching starts it Suppressed for 2 rounds, Rebooting starts it Stunned. They are set on the crew member when the run comes home, shown on the HQ crew row, passed to the next expedition as `startFx` and used up by its first fight. (Lasting droid damage never reaches a fight, because damaged droids sit out until repaired.)
+- **Burning.** New status on a unit: a number of rounds, and at the end of each round the unit takes 1 damage through its soak (working rule; the design's burn clog cards are not built, so Burning ticks instead). Shown as `BURN n` on the unit card.
+- **Pipe gang** is in the Fight room pool (from the CSV: Torch sets a unit alight, Flare is a wind-up). **Ash cult** is still out: its Dread Chant adds stress and droids have no stress track.
+- **New enemy action rules** (all data on `EnemyActionDef`): `burn`, `stun`, `area` (every unit in the most crowded squad lane), `anyLane` (healthiest live unit, preferring one not already stunned), `windup` (the unit spends one action charging, a stun cancels it) and `count` (rally two at once). A stun on a squad member outlasts the round it lands in, then clears. Scenarios can also set `startLanes`, `surviveRounds`, `bossTag` and `linked` (a leader's death kills its followers).
+- **Humanoid aftermath engine (dormant).** `src/sim/afflictions.ts` and `src/data/afflictions.ts` hold the double-faced deck (35 cards, faces dealt by severity), stress-break resolution (flee draw, virtue offer on a jack, queen or king of a Steeled face, Walks into the Dark kills) and the cure rules, with tests. Nothing in a TSC campaign calls it, and there is no stress track in combat yet: that waits for a humanoid crew (Pressmen or Concord).
+- **Loot rewards.** Control rooms pay a first-capture reward through the loot offer (see M7).
+
+## M7 as built
+
+- **Section functions.** The five functions (Power, Industrial, Supply, Secure, Medical) cycle by section from a seed-chosen start (`sectionFn`). The map header names the section's function.
+- **Control rooms.** Each section holds one extra `Control` room card, shuffled into the next 3 to 8 draws, so exploring finds it. A function that is already held (won and brought home) has no control room. Data: `src/data/control.ts`.
+  - Power: Generator core, Runaway Dynamo. The squad wins by holding 6 rounds after setup or by killing it.
+  - Industrial: Foundry office, Foundry Foreman and two Pipe Hands.
+  - Secure: Cell block, the Warden (Shock Baton stuns in his lane, Lockdown stuns anyone after a wind-up) and two Cell Guards.
+  - Medical: Clinic ward, Brood Queen (Brood adds 2 Rats up to 6 a lane); killing her kills every Rat.
+  - Supply: Storehouse, a locked door. The first guarded room or scavenge in a Supply section adds a Storehouse key to its loot offer (working rule; the Market route is not built). Using the key takes the section.
+- **Boss numbers** are the tier 1 table from the design: +2 HP and +1 damage per two tier steps. The stand-in player wins all four at tier 1 and almost none at tier 7 with an unpromoted squad, so the numbers want DJ's pass.
+- **First capture** adds to the fight's own loot: Power a loot draw, Industrial a weapon or armor draw, Supply a supplies draw, Secure two plain draws (the recruit is not built), Medical a medical gear draw.
+- **Footholds.** A control room only counts if the squad gets home (a wipe loses it). At home it appears on the Footholds screen (Holds button or H on the HQ): claim it with power, at one power per three rooms in the section (at least 2, working). A claimed foothold pays power every expedition, scaled by the section's tier: 1, 1, 2, 2, 3, 3, 4, 4.
+- Tests: `bosses.test.ts`, the control room block in `expedition.test.ts`, footholds and fight-start effects in `campaign.test.ts`, `afflictions.test.ts`.
 
 ## M0 scope in detail
 

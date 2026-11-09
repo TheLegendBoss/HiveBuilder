@@ -53,6 +53,10 @@ export function tscVsForce(force: Force, step = 0, squad: UnitTemplate[] = tscSq
     name: `TSC crew vs ${f.name}`,
     enemyName: f.name,
     enemyStart: f.start,
+    startLanes: f.startLanes,
+    surviveRounds: f.surviveRounds,
+    bossTag: f.bossTag,
+    linked: f.linked,
     enemyAlso: f.also,
     enemyDeck: f.deck,
     enemyActions: f.actions

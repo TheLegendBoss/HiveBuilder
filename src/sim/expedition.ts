@@ -1,8 +1,34 @@
 import { nextRandom, shuffleInPlace } from './rng';
 import type { UnitTemplate } from './types';
 
-export type RoomType = 'Fight' | 'Scavenge' | 'Gamble' | 'Hazard' | 'Market' | 'Rest' | 'Clinic' | 'Gate';
-export const ROOM_TYPES: RoomType[] = ['Fight', 'Scavenge', 'Gamble', 'Hazard', 'Market', 'Rest', 'Clinic', 'Gate'];
+export type RoomType = 'Fight' | 'Scavenge' | 'Gamble' | 'Hazard' | 'Market' | 'Rest' | 'Clinic' | 'Gate' | 'Control';
+export const ROOM_TYPES: RoomType[] = ['Fight', 'Scavenge', 'Gamble', 'Hazard', 'Market', 'Rest', 'Clinic', 'Gate', 'Control'];
+
+/** What a section is for. Each function has one control room, and winning it is how a section is taken. */
+export type SectionFn = 'power' | 'industrial' | 'supply' | 'secure' | 'medical';
+export const SECTION_FNS: SectionFn[] = ['power', 'industrial', 'supply', 'secure', 'medical'];
+
+/** What a first capture pays: loot draws, optionally from one kind of item. */
+export type LootPick = 'any' | 'gear' | 'supply' | 'medical';
+
+export interface ControlDef {
+  fn: SectionFn;
+  /** the room's name */
+  room: string;
+  /** a boss fight, or a locked door that needs the Storehouse key */
+  challenge: 'fight' | 'key';
+  forceId?: string;
+  reward: { loot: number; pick: LootPick; note: string };
+}
+
+/** A control room the squad has won this run. It only counts if the squad gets home. */
+export interface Capture {
+  fn: SectionFn;
+  section: number;
+  tier: number;
+  /** rooms in the section when it fell: sets the power cost to claim it */
+  rooms: number;
+}
 
 export interface Room {
   id: number;
@@ -23,6 +49,8 @@ export interface Room {
   exits: number | null;
   /** Gamble rooms: the card drawn on first entry */
   gamble: number | null;
+  /** Control rooms: which section function this is the control room of */
+  control?: SectionFn | null;
 }
 
 /** A loot card. `use` marks a consumable that works on the map. */
@@ -80,6 +108,18 @@ export interface ExpeditionConfig {
   packPrice: number;
   packDraws: number;
   sellValue: number;
+  /** the control rooms this floor can hold, and where the section functions start in the cycle */
+  controlRooms?: ControlDef[];
+  fnOffset?: number;
+  /** functions already taken in earlier runs: their sections have no control room */
+  skipFns?: SectionFn[];
+  /** statuses each squad slot starts its first fight with */
+  startFx?: Array<FightFx | null>;
+}
+
+export interface FightFx {
+  suppressed?: number;
+  stunned?: boolean;
 }
 
 export type ExpStatus = 'running' | 'done' | 'retreated' | 'wiped';
@@ -101,7 +141,8 @@ export interface GamblePending {
 }
 
 export type Pending =
-  | { kind: 'fight'; room: number; force: string; step: number }
+  | { kind: 'fight'; room: number; force: string; step: number; control?: SectionFn }
+  | { kind: 'control'; room: number; fn: SectionFn }
   | { kind: 'gate'; room: number }
   | { kind: 'loot'; offers: LootItem[]; from: string; back?: Pending }
   | { kind: 'market'; room: number }
@@ -142,6 +183,12 @@ export interface Expedition {
   /** the results deck the exit draws come off, top at the end */
   results: number[];
   status: ExpStatus;
+  /** control rooms won so far */
+  captures: Capture[];
+  /** this section has already dropped its Storehouse key */
+  keyDropped: boolean;
+  /** statuses each squad slot still owes its first fight; cleared once that fight starts */
+  fx: Array<FightFx | null>;
   /** a retreat that was not made from a checkpoint */
   groundLost: boolean;
   pending: Pending | null;
@@ -163,6 +210,12 @@ export const tierOf = (section: number): number => Math.min(8, 1 + Math.floor(se
 /** The tier of a section under this expedition's depth dial. */
 export const tierAt = (cfg: Pick<ExpeditionConfig, 'startTier' | 'ramp'>, section: number): number =>
   Math.min(8, Math.max(1, (cfg.startTier ?? 1) + Math.floor(section / Math.max(1, cfg.ramp ?? 2))));
+
+/** The function of a section: the five cycle in order from a seeded starting point. */
+export const sectionFn = (cfg: Pick<ExpeditionConfig, 'fnOffset'>, section: number): SectionFn =>
+  SECTION_FNS[(section + (cfg.fnOffset ?? 0)) % SECTION_FNS.length]!;
+
+const controlOf = (x: Expedition, fn: SectionFn): ControlDef | undefined => x.cfg.controlRooms?.find((c) => c.fn === fn);
 
 /** Low (ace to 5) gives 1 door, mid (6 to 9) gives 2, high (10 to king) gives 3. */
 export const doorsFor = (card: number): number => (card <= 5 ? 1 : card <= 9 ? 2 : 3);
@@ -188,6 +241,9 @@ export function createExpedition(cfg: ExpeditionConfig): Expedition {
     deck: [],
     results: Array.from({ length: 52 }, (_, i) => (i % 13) + 1),
     status: 'running',
+    captures: [],
+    keyDropped: false,
+    fx: cfg.squad.map((_, i) => cfg.startFx?.[i] ?? null),
     groundLost: false,
     pending: null,
     log: [],
@@ -210,8 +266,15 @@ function startSection(x: Expedition): void {
   x.rooms = [];
   x.deck = [...x.cfg.roomDeck];
   shuffleInPlace(x.deck, x);
+  x.keyDropped = false;
+  // The section's control room is one card shuffled into the next few draws, so it is findable without being on the first door.
+  const fn = sectionFn(x.cfg, x.section);
+  if (controlOf(x, fn) && !x.cfg.skipFns?.includes(fn) && !x.captures.some((c) => c.fn === fn)) {
+    const from = Math.min(x.deck.length, 3 + Math.floor(nextRandom(x) * 6));
+    x.deck.splice(x.deck.length - from, 0, 'Control');
+  }
   const origin: Room = {
-    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null, gamble: null
+    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null, gamble: null, control: null
   };
   x.rooms.push(origin);
   x.at = 0;
@@ -234,7 +297,8 @@ function spawn(x: Expedition, room: Room, dx: number, dy: number): boolean {
   const type = x.deck.pop();
   if (type === undefined) return false;
   const next: Room = {
-    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null, gamble: null
+    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null, gamble: null,
+    control: type === 'Control' ? sectionFn(x.cfg, x.section) : null
   };
   x.rooms.push(next);
   link(room, next);
@@ -372,7 +436,21 @@ function resolveRoom(x: Expedition, room: Room): string {
     case 'Scavenge':
       room.cleared = true;
       queueLoot(x, 1, 'Scavenge');
+      dropKey(x);
       return 'Scavenge: one loot draw';
+    case 'Control': {
+      const def = controlOf(x, room.control ?? sectionFn(x.cfg, x.section));
+      if (!def) {
+        room.cleared = true;
+        return 'An empty control room';
+      }
+      if (def.challenge === 'fight') {
+        x.pending = { kind: 'fight', room: room.id, force: def.forceId!, step: tierAt(x.cfg, x.section) - 1, control: def.fn };
+        return `${def.room}: contact`;
+      }
+      x.pending = { kind: 'control', room: room.id, fn: def.fn };
+      return `${def.room}: the door is locked`;
+    }
     case 'Gamble': {
       if (room.gamble === null) room.gamble = x.cfg.gambles[Math.floor(nextRandom(x) * x.cfg.gambles.length)]!.id;
       const def = x.cfg.gambles.find((g) => g.id === room.gamble)!;
@@ -415,7 +493,70 @@ export function finishFight(x: Expedition, won: boolean, hpAfter: number[], rewa
   x.eagles += reward.eagles;
   x.xpEach += fightXp(p.step);
   say(x, `Fight won: ${reward.eagles} Eagles, ${fightXp(p.step)} XP each`);
+  const def = p.control ? controlOf(x, p.control) : undefined;
+  if (def) {
+    capture(x, def, p.room, reward.loot);
+    return;
+  }
   queueLoot(x, reward.loot, 'Fight');
+  dropKey(x);
+}
+
+// ---------- control rooms
+
+export const STOREHOUSE_KEY: LootItem = { id: 99, name: 'Storehouse key', cls: 'Key', text: 'Opens the Storehouse in this section. Used up.', use: null };
+export const hasKey = (x: Expedition): boolean => x.pack.some((i) => i.id === STOREHOUSE_KEY.id);
+
+/** In a Supply section the first guarded room or scavenge drops the Storehouse key as one more offer. (Working rule.) */
+function dropKey(x: Expedition): void {
+  if (x.keyDropped || sectionFn(x.cfg, x.section) !== 'supply') return;
+  const def = controlOf(x, 'supply');
+  if (!def || x.cfg.skipFns?.includes('supply') || x.captures.some((c) => c.fn === 'supply')) return;
+  if (x.pending?.kind !== 'loot') {
+    x.pending = { kind: 'loot', offers: [], from: 'Key' };
+  }
+  x.pending.offers.push({ ...STOREHOUSE_KEY });
+  x.keyDropped = true;
+  say(x, 'A Storehouse key turns up');
+}
+
+const lootFits = (item: LootItem, pick: LootPick): boolean => {
+  switch (pick) {
+    case 'gear':
+      return /^(Melee|Sidearm|Close|Line|Precision|Support|Explosive|Armor|Defense)/.test(item.cls);
+    case 'supply':
+      return item.cls === 'Supply';
+    case 'medical':
+      return item.name === 'Healing supplies' || item.name === 'Combat stim' || item.name === 'Field medkit';
+    default:
+      return true;
+  }
+};
+
+/** A control room falls: mark it, record the capture, pay the first-capture reward on top of the fight's own loot. */
+function capture(x: Expedition, def: ControlDef, roomId: number, fightLoot: number): void {
+  const room = x.rooms[roomId]!;
+  room.cleared = true;
+  x.captures.push({ fn: def.fn, section: x.section, tier: tierAt(x.cfg, x.section), rooms: x.rooms.length });
+  say(x, `${def.room} taken. First capture: ${def.reward.note}`);
+  queueLoot(x, fightLoot, def.room, undefined, { n: def.reward.loot, pick: def.reward.pick });
+}
+
+/** Open the Storehouse with the key. */
+export function openStorehouse(x: Expedition): void {
+  const p = x.pending;
+  if (!p || p.kind !== 'control') throw new Error('no locked door');
+  const i = x.pack.findIndex((it) => it.id === STOREHOUSE_KEY.id);
+  if (i < 0) throw new Error('no key in the pack');
+  x.pack.splice(i, 1);
+  x.pending = null;
+  const def = controlOf(x, p.fn)!;
+  capture(x, def, p.room, 0);
+}
+
+/** Walk away from the locked door; it stays locked. */
+export function leaveControl(x: Expedition): void {
+  if (x.pending?.kind === 'control') x.pending = null;
 }
 
 // ---------- loot
@@ -428,13 +569,17 @@ function drawLootCard(x: Expedition): LootItem {
   return x.lootDeck.pop() as LootItem;
 }
 
-/** Draw `n` loot cards into an offer the squad can pick from. */
-export function queueLoot(x: Expedition, n: number, from: string, back?: Pending): void {
-  if (n <= 0) return;
-  const offers = Array.from({ length: n }, () => drawLootCard(x));
-  x.stats.loot += n;
+/** Draw `n` loot cards into an offer the squad can pick from. `extra` adds draws taken only from one kind of item. */
+export function queueLoot(x: Expedition, n: number, from: string, back?: Pending, extra?: { n: number; pick: LootPick }): void {
+  const offers = Array.from({ length: Math.max(0, n) }, () => drawLootCard(x));
+  if (extra) {
+    const pool = x.cfg.lootPool.filter((i) => lootFits(i, extra.pick));
+    for (let k = 0; k < extra.n && pool.length; k++) offers.push(pool[Math.floor(nextRandom(x) * pool.length)]!);
+  }
+  if (offers.length === 0) return;
+  x.stats.loot += offers.length;
   x.pending = { kind: 'loot', offers, from, back };
-  say(x, `${from}: ${n} loot draw${n === 1 ? '' : 's'}`);
+  say(x, `${from}: ${offers.length} loot draw${offers.length === 1 ? '' : 's'}`);
 }
 
 /** Put one offered item in the pack. */

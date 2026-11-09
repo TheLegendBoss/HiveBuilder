@@ -131,6 +131,10 @@ export class Hub extends ScreenScene {
     this.scene.start(SceneKeys.Expedition);
   }
 
+  private openHolds(): void {
+    this.scene.start(SceneKeys.Footholds);
+  }
+
   private openSaves(): void {
     this.scene.start(SceneKeys.Saves, { from: SceneKeys.Hub });
   }
@@ -155,6 +159,7 @@ export class Hub extends ScreenScene {
     if (k === 'Enter') return this.start();
     if (k === 'Escape') return this.back();
     if (k.toLowerCase() === 'v') return this.openSaves();
+    if (k.toLowerCase() === 'h') return this.openHolds();
     if (k >= '1' && k <= '9') return this.crewAction(Number(k) - 1);
     const lower = k.toLowerCase();
     if (lower === 'b') return this.buy();
@@ -207,6 +212,9 @@ export class Hub extends ScreenScene {
       root.add(bodyText(this, x, 32, value, 36, hot ? signal : palette.text, { weight: '700' }));
     };
     root.add(
+      new Button(this, { x: 424, y: 14, w: 200, h: 56, label: 'Holds', size: 28, state: 'live', signal, key: 'H', onClick: () => this.openHolds() })
+    );
+    root.add(
       new Button(this, { x: 640, y: 14, w: 200, h: 56, label: 'Saves', size: 28, state: 'live', signal, key: 'V', onClick: () => this.openSaves() })
     );
     root.add(
@@ -251,7 +259,8 @@ export class Hub extends ScreenScene {
       const cost = promoCost(c, m);
       root.add(bodyText(this, x0 + 440, y0 + 10, cost === null ? 'XP MAX TIER' : `XP ${m.xp}/${cost}`, 14, palette.textMuted));
       if (cost !== null) drawHpBar(bars, x0 + 440, y0 + 34, 200, 12, Math.min(m.xp, cost), cost, palette.text, palette.bloodDry);
-      const status = m.repairing ? 'ON THE BENCH' : hurt ? m.damage!.name.toUpperCase() : 'READY';
+      const fx = m.nextFight?.stunned ? ' · STUNNED NEXT FIGHT' : m.nextFight?.suppressed ? ' · SUPPRESSED NEXT FIGHT' : '';
+      const status = m.repairing ? 'ON THE BENCH' : hurt ? m.damage!.name.toUpperCase() : `READY${fx}`;
       const statusText = bodyText(this, x0 + 440, y0 + 54, status, 14, m.repairing ? palette.bone : hurt ? palette.danger : signal, { weight: '700' });
       root.add(statusText);
 

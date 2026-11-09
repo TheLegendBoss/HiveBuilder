@@ -1,5 +1,5 @@
 import { nextRandom, shuffleInPlace } from './rng';
-import type { Expedition, ExpeditionConfig, LootItem } from './expedition';
+import type { Expedition, ExpeditionConfig, FightFx, LootItem, SectionFn } from './expedition';
 import type { UnitTemplate } from './types';
 
 /** One result in the aftermath deck. Droids only for now (data/aftermath_deck_droid.csv). */
@@ -39,6 +39,10 @@ export interface CampaignConfig {
   patchXp: number;
   /** power earned per section cleared (working) */
   powerPerSection: number;
+  /** power a claimed foothold pays each expedition, by the tier of its section */
+  footholdIncome: (tier: number) => number;
+  /** power it takes to claim a taken section, by its room count */
+  claimCost: (rooms: number) => number;
   /** Eagles a run may start with, in steps of this */
   purseStep: number;
 }
@@ -58,6 +62,17 @@ export interface CrewMember {
   damage: Damage | null;
   /** a major repair has been paid for and finishes when the next expedition ends */
   repairing: boolean;
+  /** a short-term result that rides into the next fight (Glitching, Rebooting) */
+  nextFight?: FightFx | null;
+}
+
+/** A control room the gang has won. It earns nothing until it is claimed with power. */
+export interface Foothold {
+  fn: SectionFn;
+  tier: number;
+  rooms: number;
+  cost: number;
+  claimed: boolean;
 }
 
 export interface Run {
@@ -78,6 +93,8 @@ export interface Campaign {
   crew: CrewMember[];
   /** names of crew lost for good */
   fallen: string[];
+  /** control rooms won, claimed or not; one per section function */
+  footholds: Foothold[];
   aftermath: AftermathCard[];
   expeditions: number;
   wipes: number;
@@ -99,6 +116,7 @@ export function createCampaign(cfg: CampaignConfig, seed: number): Campaign {
     stash: [],
     crew: [],
     fallen: [],
+    footholds: [],
     aftermath: [],
     expeditions: 0,
     wipes: 0,
@@ -225,7 +243,7 @@ export function launchProblem(c: Campaign, l: Loadout): string | null {
  * Take the purse and the pack out of the bank and the stash, and say who goes.
  * Returns the squad, the starting pack and the purse for `createExpedition`.
  */
-export function launch(c: Campaign, l: Loadout): Pick<ExpeditionConfig, 'squad' | 'startEagles' | 'startPack'> {
+export function launch(c: Campaign, l: Loadout): Pick<ExpeditionConfig, 'squad' | 'startEagles' | 'startPack' | 'startFx' | 'skipFns'> {
   const problem = launchProblem(c, l);
   if (problem) throw new Error(problem);
   const crew = readyCrew(c);
@@ -234,7 +252,15 @@ export function launch(c: Campaign, l: Loadout): Pick<ExpeditionConfig, 'squad' 
   c.stash = c.stash.filter((_, i) => !gone.has(i));
   c.eagles -= l.purse;
   c.run = { crewIds: crew.map((m) => m.id), purse: l.purse, repairing: c.crew.filter((m) => m.repairing).map((m) => m.id) };
-  return { squad: crew.map((m) => templateOf(c, m)), startEagles: l.purse, startPack };
+  const startFx = crew.map((m) => m.nextFight ?? null);
+  for (const m of crew) m.nextFight = null;
+  return {
+    squad: crew.map((m) => templateOf(c, m)),
+    startEagles: l.purse,
+    startPack,
+    startFx,
+    skipFns: c.footholds.map((f) => f.fn)
+  };
 }
 
 /** Walk away from a run in progress: the purse and pack are gone, nothing else happens. */
@@ -243,6 +269,25 @@ export function abandon(c: Campaign): string {
   const purse = c.run.purse;
   c.run = null;
   return `Abandoned the run: the purse (${purse} Eagles) and the pack are gone.`;
+}
+
+/** Power it takes to claim this foothold now, or null when it is already claimed or the crew are out. */
+export function claimProblem(c: Campaign, fn: SectionFn): string | null {
+  const f = c.footholds.find((q) => q.fn === fn);
+  if (!f) return 'Not taken yet';
+  if (f.claimed) return 'Already claimed';
+  if (c.run) return 'The crew are out';
+  if (c.power < f.cost) return `Needs ${f.cost} power`;
+  return null;
+}
+
+export function claimFoothold(c: Campaign, fn: SectionFn): string {
+  const problem = claimProblem(c, fn);
+  if (problem) throw new Error(problem);
+  const f = c.footholds.find((q) => q.fn === fn)!;
+  c.power -= f.cost;
+  f.claimed = true;
+  return `Claimed the ${fn} section for ${f.cost} power. It pays ${c.cfg.footholdIncome(f.tier)} power every expedition.`;
 }
 
 /** Draw one aftermath card, reshuffling a fresh deck when it runs out. */
@@ -295,6 +340,21 @@ export function returnHome(c: Campaign, x: Expedition): Debrief {
     lines.push(`Banked ${x.eagles} Eagles and ${x.pack.length - sold} items${sold ? ` (${sold} sold: the stash is full)` : ''}.`);
   }
 
+  // claimed footholds pay every expedition, then any control rooms won this run are recorded
+  c.footholds ??= [];
+  for (const f of c.footholds.filter((q) => q.claimed)) {
+    const p = c.cfg.footholdIncome(f.tier);
+    c.power += p;
+    lines.push(`+${p} power from the ${f.fn} foothold.`);
+  }
+  if (x.status !== 'wiped') {
+    for (const cap of x.captures) {
+      if (c.footholds.some((f) => f.fn === cap.fn)) continue;
+      c.footholds.push({ fn: cap.fn, tier: cap.tier, rooms: cap.rooms, cost: c.cfg.claimCost(cap.rooms), claimed: false });
+      lines.push(`The ${cap.fn} control room is ours. Claiming it costs ${c.cfg.claimCost(cap.rooms)} power at the HQ.`);
+    }
+  }
+
   // power
   if (x.status !== 'wiped' && x.stats.sections > 0) {
     const p = x.stats.sections * c.cfg.powerPerSection;
@@ -328,6 +388,12 @@ export function returnHome(c: Campaign, x: Expedition): Debrief {
         if (card.name === 'Firmware Patch') {
           m.xp += c.cfg.patchXp;
           lines.push(`${m.name}: Firmware Patch, ${c.cfg.patchXp} bonus XP.`);
+        } else if (card.name === 'Glitching') {
+          m.nextFight = { ...m.nextFight, suppressed: 2 };
+          lines.push(`${m.name}: Glitching. Starts the next fight Suppressed for 2 rounds.`);
+        } else if (card.name === 'Rebooting') {
+          m.nextFight = { ...m.nextFight, stunned: true };
+          lines.push(`${m.name}: Rebooting. Starts the next fight Stunned.`);
         } else lines.push(`${m.name}: ${card.name}, a free reboot.`);
         continue;
       }
