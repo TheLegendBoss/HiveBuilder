@@ -95,6 +95,8 @@ export const settingsText = {
     fullscreen: { label: 'Fullscreen', hint: 'VOX> Enter toggles fullscreen. Esc also leaves fullscreen.' },
     textScale: { label: 'Text size', hint: 'VOX> Left and Right pick 100, 125 or 150 percent. The layout reflows.' },
     colorblind: { label: 'Colorblind mode', hint: 'VOX> Not built yet. Shapes and text already back up every color.' },
-    animSpeed: { label: 'Animation speed', hint: 'VOX> Normal, fast or off. Applies to every slide and stamp.' }
+    animSpeed: { label: 'Animation speed', hint: 'VOX> Normal, fast or off. Applies to every slide and stamp.' },
+    packStyle: { label: 'Pack opening', hint: 'VOX> Rip it shows one card at a time. Show all lays the whole pack out at once.' },
+    autoNext: { label: 'Auto-next', hint: 'VOX> Rip it only. Moves Basic and Improved cards along by itself: Off, only cards you already own, or all of them. Rarer pulls always wait for a click.' }
   }
 };

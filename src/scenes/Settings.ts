@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { updateSettings, session } from '../core/session';
 import { settingsText } from '../data/menu';
 import { palette } from '../data/palette';
-import { animSpeedOptions, textScaleOptions } from '../data/settings';
+import { animSpeedOptions, autoNextOptions, packStyleOptions, textScaleOptions } from '../data/settings';
 import { Button } from '../ui/Button';
 import { makePanel } from '../ui/Panel';
 import { ChoiceRow, SliderRow, ToggleRow, type Row } from '../ui/rows';
@@ -10,8 +10,8 @@ import { bodyText, stencilText } from '../ui/text';
 import { SceneKeys, type SceneKey } from './keys';
 import { ScreenScene } from './ScreenScene';
 
-const PANEL = { x: 360, y: 210, w: 1200, h: 660 };
-const ROW = { x: 396, y: 262, w: 1128, h: 96, step: 108 };
+const PANEL = { x: 360, y: 150, w: 1200, h: 780 };
+const ROW = { x: 396, y: 196, w: 1128, h: 84, step: 92 };
 
 export class Settings extends ScreenScene {
   private from: SceneKey = SceneKeys.MainMenu;
@@ -72,6 +72,16 @@ export class Settings extends ScreenScene {
         ...common, ...t.animSpeed, y: ROW.y + ROW.step * 4, value: s.animSpeed,
         options: animSpeedOptions.map((v) => ({ value: v, label: v === 1 ? 'Normal' : v === 2 ? 'Fast' : 'Off' })),
         onChange: (v) => updateSettings({ animSpeed: v as 0 | 1 | 2 })
+      }),
+      new ChoiceRow<string>(this, {
+        ...common, ...t.packStyle, y: ROW.y + ROW.step * 5, value: s.packStyle,
+        options: packStyleOptions.map((v) => ({ value: v, label: v === 'rip' ? 'Rip it' : 'Show all' })),
+        onChange: (v) => updateSettings({ packStyle: v as 'rip' | 'all' })
+      }),
+      new ChoiceRow<string>(this, {
+        ...common, ...t.autoNext, y: ROW.y + ROW.step * 6, value: s.autoNext,
+        options: autoNextOptions.map((v) => ({ value: v, label: v === 'off' ? 'Off' : v === 'owned' ? 'Owned' : 'Everything' })),
+        onChange: (v) => updateSettings({ autoNext: v as 'off' | 'owned' | 'all' })
       })
     ];
     this.rows.forEach((r, i) => {
@@ -79,12 +89,12 @@ export class Settings extends ScreenScene {
       if (!r.isDisabled) r.on('hovered', () => this.setFocus(i));
     });
 
-    this.vox = bodyText(this, ROW.x + 6, PANEL.y + PANEL.h - 36, '', 16.5, palette.textMuted, { originY: 1, wrap: ROW.w - 12 });
+    this.vox = bodyText(this, ROW.x + 6, PANEL.y + PANEL.h - 24, '', 16.5, palette.textMuted, { originY: 1, wrap: ROW.w - 12 });
     root.add(this.vox);
 
     this.back = new Button(this, {
       x: PANEL.x,
-      y: 920,
+      y: 950,
       w: 330,
       h: 84,
       label: settingsText.back,

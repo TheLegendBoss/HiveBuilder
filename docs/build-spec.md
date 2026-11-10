@@ -51,15 +51,15 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 
 ## M4 as built
 
-- `src/sim/campaign.ts` (no phaser): the state that outlives an expedition. Eagles (the bank), power (counted, nothing to spend it on yet), a stash of loot items (24), the crew (tier, XP, damage, bench), `fallen` names, and the aftermath deck. `src/data/campaign.ts` holds the TSC config and parses `data/aftermath_deck_droid.csv`. The campaign lives in `session.campaign` in memory; saves are M5.
-- `src/scenes/Hub.ts`: the HQ. Crew rows with one contextual button each (Repair when damaged, otherwise Promote; keys 1 to 5), the market (Buy pack, B; Sell mode, S), the stash grid (click or arrows and Space to put an item in the pack, or sell it in sell mode), the pack, the purse stepper (- and +), Auto pack (A), Clear (C), Start expedition (Enter), and a debrief modal when a run comes home. Counters: Eagles, power, crew fit, runs.
+- `src/sim/campaign.ts` (no phaser): the state that outlives an expedition. Eagles (the bank), power (counted, nothing to spend it on yet), an uncapped stash of loot items, the crew (tier, XP, damage, bench), `fallen` names, and the aftermath deck. `src/data/campaign.ts` holds the TSC config and parses `data/aftermath_deck_droid.csv`. The campaign lives in `session.campaign` in memory; saves are M5.
+- `src/scenes/Hub.ts`: the HQ. Crew rows with one contextual button each (Repair when damaged, otherwise Promote; keys 1 to 5), the market (Buy pack, B; Sell mode, S), the stash grid with type tabs and pages (click or arrows and Space to put an item in the pack, or sell it in sell mode; Tab changes type, PageUp and PageDown turn pages), the pack, the purse stepper (- and +), Auto pack (A), Clear (C), Start expedition (Enter), and a debrief modal when a run comes home. Counters: Eagles, power, crew fit, runs.
 - **Going out:** `launch` takes the purse (Eagles) and the chosen stash items off the books and sends the crew who are fit. Damaged or benched crew stay home, so the squad can be 1 to 5 droids; combat and the map already handle any size.
 - **Coming home:** `returnHome` banks the purse and pack (lost on a wipe), adds power (1 per section cleared), shares XP, draws aftermath for crew who ended a fight downed, finishes major repairs that were on the bench, and returns a debrief. Abandoning a run from the pause menu loses the purse and pack and nothing else.
 - **XP:** a won fight pays every squad member its tier in XP (patrol threat 1 times the fight tier); a finished floor pays 5; the Pit side bet pays its XP to the lowest tier member.
 - **Promotion:** costs XP and the same number of Eagles (20, 40, 80, 160 for tiers 2 to 5). Each tier adds 1 max HP and a perk slot (counted, unused).
 - **Aftermath:** each time a crew member ends a fight downed, they draw once from the 35-card droid deck at home. Short-term results are free reboots (Firmware Patch gives 3 XP); lasting results need a repair; Core Breach counts as major; Head Destroyed removes the droid for good. The combat effects of the results (Suppressed or Stunned at the start of the next fight) are not wired.
 - **Repairs:** a minor repair costs 1 Eagle and is instant; a major repair costs 3, and the droid sits out the next expedition. Unrepaired damage also sits out.
-- Tests: `campaign.test.ts` (23 cases: market, stash cap, launch and return, wipe, abandon, promotion, aftermath, repairs).
+- Tests: `campaign.test.ts` (23 cases: market, uncapped stash, launch and return, wipe, abandon, promotion, aftermath, repairs).
 
 ## M5 as built
 
@@ -111,6 +111,7 @@ Menu content: title lockup, hive cutaway with the Middle Hive floor lit, a cable
 - `src/data/gear.ts` reads the loot pool text into `GearInfo` (slot, hands, Max soak, Ammo, actions, unsupported lines) and holds the TSC starter kit as items (ids 101 to 105). `src/core/loadout.ts` lists a unit's gear with its actions and cards for the combat views and writes the rules text.
 - `src/sim/campaign.ts`: `CrewMember.equipped`, `equip`, `unequip`, `equipProblem`, `handsUsed`, `weaponSlots`; `templateOf` builds gear, armor and ammo from the slots. Old saves get their starter kit on load.
 - `src/sim/cards.ts` `gearTargets` and `applyGearAction` run loot actions; `src/data/scenarios.ts` `deckFor(squad)` builds the fight deck from the squad's slotted gear.
+- `src/sim/packs.ts` (no phaser): rarity rolls on the pack ramp (`slotChance`, `rollRarities`, `rollPack`, `chanceAtLeast`). `src/core/stash.ts` groups and sorts the stash into tabs with real indexes; `src/core/packRip.ts` holds the ripper's rules (owned flags, auto-next, reaction strength). `src/ui/PackRip.ts` is the ripper overlay (Rip it and Show all), `src/ui/itemCard.ts` the loot item card, `src/ui/stashNav.ts` the tab row and pager used by both stash screens.
 - `src/scenes/Loadout.ts` is the Gear screen: crew list, the selected member's slots, the stash with click-to-equip, and a detail box. Reached from the HQ (L), back with Esc.
 - Rules and what is not run yet are in `decisions.md`.
 

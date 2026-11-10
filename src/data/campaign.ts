@@ -21,7 +21,6 @@ export const droidAftermath: AftermathCard[] = parseCsv(aftermathCsv).map((r) =>
 /** Working numbers for the HQ; see decisions.md. Promotion costs are the design's 20, 40, 80, 160. */
 export const campaignDefaults = {
   startEagles: 30,
-  stashCap: 24,
   promoCosts: [20, 40, 80, 160],
   maxTier: 5,
   hpPerTier: 1,
@@ -54,7 +53,7 @@ export function newSandboxCampaign(setup: SandboxSetup, seed: number): Campaign 
   const c = createCampaign({ ...tscCampaignConfig, startEagles: setup.startEagles }, seed);
   const deck = lootPool.slice();
   shuffleInPlace(deck, c);
-  c.stash.push(...deck.slice(0, Math.min(setup.startItems, c.cfg.stashCap)));
+  c.stash.push(...deck.slice(0, setup.startItems));
   return c;
 }
 

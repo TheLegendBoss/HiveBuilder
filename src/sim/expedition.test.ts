@@ -407,6 +407,21 @@ describe('market', () => {
     expect(x.pending?.kind).toBe('market');
   });
 
+  it('gives the pack a rarity per card and returns the same cards it offers', () => {
+    const x = atMarket();
+    const cards = buyPack(x);
+    expect(cards).toHaveLength(x.cfg.packDraws);
+    const p = x.pending as { kind: string; offers: Array<{ rarity?: string }> };
+    expect(p.offers.map((o) => o.rarity)).toEqual(cards.map((c) => c.rarity));
+    expect(cards.every((c) => c.rarity)).toBe(true);
+  });
+
+  it('keeps room and fight loot white', () => {
+    const x = fresh(12);
+    const pick = (x.cfg.lootPool[0]!);
+    expect(pick.rarity).toBeUndefined();
+  });
+
   it('cannot buy without the Eagles', () => {
     const x = atMarket();
     x.eagles = x.cfg.packPrice - 1;

@@ -38,6 +38,10 @@ describe('settings store', () => {
     expect(s.animSpeed).toBe(1);
     expect(s.colorblind).toBe(false);
   });
+  it('keeps valid pack settings and falls back on bad ones', () => {
+    expect(sanitizeSettings({ packStyle: 'all', autoNext: 'off' })).toMatchObject({ packStyle: 'all', autoNext: 'off' });
+    expect(sanitizeSettings({ packStyle: 'x', autoNext: 3 })).toMatchObject({ packStyle: 'rip', autoNext: 'owned' });
+  });
   it('reports failure when saving cannot work', () => {
     const bad = { setItem: () => { throw new Error('full'); } };
     expect(saveSettings(defaultSettings, bad)).toBe(false);

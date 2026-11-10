@@ -1,3 +1,5 @@
+import type { RarityId } from '../data/palette';
+import { rollRarities } from './packs';
 import { nextRandom, shuffleInPlace } from './rng';
 import type { UnitTemplate } from './types';
 
@@ -60,6 +62,8 @@ export interface LootItem {
   cls: string;
   text: string;
   use: { kind: 'rations' | 'heal'; amount: number } | null;
+  /** from a pack roll; missing means Basic (white). Rarity is shown but does not change the stats yet. */
+  rarity?: RarityId;
 }
 
 export type StakeKind = 'eagles' | 'rations';
@@ -632,12 +636,20 @@ export function useItem(x: Expedition, index: number): string | null {
 export const canBuyPack = (x: Expedition): boolean => x.eagles >= x.cfg.packPrice;
 
 /** Buy a pack: its loot draws open as an offer, and the market is still there afterward. */
-export function buyPack(x: Expedition): void {
+export function buyPack(x: Expedition): LootItem[] {
   const p = x.pending;
   if (!p || p.kind !== 'market') throw new Error('not at a market');
   if (!canBuyPack(x)) throw new Error('not enough Eagles');
   x.eagles -= x.cfg.packPrice;
   queueLoot(x, x.cfg.packDraws, 'Basic pack', p);
+  // The market's packs roll rarity on the pack ramp; loot from rooms and fights stays Basic.
+  const open = x.pending;
+  if (open && open.kind === 'loot') {
+    const rarities = rollRarities(x, 'Basic', open.offers.length);
+    open.offers = open.offers.map((o, i) => ({ ...o, rarity: rarities[i]! }));
+    return open.offers.map((o) => ({ ...o }));
+  }
+  return [];
 }
 
 /** Sell a spare item from the pack. */

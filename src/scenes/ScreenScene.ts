@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { session } from '../core/session';
 import { palette, signalFor } from '../data/palette';
 import { computeLayout, scaledDuration, toRef, type Layout } from '../ui/layout';
-import type { Modal } from '../ui/Modal';
 import { textContext } from '../ui/text';
 
 /**
@@ -12,7 +11,8 @@ import { textContext } from '../ui/text';
 export abstract class ScreenScene extends Phaser.Scene {
   protected L!: Layout;
   protected root!: Phaser.GameObjects.Container;
-  protected modal: Modal | null = null;
+  /** an open dialog or overlay; closed on every rebuild */
+  protected modal: { readonly isOpen: boolean; close(): void } | null = null;
   private bar: Phaser.GameObjects.Graphics | null = null;
   private resizeTimer: Phaser.Time.TimerEvent | null = null;
   private built = false;

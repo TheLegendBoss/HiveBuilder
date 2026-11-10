@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
+import { ownedFlags, ownedNames } from '../core/packRip';
 import { autosave, campaign, launchExpedition, session } from '../core/session';
-import { mix, palette } from '../data/palette';
+import { pageCount, rarityOf, stashView, tabCounts, type StashTab } from '../core/stash';
+import { mix, palette, rarityInfo } from '../data/palette';
 import {
   buyPack, canBuyPack, canPromote, canRepair, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
   templateOf
@@ -9,6 +11,8 @@ import { Button } from '../ui/Button';
 import { drawHpBar } from '../ui/combat/parts';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
+import { PackRip } from '../ui/PackRip';
+import { drawPager, drawStashTabs } from '../ui/stashNav';
 import { makePanel } from '../ui/Panel';
 import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
@@ -18,6 +22,8 @@ const CREW = { x: 40, y: 92, w: 1010, h: 566 };
 const TRADE = { x: 1070, y: 92, w: 810, h: 566 };
 const LOAD = { x: 40, y: 678, w: 1840, h: 374 };
 const COLS = 6;
+const ROWS = 4;
+const PER_PAGE = COLS * ROWS;
 const CELL = { w: 118, h: 82, gap: 8 };
 
 /** The gang's HQ: spend Eagles and XP on the crew, buy and sell, then pick a purse and a pack and head out. */
@@ -26,7 +32,9 @@ export class Hub extends ScreenScene {
   private purse = 10;
   private pack = new Set<number>();
   private sellMode = false;
+  /** place of the highlighted item in the current tab's list (not the real stash index) */
   private cursor = 0;
+  private tab: StashTab = 'all';
   private starting = false;
 
   constructor() {
@@ -41,6 +49,7 @@ export class Hub extends ScreenScene {
     this.starting = false;
     this.sellMode = false;
     this.cursor = 0;
+    this.tab = 'all';
     this.note = session.debrief ? '' : 'Spend, promote, repair, then pick what to carry.';
     this.pack = new Set();
     this.purse = Math.min(10, maxPurse(this.c));
@@ -71,9 +80,31 @@ export class Hub extends ScreenScene {
 
   private buy(): void {
     if (!canBuyPack(this.c)) return;
-    const r = buyPack(this.c);
-    this.note = `Pack opened: ${r.got.map((g) => g.name).join(', ') || 'nothing kept'}${r.sold.length ? `. ${r.sold.length} sold, the stash is full.` : '.'}`;
+    const c = this.c;
+    const owned = ownedNames(c.stash, c.crew);
+    const r = buyPack(c);
+    this.note = `Pack opened: ${r.got.map((g) => g.name).join(', ')}.`;
     this.fixPurse();
+    this.rebuild();
+    this.modal = new PackRip(this, this.root, {
+      title: 'Pack opened', cards: r.got, owned: ownedFlags(r.got, owned), style: session.settings.packStyle, autoNext: session.settings.autoNext,
+      animSpeed: session.settings.animSpeed, signal: this.signal,
+      onDone: () => {
+        this.modal = null;
+      }
+    });
+  }
+
+  private setTab(tab: StashTab): void {
+    this.tab = tab;
+    this.cursor = 0;
+    this.rebuild();
+  }
+
+  private stepPage(dir: number): void {
+    const n = stashView(this.c.stash, this.tab).length;
+    const page = Math.max(0, Math.min(pageCount(n, PER_PAGE) - 1, Math.floor(this.cursor / PER_PAGE) + dir));
+    this.cursor = page * PER_PAGE;
     this.rebuild();
   }
 
@@ -81,7 +112,7 @@ export class Hub extends ScreenScene {
     const c = this.c;
     const item = c.stash[i];
     if (!item) return;
-    this.cursor = i;
+    this.cursor = Math.max(0, stashView(c.stash, this.tab).findIndex((e) => e.index === i));
     if (this.sellMode) {
       sellStash(c, i);
       const next = new Set<number>();
@@ -176,11 +207,20 @@ export class Hub extends ScreenScene {
     if (lower === 'c') return this.clearPack();
     if (k === '-') return this.stepPurse(-1);
     if (k === '+' || k === '=') return this.stepPurse(1);
+    if (k === 'PageDown') return this.stepPage(1);
+    if (k === 'PageUp') return this.stepPage(-1);
+    if (k === 'Tab') {
+      e.preventDefault();
+      const ids: StashTab[] = ['all', 'weapons', 'armor', 'tools', 'supplies'];
+      return this.setTab(ids[(ids.indexOf(this.tab) + (e.shiftKey ? 4 : 1)) % ids.length]!);
+    }
+    const view = stashView(this.c.stash, this.tab);
     if (k === ' ') {
       e.preventDefault();
-      return this.stashTap(this.cursor);
+      const at = view[this.cursor];
+      return at ? this.stashTap(at.index) : undefined;
     }
-    const n = this.c.stash.length;
+    const n = view.length;
     if (n === 0) return;
     const move: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLS, ArrowDown: COLS };
     const d = move[k];
@@ -206,7 +246,7 @@ export class Hub extends ScreenScene {
     const c = this.c;
     const signal = this.signal;
     autosave();
-    this.cursor = Math.max(0, Math.min(this.cursor, Math.max(0, c.stash.length - 1)));
+    this.cursor = Math.max(0, Math.min(this.cursor, Math.max(0, stashView(c.stash, this.tab).length - 1)));
     const title = stencilText(this, 40, 10, 'Tenebrae HQ', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
     root.add(
@@ -322,36 +362,47 @@ export class Hub extends ScreenScene {
     root.add(
       bodyText(this, TRADE.x + 28, TRADE.y + 128, this.note, 14, palette.text, { wrap: TRADE.w - 56 })
     );
-    root.add(
-      bodyText(this, TRADE.x + 28, TRADE.y + 158, `STASH ${c.stash.length}/${c.cfg.stashCap}`, 14, palette.textMuted, { spacing: 0.12 })
-    );
+    const view = stashView(c.stash, this.tab);
+    const pages = pageCount(view.length, PER_PAGE);
+    const page = Math.min(pages - 1, Math.floor(this.cursor / PER_PAGE));
     root.add(
       bodyText(
-        this, TRADE.x + TRADE.w - 28, TRADE.y + 158,
-        this.sellMode ? `CLICK TO SELL FOR ${c.cfg.sellValue}` : 'CLICK TO PACK  ARROWS + SPACE', 14, this.sellMode ? palette.danger : palette.textMuted, { originX: 1 }
+        this, TRADE.x + TRADE.w - 28 - 150, TRADE.y + 22,
+        this.sellMode ? `CLICK TO SELL FOR ${c.cfg.sellValue}` : 'CLICK TO PACK  TAB: TYPE', 14, this.sellMode ? palette.danger : palette.textMuted, { originX: 1 }
       )
     );
+    drawPager(this, root, TRADE.x + TRADE.w - 28, TRADE.y + 14, page, pages, signal, (d) => this.stepPage(d));
+    drawStashTabs(this, root, {
+      x: TRADE.x + 28, y: TRADE.y + 154, w: TRADE.w - 56, h: 28, tab: this.tab, counts: tabCounts(c.stash), signal, onPick: (t) => this.setTab(t)
+    });
     const g = this.add.graphics();
     root.add(g);
-    const slots = c.cfg.stashCap;
-    for (let i = 0; i < slots; i++) {
-      const cx = TRADE.x + 28 + (i % COLS) * (CELL.w + CELL.gap);
-      const cy = TRADE.y + 184 + Math.floor(i / COLS) * (CELL.h + CELL.gap);
-      const item = c.stash[i];
-      const inPack = this.pack.has(i);
+    const shown = view.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+    for (let s = 0; s < PER_PAGE; s++) {
+      const cx = TRADE.x + 28 + (s % COLS) * (CELL.w + CELL.gap);
+      const cy = TRADE.y + 192 + Math.floor(s / COLS) * (CELL.h + CELL.gap);
+      const entry = shown[s];
+      const item = entry?.item;
+      const inPack = !!entry && this.pack.has(entry.index);
+      const rc = item ? palette.rarity[rarityOf(item)] : palette.line;
       g.fillStyle(inPack ? mix(signal, palette.bg, 0.88) : palette.panelDeep, 1);
       g.fillRect(cx, cy, CELL.w, CELL.h);
-      const cur = i === this.cursor && item;
-      g.lineStyle(inPack || cur ? 3 : 1.5, inPack ? signal : cur ? palette.bone : palette.line, 1);
+      const cur = !!item && page * PER_PAGE + s === this.cursor;
+      g.lineStyle(inPack || cur ? 3 : 1.5, inPack ? signal : cur ? palette.bone : item && rarityOf(item) !== 'white' ? rc : palette.line, 1);
       g.strokeRect(cx + 0.75, cy + 0.75, CELL.w - 1.5, CELL.h - 1.5);
-      if (!item) continue;
-      root.add(bodyText(this, cx + 8, cy + 8, item.name.toUpperCase(), 12, palette.text, { wrap: CELL.w - 14 }));
-      const tag = inPack ? 'IN PACK' : item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase();
-      root.add(bodyText(this, cx + 8, cy + CELL.h - 22, tag, 12, inPack ? signal : item.use ? signal : palette.textMuted));
+      if (!entry || !item) continue;
+      g.fillStyle(rc, 1);
+      g.fillRect(cx + 1.5, cy + 1.5, 5, CELL.h - 3);
+      root.add(bodyText(this, cx + 14, cy + 8, item.name.toUpperCase(), 12, palette.text, { wrap: CELL.w - 20 }));
+      const r = rarityOf(item);
+      const tag = inPack ? 'IN PACK' : r !== 'white' ? rarityInfo[r].name.toUpperCase() : item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase();
+      root.add(bodyText(this, cx + 14, cy + CELL.h - 22, tag, 12, inPack ? signal : r !== 'white' ? rc : item.use ? signal : palette.textMuted));
       const hit = this.add.rectangle(cx + CELL.w / 2, cy + CELL.h / 2, CELL.w, CELL.h, palette.bg, 0.001).setInteractive({ useHandCursor: true });
-      hit.on('pointerup', () => this.stashTap(i));
+      hit.on('pointerup', () => this.stashTap(entry.index));
       root.add(hit);
     }
+    if (c.stash.length === 0) root.add(bodyText(this, TRADE.x + 36, TRADE.y + 204, 'The stash is empty. Buy a pack.', 16, palette.textMuted));
+    else if (view.length === 0) root.add(bodyText(this, TRADE.x + 36, TRADE.y + 204, 'Nothing of that type yet.', 16, palette.textMuted));
   }
 
   private drawLoad(root: Phaser.GameObjects.Container, signal: number): void {
@@ -370,6 +421,8 @@ export class Hub extends ScreenScene {
       g.lineStyle(1.5, item?.use ? signal : palette.line, 1);
       g.strokeRect(sx + 0.75, sy + 0.75, 198.5, 54.5);
       if (!item) continue;
+      g.fillStyle(palette.rarity[rarityOf(item)], 1);
+      g.fillRect(sx + 1.5, sy + 1.5, 4, 53);
       const size = Math.max(12, Math.min(16, Math.floor(180 / (item.name.length * 0.62))));
       root.add(bodyText(this, sx + 10, sy + 8, item.name.toUpperCase(), size, palette.text));
       root.add(bodyText(this, sx + 10, sy + 32, item.use ? 'USE' : item.cls.split(',')[0]!.toUpperCase(), 13, item.use ? signal : palette.textMuted));

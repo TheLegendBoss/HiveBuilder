@@ -35,14 +35,13 @@ describe('market and stash', () => {
     expect(c.stash).toHaveLength(4);
   });
 
-  it('items that do not fit the stash are sold on the spot', () => {
+  it('the stash has no cap', () => {
     const c = newTscCampaign(3);
-    fillStash(c, c.cfg.stashCap);
-    const before = c.eagles;
+    fillStash(c, 60);
+    c.eagles = 100;
     const r = buyPack(c);
-    expect(r.sold).toHaveLength(5);
-    expect(c.stash).toHaveLength(c.cfg.stashCap);
-    expect(c.eagles).toBe(before - 10 + 5);
+    expect(r.got).toHaveLength(5);
+    expect(c.stash).toHaveLength(65);
   });
 
   it('cannot buy without the Eagles', () => {

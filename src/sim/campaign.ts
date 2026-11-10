@@ -1,5 +1,6 @@
 import { gearInfo, isEquippable, isSlotted, starterItems } from '../data/gear';
-import { nextRandom, shuffleInPlace } from './rng';
+import { rollPack } from './packs';
+import { shuffleInPlace } from './rng';
 import type { Expedition, ExpeditionConfig, FightFx, LootItem, SectionFn } from './expedition';
 import type { UnitTemplate } from './types';
 
@@ -20,7 +21,6 @@ export interface CampaignConfig {
   lootPool: LootItem[];
   aftermath: AftermathCard[];
   startEagles: number;
-  stashCap: number;
   packSize: number;
   /** HQ market: Eagles for a pack of loot draws, and what a spare sells for */
   packPrice: number;
@@ -203,7 +203,6 @@ export function unequip(c: Campaign, m: CrewMember, index: number): string {
   if (c.run) throw new Error('The crew are out');
   const item = m.equipped[index];
   if (!item) throw new Error('nothing in that slot');
-  if (c.stash.length >= c.cfg.stashCap) throw new Error('The stash is full');
   m.equipped.splice(index, 1);
   c.stash.push(item);
   return `${m.name} puts the ${item.name} in the stash`;
@@ -265,23 +264,13 @@ export function repair(c: Campaign, m: CrewMember): string {
 
 export const canBuyPack = (c: Campaign): boolean => c.eagles >= c.cfg.packPrice && !c.run;
 
-/** Buy a pack: loot draws from the pool (with replacement) go to the stash; any that do not fit are sold on the spot. */
-export function buyPack(c: Campaign): { got: LootItem[]; sold: LootItem[] } {
+/** Buy a pack: its cards roll rarity on the Basic ramp and all go to the stash, which has no cap. */
+export function buyPack(c: Campaign): { got: LootItem[] } {
   if (!canBuyPack(c)) throw new Error('cannot buy a pack');
   c.eagles -= c.cfg.packPrice;
-  const got: LootItem[] = [];
-  const sold: LootItem[] = [];
-  for (let i = 0; i < c.cfg.packDraws; i++) {
-    const item = c.cfg.lootPool[Math.floor(nextRandom(c) * c.cfg.lootPool.length)]!;
-    if (c.stash.length < c.cfg.stashCap) {
-      c.stash.push(item);
-      got.push(item);
-    } else {
-      c.eagles += c.cfg.sellValue;
-      sold.push(item);
-    }
-  }
-  return { got, sold };
+  const got = rollPack(c, c.cfg.lootPool, 'Basic', c.cfg.packDraws);
+  c.stash.push(...got);
+  return { got };
 }
 
 export function sellStash(c: Campaign, index: number): LootItem {
@@ -404,15 +393,8 @@ export function returnHome(c: Campaign, x: Expedition): Debrief {
     lines.push(`The squad was overwhelmed. The purse (${x.eagles} Eagles) and the pack (${x.pack.length} items) are lost.`);
   } else {
     c.eagles += x.eagles;
-    let sold = 0;
-    for (const item of x.pack) {
-      if (c.stash.length < c.cfg.stashCap) c.stash.push(item);
-      else {
-        c.eagles += c.cfg.sellValue;
-        sold++;
-      }
-    }
-    lines.push(`Banked ${x.eagles} Eagles and ${x.pack.length - sold} items${sold ? ` (${sold} sold: the stash is full)` : ''}.`);
+    c.stash.push(...x.pack);
+    lines.push(`Banked ${x.eagles} Eagles and ${x.pack.length} items.`);
   }
 
   // claimed footholds pay every expedition, then any control rooms won this run are recorded

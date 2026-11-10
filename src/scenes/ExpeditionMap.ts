@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ownedFlags, ownedNames } from '../core/packRip';
 import { autosave, campaign, session } from '../core/session';
 import { abandon, returnHome } from '../sim/campaign';
 import { controlRooms, fnInfo } from '../data/control';
@@ -13,6 +14,7 @@ import { drawHpBar } from '../ui/combat/parts';
 import { drawLamp } from '../ui/Lamp';
 import { Modal } from '../ui/Modal';
 import type { LootItem } from '../sim/expedition';
+import { PackRip } from '../ui/PackRip';
 import { makePanel } from '../ui/Panel';
 import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
@@ -55,6 +57,21 @@ export class ExpeditionMap extends ScreenScene {
 
   // ---------- actions
 
+  /** Buy a market pack, then open it with the ripper before the pick-what-to-carry screen. */
+  private buy(): void {
+    const x = this.exp;
+    const owned = ownedNames(session.campaign?.stash ?? [], session.campaign?.crew ?? [], x.pack);
+    const cards = buyPack(x);
+    this.rebuild();
+    this.modal = new PackRip(this, this.root, {
+      title: 'Pack opened', cards, owned: ownedFlags(cards, owned), style: session.settings.packStyle, autoNext: session.settings.autoNext,
+      animSpeed: session.settings.animSpeed, signal: this.signal,
+      onDone: () => {
+        this.modal = null;
+      }
+    });
+  }
+
   private go(room: Room): void {
     if (this.modal?.isOpen || this.exp.status !== 'running' || this.exp.pending) return;
     if (!moves(this.exp).some((r) => r.id === room.id)) return;
@@ -87,8 +104,7 @@ export class ExpeditionMap extends ScreenScene {
         leaveMarket(this.exp);
         this.rebuild();
       } else if (e.key.toLowerCase() === 'b' && canBuyPack(this.exp)) {
-        buyPack(this.exp);
-        this.rebuild();
+        this.buy();
       }
       return;
     }
@@ -532,8 +548,7 @@ export class ExpeditionMap extends ScreenScene {
         x: P.x + 580, y: P.y + 188, w: 150, h: 58, label: 'Buy', size: 27, state: can ? 'live' : 'offline', signal, accent: can, key: 'B',
         onClick: () => {
           if (!can) return;
-          buyPack(x);
-          this.rebuild();
+          this.buy();
         }
       })
     );

@@ -2,9 +2,13 @@ import {
   SETTINGS_KEY,
   SETTINGS_VERSION,
   animSpeedOptions,
+  autoNextOptions,
   defaultSettings,
+  packStyleOptions,
   textScaleOptions,
   type AnimSpeed,
+  type AutoNext,
+  type PackStyle,
   type Settings,
   type TextScale
 } from '../data/settings';
@@ -36,6 +40,8 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (typeof r.animSpeed === 'number' && (animSpeedOptions as readonly number[]).includes(r.animSpeed)) {
     out.animSpeed = r.animSpeed as AnimSpeed;
   }
+  if ((packStyleOptions as readonly unknown[]).includes(r.packStyle)) out.packStyle = r.packStyle as PackStyle;
+  if ((autoNextOptions as readonly unknown[]).includes(r.autoNext)) out.autoNext = r.autoNext as AutoNext;
   out.version = SETTINGS_VERSION;
   return out;
 }

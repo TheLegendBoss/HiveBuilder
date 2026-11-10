@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { autosave, campaign } from '../core/session';
 import { gearDetail } from '../core/loadout';
+import { pageCount, rarityOf, stashView, tabCounts, type StashTab } from '../core/stash';
 import { gearInfo, isSlotted } from '../data/gear';
-import { palette } from '../data/palette';
+import { palette, rarityInfo } from '../data/palette';
 import { equip, equipProblem, handsUsed, templateOf, unequip, weaponSlots, type CrewMember } from '../sim/campaign';
 import type { LootItem } from '../sim/expedition';
 import { Button } from '../ui/Button';
 import { makePanel } from '../ui/Panel';
+import { drawPager, drawStashTabs } from '../ui/stashNav';
 import { bodyText, stencilText, textContext } from '../ui/text';
 import { SceneKeys } from './keys';
 import { ScreenScene } from './ScreenScene';
@@ -15,10 +17,14 @@ const CREW = { x: 40, y: 92, w: 360, h: 960 };
 const SLOTS = { x: 420, y: 92, w: 760, h: 960 };
 const STASH = { x: 1200, y: 92, w: 680, h: 960 };
 const CELL = { w: 316, h: 44, gap: 8 };
+const ROWS = 11;
+const PER_PAGE = ROWS * 2;
 
 /** The character screen: pick a crew member, see what is in their slots, and move gear between them and the stash. */
 export class Loadout extends ScreenScene {
   private who = 0;
+  private tab: StashTab = 'all';
+  private page = 0;
   private note = '';
   private detail: Phaser.GameObjects.Text | null = null;
   private detailTitle: Phaser.GameObjects.Text | null = null;
@@ -31,6 +37,8 @@ export class Loadout extends ScreenScene {
     const d = data as { who?: number } | undefined;
     this.who = Math.max(0, Math.min(d?.who ?? 0, campaign().crew.length - 1));
     this.note = '';
+    this.tab = 'all';
+    this.page = 0;
     this.input.keyboard?.on('keydown', this.onKey, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onKey, this));
   }
@@ -46,6 +54,13 @@ export class Loadout extends ScreenScene {
   private onKey(e: KeyboardEvent): void {
     const k = e.key;
     if (k === 'Escape') return this.back();
+    if (k === 'PageDown') return this.stepPage(1);
+    if (k === 'PageUp') return this.stepPage(-1);
+    if (k === 'Tab') {
+      e.preventDefault();
+      const ids: StashTab[] = ['all', 'weapons', 'armor', 'tools', 'supplies'];
+      return this.setTab(ids[(ids.indexOf(this.tab) + (e.shiftKey ? 4 : 1)) % ids.length]!);
+    }
     const n = campaign().crew.length;
     if (k >= '1' && k <= '9' && Number(k) <= n) {
       this.who = Number(k) - 1;
@@ -54,6 +69,18 @@ export class Loadout extends ScreenScene {
     if (k === 'ArrowUp' || k === 'ArrowLeft') this.who = (this.who + n - 1) % n;
     else if (k === 'ArrowDown' || k === 'ArrowRight') this.who = (this.who + 1) % n;
     else return;
+    this.rebuild();
+  }
+
+  private setTab(tab: StashTab): void {
+    this.tab = tab;
+    this.page = 0;
+    this.rebuild();
+  }
+
+  private stepPage(dir: number): void {
+    const pages = pageCount(stashView(campaign().stash, this.tab).length, PER_PAGE);
+    this.page = Math.max(0, Math.min(pages - 1, this.page + dir));
     this.rebuild();
   }
 
@@ -85,7 +112,8 @@ export class Loadout extends ScreenScene {
       return;
     }
     this.detailTitle.setText(item.name.toUpperCase());
-    this.detail.setText(gearDetail(item.name, item.cls).join('\n'));
+    const r = rarityOf(item);
+    this.detail.setText([...(r === 'white' ? [] : [`${rarityInfo[r].name} (the look only, until upgrades arrive)`]), ...gearDetail(item.name, item.cls)].join('\n'));
   }
 
   protected build(root: Phaser.GameObjects.Container): void {
@@ -210,36 +238,48 @@ export class Loadout extends ScreenScene {
 
     // ---- stash
     root.add(makePanel(this, { ...STASH, bolts: true }));
-    root.add(bodyText(this, STASH.x + 24, STASH.y + 22, `STASH ${c.stash.length}/${c.cfg.stashCap}`, 16, palette.textMuted, { spacing: 0.14 }));
-    root.add(bodyText(this, STASH.x + STASH.w - 24, STASH.y + 22, `CLICK TO GIVE TO ${m.name.toUpperCase()}`, 14, palette.textMuted, { originX: 1 }));
-    c.stash.forEach((item, i) => {
-      const col = i % 2;
-      const rw = Math.floor(i / 2);
+    root.add(bodyText(this, STASH.x + 24, STASH.y + 22, 'STASH', 16, palette.textMuted, { spacing: 0.14 }));
+    root.add(bodyText(this, STASH.x + STASH.w - 24 - 150, STASH.y + 22, `CLICK TO GIVE TO ${m.name.toUpperCase()}`, 14, palette.textMuted, { originX: 1 }));
+    const view = stashView(c.stash, this.tab);
+    const pages = pageCount(view.length, PER_PAGE);
+    this.page = Math.min(this.page, pages - 1);
+    drawPager(this, root, STASH.x + STASH.w - 24, STASH.y + 14, this.page, pages, signal, (d) => this.stepPage(d));
+    drawStashTabs(this, root, {
+      x: STASH.x + 24, y: STASH.y + 52, w: STASH.w - 48, h: 30, tab: this.tab, counts: tabCounts(c.stash), signal, size: 13, onPick: (t) => this.setTab(t)
+    });
+    view.slice(this.page * PER_PAGE, (this.page + 1) * PER_PAGE).forEach(({ item, index: i }, s) => {
+      const col = s % 2;
+      const rw = Math.floor(s / 2);
       const x0 = STASH.x + 24 + col * (CELL.w + CELL.gap + 8);
-      const y0 = STASH.y + 52 + rw * (CELL.h + 6);
+      const y0 = STASH.y + 92 + rw * (CELL.h + 6);
       const gear = !!gearInfo(item.name) && gearInfo(item.name)!.slot !== 'other';
       const problem = gear ? equipProblem(c, m, item) : 'not gear';
       const ok = gear && !problem;
+      const r = rarityOf(item);
       const g = this.add.graphics();
       g.fillStyle(palette.panelDeep, 1);
       g.fillRect(x0, y0, CELL.w, CELL.h);
-      g.lineStyle(ok ? 2 : 1.5, ok ? signal : palette.line, 1);
+      g.lineStyle(ok ? 2 : 1.5, ok ? signal : r !== 'white' ? palette.rarity[r] : palette.line, 1);
       g.strokeRect(x0 + 0.75, y0 + 0.75, CELL.w - 1.5, CELL.h - 1.5);
+      g.fillStyle(palette.rarity[r], 1);
+      g.fillRect(x0 + 1.5, y0 + 1.5, 5, CELL.h - 3);
       root.add(g);
-      const nm = bodyText(this, x0 + 12, y0 + 7, item.name.toUpperCase(), 16, gear ? palette.text : palette.textMuted, { weight: '700', spacing: 0.04 });
-      if (nm.width > CELL.w - 24) nm.setScale((CELL.w - 24) / nm.width);
+      const nm = bodyText(this, x0 + 16, y0 + 7, item.name.toUpperCase(), 16, gear ? palette.text : palette.textMuted, { weight: '700', spacing: 0.04 });
+      if (nm.width > CELL.w - 28) nm.setScale((CELL.w - 28) / nm.width);
       root.add(nm);
-      root.add(bodyText(this, x0 + 12, y0 + 26, gear ? (problem ? 'NO ROOM' : item.cls.toUpperCase()) : 'SUPPLIES', 11, palette.textMuted, { spacing: 0.1 }));
+      const sub = (gear ? (problem ? 'NO ROOM' : item.cls.toUpperCase()) : 'SUPPLIES') + (r !== 'white' ? ` · ${rarityInfo[r].name.toUpperCase()}` : '');
+      root.add(bodyText(this, x0 + 16, y0 + 26, sub, 11, r !== 'white' ? palette.rarity[r] : palette.textMuted, { spacing: 0.1 }));
       const hit = this.add.zone(x0 + CELL.w / 2, y0 + CELL.h / 2, CELL.w, CELL.h).setInteractive({ useHandCursor: ok });
       hit.on('pointerover', () => this.show(item));
       hit.on('pointerout', () => this.show(null));
       hit.on('pointerup', () => this.equipFrom(i));
       root.add(hit);
     });
-    if (c.stash.length === 0) root.add(bodyText(this, STASH.x + 24, STASH.y + 60, 'The stash is empty. Buy packs at the HQ market or win loot on a run.', 16, palette.textMuted, { wrap: STASH.w - 48 }));
+    if (c.stash.length === 0) root.add(bodyText(this, STASH.x + 24, STASH.y + 100, 'The stash is empty. Buy packs at the HQ market or win loot on a run.', 16, palette.textMuted, { wrap: STASH.w - 48 }));
+    else if (view.length === 0) root.add(bodyText(this, STASH.x + 24, STASH.y + 100, 'Nothing of that type yet.', 16, palette.textMuted));
 
     // ---- detail box
-    const dy = STASH.y + 52 + 12 * (CELL.h + 6) + 14;
+    const dy = STASH.y + 92 + ROWS * (CELL.h + 6) + 14;
     const dg = this.add.graphics();
     dg.fillStyle(palette.panelDeep, 1);
     dg.fillRect(STASH.x + 24, dy, STASH.w - 48, STASH.y + STASH.h - 24 - dy);

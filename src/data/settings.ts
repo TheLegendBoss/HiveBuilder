@@ -8,6 +8,14 @@ export type TextScale = (typeof textScaleOptions)[number];
 export const animSpeedOptions = [1, 2, 0] as const;
 export type AnimSpeed = (typeof animSpeedOptions)[number];
 
+/** How a bought pack opens: one card at a time from a stack, or every card at once. */
+export const packStyleOptions = ['rip', 'all'] as const;
+export type PackStyle = (typeof packStyleOptions)[number];
+
+/** Rip it only: which cards move along on their own. Blue and up always wait for a click. */
+export const autoNextOptions = ['off', 'owned', 'all'] as const;
+export type AutoNext = (typeof autoNextOptions)[number];
+
 export interface Settings {
   version: number;
   volume: number; // 0 to 100
@@ -15,6 +23,8 @@ export interface Settings {
   textScale: TextScale;
   colorblind: boolean;
   animSpeed: AnimSpeed;
+  packStyle: PackStyle;
+  autoNext: AutoNext;
 }
 
 export const defaultSettings: Settings = {
@@ -23,5 +33,7 @@ export const defaultSettings: Settings = {
   fullscreen: false,
   textScale: 100,
   colorblind: false,
-  animSpeed: 1
+  animSpeed: 1,
+  packStyle: 'rip',
+  autoNext: 'owned'
 };
