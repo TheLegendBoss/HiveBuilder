@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { loadoutOf } from '../core/loadout';
-import { candidates, needsConfirm, pickActor, pickLane, pickTarget, pickVariant, resolve, unplayableReason, type Sel, type Step } from '../core/selection';
+import { describeAction, loadoutOf } from '../core/loadout';
+import { candidates, gearKey, needsConfirm, pickActor, pickLane, pickTarget, pickVariant, resolve, unplayableReason, type Sel, type Step } from '../core/selection';
 import { session } from '../core/session';
 import { cardDefs } from '../data/cards';
 import type { Force } from '../data/forces';
@@ -529,7 +529,7 @@ export class Combat extends ScreenScene {
     if (key.toLowerCase() === 'g') {
       // Gear actions of the clicked unit if there is one, else of everyone.
       const mine = this.chosenUnit !== null ? this.actions.filter((a) => a.kind === 'basic' && a.actor === this.chosenUnit) : [];
-      const gear = [...new Set((mine.length ? mine : this.actions.filter((a) => a.kind === 'basic')).map((a) => a.label))];
+      const gear = [...new Set((mine.length ? mine : this.actions.filter((a) => a.kind === 'basic')).map(gearKey))];
       if (!gear.length) return;
       const cur = this.sel?.item.kind === 'gear' ? gear.indexOf(this.sel.item.label) : -1;
       this.select({ kind: 'gear', label: gear[(cur + 1) % gear.length]! }, mine.length ? this.chosenUnit! : undefined);
@@ -1140,8 +1140,10 @@ export class Combat extends ScreenScene {
         }
         yy += size + 7;
         for (const a of e.actions) {
-          const desc = `${a.dmg} damage to ${a.targets > 1 ? `up to ${a.targets} units` : 'one unit'}. Costs ${a.fuel} fuel${a.ammo ? ` and ${a.ammo} ammo` : ''}.`;
-          yy += flowInline(this, parent, 34, yy, W - 12, a.name, desc, size, signal, palette.text, { dry }).height + 2;
+          yy += flowInline(this, parent, 34, yy, W - 12, a.name, describeAction(a), size, signal, palette.text, { dry }).height + 2;
+        }
+        for (const l of e.unsupported) {
+          yy += flowInline(this, parent, 34, yy, W - 12, 'Not in combat yet.', l, size - 1, palette.textMuted, palette.textMuted, { dry }).height + 2;
         }
         for (const d of e.cards) {
           const desc = `${d.text.charAt(0).toUpperCase()}${d.text.slice(1)}.${d.playFuel ? ` Costs ${d.playFuel} fuel.` : ''}${d.ammoCost ? ` Uses ${d.ammoCost} ammo.` : ''}`;
@@ -1260,10 +1262,11 @@ export class Combat extends ScreenScene {
     // Gear actions of the viewed unit.
     if (unit && unit.lane !== null) {
       const mine = this.actions.filter((a) => a.kind === 'basic' && a.actor === unit.id);
-      const labels = [...new Set(mine.map((a) => a.label))];
+      const labels = [...new Set(mine.map(gearKey))];
+      const gears = new Set(mine.map((a) => a.gear));
       const selGear = this.sel?.item.kind === 'gear' ? this.sel.item.label : null;
-      labels.slice(0, 2).forEach((lab, i) => {
-        const first = mine.find((a) => a.label === lab)!;
+      labels.slice(0, 4).forEach((lab, i) => {
+        const first = mine.find((a) => gearKey(a) === lab)!;
         const on = selGear === lab;
         const bh = 36;
         const b = this.add.container(22 + W / 2, y + bh / 2);
@@ -1273,9 +1276,14 @@ export class Combat extends ScreenScene {
         gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.line, 1);
         gg.strokeRect(-W / 2, -bh / 2, W, bh);
         b.add(gg);
-        const nameT = bodyText(this, -W / 2 + 12, 0, lab.toUpperCase(), 18, palette.text, { originY: 0.5 });
+        const nameT = bodyText(this, -W / 2 + 12, 0, first.label.toUpperCase(), 18, palette.text, { originY: 0.5 });
+        const gearT = gears.size > 1 ? bodyText(this, -W / 2 + 18 + nameT.width, 1, (first.gear ?? '').toUpperCase(), 12, palette.textMuted, { originY: 0.5, spacing: 0.08 }) : null;
         const costT = bodyText(this, W / 2 - 12, 0, `FUEL ${first.fuel}${first.ammo ? ` · AMMO ${first.ammo}` : ''}`, 16, palette.textMuted, { originX: 1, originY: 0.5 });
         b.add([nameT, costT]);
+        if (gearT) {
+          if (gearT.x + gearT.width > W / 2 - 110) gearT.destroy();
+          else b.add(gearT);
+        }
         b.setSize(W, bh);
         b.setInteractive({ useHandCursor: true });
         b.on('pointerup', () => (on ? (this.clearSel(), this.refresh()) : this.select({ kind: 'gear', label: lab }, unit.id)));
@@ -1360,7 +1368,7 @@ export class Combat extends ScreenScene {
     }
     const aid = this.stepActor();
     const what =
-      this.sel.item.kind === 'card' ? this.sel.item.name : this.sel.item.kind === 'gear' ? this.sel.item.label : `Deploy ${unitById(g, this.sel.item.unit).name}`;
+      this.sel.item.kind === 'card' ? this.sel.item.name : this.sel.item.kind === 'gear' ? this.sel.item.label.split('|').pop()! : `Deploy ${unitById(g, this.sel.item.unit).name}`;
     const head = `${what}${aid !== null && this.sel.item.kind !== 'deploy' ? ' · ' + unitById(g, aid).name : ''}`;
     const bits: string[] = [head];
     switch (s.step) {

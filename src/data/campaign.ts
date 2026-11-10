@@ -1,5 +1,5 @@
 import aftermathCsv from '../../data/aftermath_deck_droid.csv?raw';
-import { createCampaign, launch, type AftermathCard, type Campaign, type CampaignConfig, type Loadout } from '../sim/campaign';
+import { createCampaign, launch, starterEquipped, type AftermathCard, type Campaign, type CampaignConfig, type Loadout } from '../sim/campaign';
 import { parseCsv } from '../sim/csv';
 import { createExpedition, type Expedition, type ExpeditionConfig } from '../sim/expedition';
 import { shuffleInPlace } from '../sim/rng';
@@ -62,6 +62,8 @@ export function newSandboxCampaign(setup: SandboxSetup, seed: number): Campaign 
 export const reattachConfig = (c: Campaign): Campaign => {
   c.cfg = tscCampaignConfig;
   c.footholds ??= [];
+  // Older saves have no slots: give each crew member their starter kit.
+  for (const m of c.crew) m.equipped ??= starterEquipped(m.base);
   return c;
 };
 

@@ -131,6 +131,10 @@ export class Hub extends ScreenScene {
     this.scene.start(SceneKeys.Expedition);
   }
 
+  private openLoadout(): void {
+    this.scene.start(SceneKeys.Loadout);
+  }
+
   private openHolds(): void {
     this.scene.start(SceneKeys.Footholds);
   }
@@ -160,6 +164,7 @@ export class Hub extends ScreenScene {
     if (k === 'Escape') return this.back();
     if (k.toLowerCase() === 'v') return this.openSaves();
     if (k.toLowerCase() === 'h') return this.openHolds();
+    if (k.toLowerCase() === 'l') return this.openLoadout();
     if (k >= '1' && k <= '9') return this.crewAction(Number(k) - 1);
     const lower = k.toLowerCase();
     if (lower === 'b') return this.buy();
@@ -212,13 +217,16 @@ export class Hub extends ScreenScene {
       root.add(bodyText(this, x, 32, value, 36, hot ? signal : palette.text, { weight: '700' }));
     };
     root.add(
-      new Button(this, { x: 424, y: 14, w: 200, h: 56, label: 'Holds', size: 28, state: 'live', signal, key: 'H', onClick: () => this.openHolds() })
+      new Button(this, { x: 424, y: 14, w: 150, h: 56, label: 'Gear', size: 24, state: 'live', signal, key: 'L', onClick: () => this.openLoadout() })
     );
     root.add(
-      new Button(this, { x: 640, y: 14, w: 200, h: 56, label: 'Saves', size: 28, state: 'live', signal, key: 'V', onClick: () => this.openSaves() })
+      new Button(this, { x: 582, y: 14, w: 150, h: 56, label: 'Holds', size: 24, state: 'live', signal, key: 'H', onClick: () => this.openHolds() })
     );
     root.add(
-      new Button(this, { x: 856, y: 14, w: 200, h: 56, label: 'Menu', size: 28, state: 'live', signal, key: 'Esc', onClick: () => this.back() })
+      new Button(this, { x: 740, y: 14, w: 150, h: 56, label: 'Saves', size: 24, state: 'live', signal, key: 'V', onClick: () => this.openSaves() })
+    );
+    root.add(
+      new Button(this, { x: 898, y: 14, w: 150, h: 56, label: 'Menu', size: 24, state: 'live', signal, key: 'Esc', onClick: () => this.back() })
     );
     counter(1080, 'EAGLES', String(c.eagles), true);
     counter(1330, 'POWER', String(c.power));

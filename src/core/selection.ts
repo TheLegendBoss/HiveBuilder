@@ -6,6 +6,9 @@ import type { Action, Target } from '../sim/types';
  * a reserve unit to deploy, or discard-and-draw) and then narrows by actor, targets and variant.
  * Pure logic, no phaser, so the click and keyboard flows share one rule set.
  */
+/** A basic action's identity: two weapons can share an action name, so the gear is part of it. */
+export const gearKey = (a: Action): string => `${a.gear ?? ''}|${a.label}`;
+
 export interface Sel {
   item: { kind: 'card'; name: string } | { kind: 'gear'; label: string } | { kind: 'deploy'; unit: number } | { kind: 'cycle' };
   actor?: number;
@@ -25,7 +28,7 @@ export type Step =
 export function matches(a: Action, sel: Sel): boolean {
   const it = sel.item;
   if (it.kind === 'card' && !(a.kind === 'play' && a.card === it.name)) return false;
-  if (it.kind === 'gear' && !(a.kind === 'basic' && a.label === it.label)) return false;
+  if (it.kind === 'gear' && !(a.kind === 'basic' && (a.label === it.label || gearKey(a) === it.label))) return false;
   if (it.kind === 'deploy' && !(a.kind === 'deploy' && a.unit === it.unit)) return false;
   if (it.kind === 'cycle' && a.kind !== 'cycle') return false;
   if (sel.actor !== undefined && a.actor !== sel.actor) return false;

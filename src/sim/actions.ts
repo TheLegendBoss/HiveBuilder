@@ -1,14 +1,6 @@
 import { cardDefs } from '../data/cards';
-import { fallbackAction, gearActions, type GearAction } from '../data/gearActions';
-import {
-  attackTargets,
-  cardRules,
-  multiTargets,
-  needsActor,
-  spendBonuses,
-  strike,
-  type Variant
-} from './cards';
+import { fallbackAction, gearActions, type GearAction } from '../data/gear';
+import { applyGearAction, cardRules, gearTargets, needsActor, type Variant } from './cards';
 import {
   bodiesInLane,
   bump,
@@ -47,7 +39,8 @@ export function fuelAvailable(g: Game, exceptIid: number | undefined): number {
 
 function basicGearActions(actor: Unit): GearAction[] {
   const own = gearActions.filter((a) => actor.gear.includes(a.gear) && (a.ammo === 0 || actor.ammo >= a.ammo));
-  return own.length ? own : [fallbackAction];
+  // A unit with nothing that hurts (no weapon, or the ammo is gone) can always use the armory pistol.
+  return own.some((a) => a.dmg > 0) ? own : [...own, fallbackAction];
 }
 
 /** Everything the player can do right now. Empty on the enemy's turn or when the fight is over. */
@@ -112,10 +105,9 @@ export function listActions(g: Game): Action[] {
     for (const ga of basicGearActions(actor)) {
       const { fuel, baseFuel } = fuelFor(g, actor, ga.fuel, ga.gear);
       if (fuel > fuelAvailable(g, undefined)) continue;
-      const sets: Target[][] = ga.targets === 1 ? attackTargets(g, actor).map((t) => [t]) : multiTargets(g, actor, ga.targets);
-      for (const targets of sets) {
+      for (const targets of gearTargets(g, actor, ga)) {
         out.push({
-          key: `basic:${ga.name}:${actor.id}:${targetsKey(targets)}`,
+          key: `basic:${ga.gear}:${ga.name}:${actor.id}:${targetsKey(targets)}`,
           kind: 'basic',
           label: ga.name,
           gear: ga.gear,
@@ -225,8 +217,7 @@ export function perform(g: Game, action: Action, cards?: number[]): Ev[] {
       cardRules[a.card!]!.apply(g, actor, { targets: a.targets, variant: a.variant }, ev);
     } else {
       const ga = [...gearActions, fallbackAction].find((x) => x.gear === a.gear && x.name === a.label)!;
-      for (const t of a.targets) strike(g, actor!, t, ga.dmg, ga.gear, ev);
-      spendBonuses(g, actor!, ga.gear, ev);
+      applyGearAction(g, actor!, ga, a.targets, ev);
     }
   }
 

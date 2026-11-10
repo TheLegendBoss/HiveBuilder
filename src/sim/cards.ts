@@ -1,4 +1,5 @@
 import { cardDefs } from '../data/cards';
+import type { GearAction } from '../data/gearActions';
 import { nextRandom } from './rng';
 import {
   attackLanes,
@@ -326,4 +327,86 @@ export function needsActor(cardName: string): boolean {
 
 export function sourceOf(cardName: string): string {
   return cardDefs[cardName]?.source ?? '';
+}
+
+// ---------- basic gear actions
+
+/** Low, mid or high result from the top of the results deck (A to 5, 6 to 9, 10 to K). */
+function resultBand(v: number): 0 | 1 | 2 {
+  return v <= 5 ? 0 : v <= 9 ? 1 : 2;
+}
+
+/** Every way a basic gear action can be aimed right now. An empty target list means it needs none. */
+export function gearTargets(g: Game, actor: Unit, ga: GearAction): Target[][] {
+  if (ga.soak) return soakNeeded(actor) ? [[]] : [];
+  if (ga.heal) return inLane(g, 'P', actor.lane!, false).filter(hurt).map((u) => [unitTarget(u)]);
+  if (ga.area) {
+    const out: Target[][] = [];
+    for (const L of attackLanes(g, actor)) {
+      if (inLane(g, 'E', L).length || g.laneHP.E[L]! > 0) out.push([laneTarget('E', L)]);
+    }
+    return out;
+  }
+  return ga.targets === 1 ? attackTargets(g, actor).map((t) => [t]) : multiTargets(g, actor, ga.targets);
+}
+
+/** A hit that ignores up to `pierce` points of the target's soak. */
+function pierceHit(u: Unit, d: number, pierce: number, ev: Ev[]): void {
+  const fromArmor = Math.min(pierce, u.armor);
+  const fromBuilt = Math.min(pierce - fromArmor, u.builtin);
+  u.armor -= fromArmor;
+  u.builtin -= fromBuilt;
+  hitUnit(u, d, ev);
+  u.armor += fromArmor;
+  u.builtin += fromBuilt;
+}
+
+/** Do a basic gear action: restore, heal, or damage rolled from the results deck, with riders. */
+export function applyGearAction(g: Game, actor: Unit, ga: GearAction, targets: Target[], ev: Ev[]): void {
+  if (ga.soak) {
+    restoreSoak(actor, ga.soak, ev);
+    ev.push({ t: 'log', text: `${actor.name} regains ${ga.soak} soak` });
+    return;
+  }
+  if (ga.heal) {
+    const u = unitById(g, (targets[0] as { id: number }).id);
+    heal(u, ga.heal, ev);
+    ev.push({ t: 'log', text: `${u.name} is patched for ${ga.heal}` });
+    return;
+  }
+  let base = ga.dmg;
+  if (ga.dmgMax !== undefined && ga.dmgMax > ga.dmg) {
+    const v = drawResult(g);
+    const band = resultBand(v);
+    base = band === 0 ? ga.dmg : band === 2 ? ga.dmgMax : Math.round((ga.dmg + ga.dmgMax) / 2);
+    ev.push({ t: 'log', text: `${ga.name}: a ${v} on the results deck, ${band === 0 ? 'low' : band === 2 ? 'high' : 'mid'}` });
+  }
+  const riders = ga.riders && (!ga.riderSolo || targets.length === 1) ? ga.riders : [];
+  const hit = (t: Target): void => {
+    if (t.k === 'unit' && ga.pierce) {
+      const u = unitById(g, t.id);
+      const d = base + bonus(g, actor, u, ga.gear);
+      ev.push({ t: 'log', text: `${actor.name} hits ${u.name} for ${d}, ignoring ${ga.pierce} soak` });
+      ev.push({ t: 'strike', from: actor.id, to: t, melee: false, dmg: d });
+      pierceHit(u, d, ga.pierce, ev);
+    } else strike(g, actor, t, base, ga.gear, ev);
+    if (t.k !== 'unit') return;
+    const u = unitById(g, t.id);
+    if (u.dead) return;
+    for (const r of riders) {
+      if (r === 'stunned' && !u.stunned) u.stunned = true;
+      else if (r === 'exposed' && !u.exposed) u.exposed = true;
+      else if (r === 'suppressed') u.suppressed = 2;
+      else continue;
+      ev.push({ t: 'status', unit: u.id, status: r, on: true });
+    }
+  };
+  for (const t of targets) {
+    if (t.k === 'lane' && ga.area) {
+      const en = inLane(g, 'E', t.lane);
+      if (en.length) for (const e of en) hit(unitTarget(e));
+      else hit(t);
+    } else hit(t);
+  }
+  spendBonuses(g, actor, ga.gear, ev);
 }

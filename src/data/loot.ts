@@ -12,7 +12,7 @@ const mapUse: Record<number, LootItem['use']> = {
   29: { kind: 'heal', amount: 2 }
 };
 
-/** The 30 base items, white versions. Gear cannot be equipped yet, so most items just ride in the pack. */
+/** The 30 base items, white versions. Gear is equipped at the HQ; supplies and disposables ride in the pack. */
 export const lootPool: LootItem[] = parseCsv(lootCsv).map((r) => ({
   id: Number(r.id),
   name: r.base_item!,

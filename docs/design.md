@@ -791,7 +791,7 @@ These are placeholders so the loop could run. Each is flagged in the repo's deci
 - Rest rooms (need exhausted cards)
 - Shrine offering (stress stake) and Toll-booth bet (gear stake) Gamble cards
 - Pipe gang and Ash cult forces (need Burning and stress)
-- Gear equipping: items ride in the pack but do nothing yet
+- Gear equipping: built for weapons, armor and tools at the HQ (see decisions.md); loot gear gives actions but no deck cards yet, and shields, attachments, accessories and disposables do nothing in a fight
 - Perk slots are counted but empty, and promotion only adds max HP (no perk card, no attributes)
 - Suppressed is applied to units but has no effect on enemies
 - Nothing is saved yet (the campaign lives in memory until M5), and the faction accent colours are working values

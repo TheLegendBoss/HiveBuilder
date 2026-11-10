@@ -1,3 +1,4 @@
+import { gearInfo, isEquippable, isSlotted, starterItems } from '../data/gear';
 import { nextRandom, shuffleInPlace } from './rng';
 import type { Expedition, ExpeditionConfig, FightFx, LootItem, SectionFn } from './expedition';
 import type { UnitTemplate } from './types';
@@ -64,6 +65,8 @@ export interface CrewMember {
   repairing: boolean;
   /** a short-term result that rides into the next fight (Glitching, Rebooting) */
   nextFight?: FightFx | null;
+  /** gear in the slots: weapons, armor, tool. Role gear (skills, the sight) stays on `base`. */
+  equipped: LootItem[];
 }
 
 /** A control room the gang has won. It earns nothing until it is claimed with power. */
@@ -123,15 +126,87 @@ export function createCampaign(cfg: CampaignConfig, seed: number): Campaign {
     run: null,
     nextId: 1
   };
-  cfg.crew.forEach((t) => c.crew.push({ id: c.nextId++, name: t.name, base: t, tier: 1, xp: 0, damage: null, repairing: false }));
+  cfg.crew.forEach((t) => c.crew.push({ id: c.nextId++, name: t.name, base: t, tier: 1, xp: 0, damage: null, repairing: false, equipped: starterEquipped(t) }));
   return c;
 }
 
 // ---------- crew
 
-/** The template a crew member goes on the road as: promotions add max HP. */
+/** The starter kit of a chassis, as items: the slotted gear from its template. */
+export function starterEquipped(t: UnitTemplate): LootItem[] {
+  return t.gear.filter(isSlotted).flatMap((n) => starterItems.filter((i) => i.name === n));
+}
+
+/**
+ * The template a crew member goes on the road as: promotions add max HP, and the slotted gear sets the gear list,
+ * the armor pool (Max soak) and the ammo pool.
+ */
 export function templateOf(c: Campaign, m: CrewMember): UnitTemplate {
-  return { ...m.base, gear: [...m.base.gear], hp: m.base.hp + (m.tier - 1) * c.cfg.hpPerTier };
+  const eq = m.equipped ?? starterEquipped(m.base);
+  const infos = eq.map((i) => gearInfo(i.name)).filter((i) => !!i);
+  const armor = infos.reduce((n, i) => n + i!.maxSoak, 0);
+  const ammo = infos.reduce((n, i) => n + i!.ammo, 0);
+  const t: UnitTemplate = {
+    ...m.base,
+    gear: [...eq.map((i) => i.name), ...m.base.gear.filter((n) => !isSlotted(n))],
+    armor,
+    hp: m.base.hp + (m.tier - 1) * c.cfg.hpPerTier
+  };
+  if (ammo > 0) t.ammo = ammo;
+  else delete t.ammo;
+  return t;
+}
+
+// ---------- slots
+
+export const weaponSlots = (m: CrewMember): number => m.base.weaponSlots ?? 2;
+
+/** Weapon slots in use: each weapon takes its hands, shields one. */
+export function handsUsed(m: CrewMember): number {
+  return m.equipped.reduce((n, i) => n + (gearInfo(i.name)?.slot === 'weapon' ? gearInfo(i.name)!.hands : 0), 0);
+}
+
+/** Why this item cannot go on this crew member, or null when it fits (armor and tools swap with what is there). */
+export function equipProblem(c: Campaign, m: CrewMember, item: LootItem): string | null {
+  if (c.run) return 'The crew are out';
+  const info = gearInfo(item.name);
+  if (!isEquippable(item) || !info) return `${item.name} does not go in a slot`;
+  if (info.slot === 'weapon' && handsUsed(m) + info.hands > weaponSlots(m)) {
+    return `${m.name} has no room: ${item.name} needs ${info.hands} weapon slot${info.hands > 1 ? 's' : ''}, ${weaponSlots(m) - handsUsed(m)} free`;
+  }
+  return null;
+}
+
+/** Put a stash item into a slot. An armor or tool already there goes back to the stash. */
+export function equip(c: Campaign, m: CrewMember, stashIndex: number): string {
+  const item = c.stash[stashIndex];
+  if (!item) throw new Error('no such stash slot');
+  const problem = equipProblem(c, m, item);
+  if (problem) throw new Error(problem);
+  const slot = gearInfo(item.name)!.slot;
+  c.stash.splice(stashIndex, 1);
+  let note = `${m.name} takes the ${item.name}`;
+  if (slot !== 'weapon') {
+    const at = m.equipped.findIndex((i) => gearInfo(i.name)?.slot === slot);
+    if (at >= 0) {
+      const [old] = m.equipped.splice(at, 1);
+      c.stash.push(old!);
+      note += `; the ${old!.name} goes back to the stash`;
+    }
+  }
+  m.equipped.push(item);
+  return note;
+}
+
+/** Take a piece of gear off. It goes to the stash, which must have room. */
+export function unequip(c: Campaign, m: CrewMember, index: number): string {
+  if (c.run) throw new Error('The crew are out');
+  const item = m.equipped[index];
+  if (!item) throw new Error('nothing in that slot');
+  if (c.stash.length >= c.cfg.stashCap) throw new Error('The stash is full');
+  m.equipped.splice(index, 1);
+  c.stash.push(item);
+  return `${m.name} puts the ${item.name} in the stash`;
 }
 
 /** Crew who can go: no damage, nothing waiting on a repair. */

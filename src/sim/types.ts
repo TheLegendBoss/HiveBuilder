@@ -11,6 +11,8 @@ export interface UnitTemplate {
   /** gear source names, matching the `source` column of the deck CSV */
   gear: string[];
   ammo?: number;
+  /** weapon slots on this chassis (default 2) */
+  weaponSlots?: number;
   /** enemy only: action ids in order */
   pattern?: string[];
   tags?: string[];

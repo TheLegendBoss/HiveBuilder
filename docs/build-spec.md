@@ -44,7 +44,7 @@ Work one milestone at a time. Each ends with a commit and a short note of what t
 - `src/data/rooms.ts`: the room deck from `data/starter_room_deck.csv`, the working expedition numbers, and `startFight` / `settleFight`, which carry the squad's HP into a fight and back.
 - `src/scenes/ExpeditionMap.ts`: the map (fog, current room, doors you can take with 1 to 3 or the arrows), the squad and ration panel, the retreat and gate modals and the end summary. Combat now takes its fight from the expedition when one is running; Quick fight on the setup screen still plays the old single Scavver fight.
 - Rooms: Clinic heals. Scavenge draws 1 loot card. Gamble runs the push-your-luck ladder. Market sells spares and buys packs. Hazard and Rest are still walk-through stubs (Hazard needs unit attributes, Rest needs exhausted cards).
-- Loot and Eagles: `src/data/loot.ts` loads the 30-item pool from `data/loot_pool_base_items.csv` into a shuffled loot deck drawn without replacement. Winning a fight pays its Eagles into a purse and offers its loot draws. The pack holds 8; take offers, drop to make room, click a pack item to use it (Hive rations, Healing supplies and Combat stim work on the map). Gear cannot be equipped yet.
+- Loot and Eagles: `src/data/loot.ts` loads the 30-item pool from `data/loot_pool_base_items.csv` into a shuffled loot deck drawn without replacement. Winning a fight pays its Eagles into a purse and offers its loot draws. The pack holds 8; take offers, drop to make room, click a pack item to use it (Hive rations, Healing supplies and Combat stim work on the map). Gear is equipped at the HQ (see the gear equipping note below).
 - Gamble: `src/data/gambles.ts` holds four of the six drafted cards (Back-alley dice, Scavver's wager, Pit side bet, Quartermaster's crate) with ladders from `data/hazard_gamble_tiers.csv`. Commit pays the stake; each push draws the top results card (10 to K climbs, 6 to 9 holds, A to 5 busts); cash out any time; the third rung pays by itself.
 - Market: a Basic pack (5 loot draws) costs 10 Eagles; a spare item sells for 1.
 - Tests: `expedition.test.ts` (1500 seeds all build a connected grid with a gate; loot, pack, gamble and market rules) and `forces.test.ts`.
@@ -105,6 +105,14 @@ Data: `src/data/palette.ts` (tokens and faction accents, `signal` from the chose
 Settings: volume, fullscreen, text size (100, 125, 150), colorblind mode and animation speed shown but disabled until used. Stored in localStorage under one key with a version number; unreadable storage falls back to defaults.
 
 Menu content: title lockup, hive cutaway with the Middle Hive floor lit, a cable from Sandbox Mode to that floor, the bolted console with OFFLINE stamps, Expeditions Lost counter (reads 0000) with skull outlines, memorial plaque ("No names yet"), vox line at the bottom of the console.
+
+### Gear equipping (post-M7, working)
+
+- `src/data/gear.ts` reads the loot pool text into `GearInfo` (slot, hands, Max soak, Ammo, actions, unsupported lines) and holds the TSC starter kit as items (ids 101 to 105). `src/core/loadout.ts` lists a unit's gear with its actions and cards for the combat views and writes the rules text.
+- `src/sim/campaign.ts`: `CrewMember.equipped`, `equip`, `unequip`, `equipProblem`, `handsUsed`, `weaponSlots`; `templateOf` builds gear, armor and ammo from the slots. Old saves get their starter kit on load.
+- `src/sim/cards.ts` `gearTargets` and `applyGearAction` run loot actions; `src/data/scenarios.ts` `deckFor(squad)` builds the fight deck from the squad's slotted gear.
+- `src/scenes/Loadout.ts` is the Gear screen: crew list, the selected member's slots, the stash with click-to-equip, and a detail box. Reached from the HQ (L), back with Esc.
+- Rules and what is not run yet are in `decisions.md`.
 
 ## Checks for every milestone
 
