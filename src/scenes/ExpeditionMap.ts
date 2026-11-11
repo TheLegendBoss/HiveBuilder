@@ -7,7 +7,7 @@ import { forceById } from '../data/rooms';
 import { mix, palette } from '../data/palette';
 import {
   atCheckpoint, buyPack, canAffordGamble, canBuyPack, leaveMarket, sellItem, cashOutGamble, closeGamble, commitGamble, currentRoom, declineGamble, dropItem, leaveGate, leaveLoot,
-  hasKey, leaveControl, move, moves, openStorehouse, pushGamble, retreat, sectionFn, takeGate, takeLoot, tierAt, useItem, type Expedition, type GamblePending, type Pending, type Room, type RoomType
+  canPushHazard, closeHazard, hasKey, leaveControl, move, moves, openStorehouse, pushGamble, pushHazard, testHazard, retreat, sectionFn, takeGate, takeLoot, tierAt, useItem, type Expedition, type GamblePending, type HazardPending, type Pending, type Room, type RoomType
 } from '../sim/expedition';
 import { Button } from '../ui/Button';
 import { drawHpBar } from '../ui/combat/parts';
@@ -436,6 +436,7 @@ export class ExpeditionMap extends ScreenScene {
     if (p.kind === 'loot') return this.showLoot(p.offers, p.from);
     if (p.kind === 'market') return this.showMarket();
     if (p.kind === 'gamble') return this.showGamble(p);
+    if (p.kind === 'hazard') return this.showHazard(p);
     const last = x.section + 1 >= x.cfg.sections;
     this.modal = new Modal(this, this.root, {
       title: last ? 'Way out' : 'Gate',
@@ -643,6 +644,64 @@ export class ExpeditionMap extends ScreenScene {
         signal: this.signal,
         onConfirm: () => {
           closeGamble(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+          done();
+        }
+      });
+    }
+  }
+
+  private showHazard(p: HazardPending): void {
+    const x = this.exp;
+    const attr = p.def.attr.toUpperCase();
+    const head = `${p.def.blurb}\n${p.def.kind === 'guarded' ? 'A guarded room: get through for a loot draw.' : 'An obstacle: you cannot go on until it is passed.'}`;
+    const sum = `${attr} ${p.rating}${p.roll ? ` + results card ${p.roll.card} (+${p.roll.bonus})` : ''}${p.pushed ? ` + ${p.pushed} pushed` : ''} against ${p.need}.`;
+    const done = (): void => this.rebuild();
+    if (p.stage === 'offer') {
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${head}\nThe squad's best ${attr} is ${p.rating}; you need ${p.need}. A results card adds 0, 1 or 2.`,
+        confirmLabel: 'Try it',
+        cancelLabel: 'Turn back',
+        signal: this.signal,
+        onConfirm: () => {
+          testHazard(x);
+          done();
+        },
+        onCancel: () => {
+          closeHazard(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+          done();
+        }
+      });
+    } else if (p.stage === 'short') {
+      const can = canPushHazard(x, p);
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${sum}\nShort. Each ration spent pushes the test by 1.${can ? '' : '\nNo rations left to push with.'}`,
+        confirmLabel: can ? 'Spend a ration' : 'Turn back',
+        cancelLabel: can ? 'Turn back' : undefined,
+        signal: this.signal,
+        onConfirm: () => {
+          if (can) pushHazard(x);
+          else closeHazard(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+          done();
+        },
+        onCancel: () => {
+          closeHazard(x);
+          this.note = x.log[x.log.length - 1] ?? '';
+          done();
+        }
+      });
+    } else {
+      this.modal = new Modal(this, this.root, {
+        title: p.def.name,
+        body: `${sum}\n${p.outcome ?? ''}`,
+        confirmLabel: 'Go on',
+        signal: this.signal,
+        onConfirm: () => {
+          closeHazard(x);
           this.note = x.log[x.log.length - 1] ?? '';
           done();
         }

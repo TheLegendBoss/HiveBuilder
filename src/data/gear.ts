@@ -149,6 +149,9 @@ const infoByName = new Map<string, GearInfo>();
 for (const d of starterDefs) infoByName.set(d.item.name, { name: d.item.name, cls: d.item.cls, unsupported: [], ...d.info });
 for (const it of lootPool) infoByName.set(it.name, readLoot(it));
 
+/** Every piece of gear the game knows, starter and loot. */
+export const allGearInfo = (): GearInfo[] => [...infoByName.values()];
+
 /** What an item is as gear, or undefined for supplies and role gear. Items that are not gear have slot 'other'. */
 export function gearInfo(name: string): GearInfo | undefined {
   return infoByName.get(name);

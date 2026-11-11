@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newTscCampaign } from '../data/campaign';
 import { gearInfo } from '../data/gear';
-import { tscDeck } from '../data/cards';
+import { gearCardSpecs, tscDeck } from '../data/cards';
 import { deckFor, tscSquad, tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
@@ -142,6 +142,60 @@ describe('loot weapons in a fight', () => {
     const squad = squadWith('Pump shotgun', 'Hive revolver');
     const g = createGame({ ...tscVsScavvers, squad, deck: deckFor(squad) }, 11);
     expect(['win', 'loss', 'timeout']).toContain(autoPlay(g));
+  });
+});
+
+describe('loot gear cards', () => {
+  const squadWith = (...names: string[]): UnitTemplate[] => {
+    const c = newTscCampaign(1);
+    const van = c.crew[2]!;
+    c.stash.push(...names.map(item));
+    for (let i = 0; i < names.length; i++) equip(c, van, 0);
+    return c.crew.map((m) => templateOf(c, m));
+  };
+
+  it('every gear action becomes a card, the first one twice', () => {
+    const shotgun = gearCardSpecs.filter((s) => s.def.source === 'Pump shotgun');
+    expect(shotgun.length).toBeGreaterThan(0);
+    expect(shotgun[0]!.def.count).toBe(2);
+    const a = gearInfo('Pump shotgun')!.actions[0]!;
+    expect(shotgun[0]!.action.dmg).toBe(a.dmg + 1);
+    expect(shotgun[0]!.action.fuel).toBe(Math.max(0, a.fuel - 1));
+    const names = gearCardSpecs.map((s) => s.def.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('adds the cards to the deck only when the gear is carried', () => {
+    expect(deckFor(tscSquad).map((d) => d.name)).not.toContain(gearCardSpecs[0]!.def.name);
+    const squad = squadWith('Pump shotgun');
+    const names = deckFor(squad).map((d) => d.name);
+    for (const s of gearCardSpecs.filter((x) => x.def.source === 'Pump shotgun')) expect(names).toContain(s.def.name);
+  });
+
+  it('plays a loot card from the hand', () => {
+    const squad = squadWith('Pump shotgun');
+    const g = ready(squad);
+    const card = gearCardSpecs.find((s) => s.def.source === 'Pump shotgun')!.def.name;
+    g.hand.push({ iid: 9999, name: card });
+    const play = listActions(g).find((x) => x.kind === 'play' && x.card === card);
+    expect(play).toBeDefined();
+    const before = g.hand.length;
+    perform(g, play!);
+    expect(g.hand.length).toBeLessThan(before);
+  });
+});
+
+describe('small squads', () => {
+  it('a squad of two never stalls in the setup rounds', () => {
+    const squad = tscSquad.slice(0, 2);
+    const g = createGame({ ...tscVsScavvers, squad, deck: deckFor(squad) }, 5);
+    expect(['win', 'loss']).toContain(autoPlay(g));
+  });
+
+  it('a lone droid can still act once it has deployed', () => {
+    const squad = tscSquad.slice(0, 1);
+    const g = createGame({ ...tscVsScavvers, squad, deck: deckFor(squad) }, 5);
+    expect(['win', 'loss']).toContain(autoPlay(g));
   });
 });
 

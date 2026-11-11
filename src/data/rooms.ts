@@ -1,3 +1,4 @@
+import { hazardDefs, hazardNeeds } from './hazards';
 import roomDeckCsv from '../../data/starter_room_deck.csv?raw';
 import { parseCsv } from '../sim/csv';
 import { ROOM_TYPES, finishFight, type Expedition, type ExpeditionConfig, type RoomType } from '../sim/expedition';
@@ -18,7 +19,7 @@ export const starterRoomDeck: RoomType[] = parseCsv(roomDeckCsv).flatMap((r) => 
 });
 
 /** Working numbers for the sandbox expedition; see decisions.md. */
-export const expeditionDefaults = { sections: 3, rations: 24, clinicHeal: 3, startEagles: 10, packSize: 8, packPrice: 10, packDraws: 5, sellValue: 1 };
+export const expeditionDefaults = { sections: 3, rations: 24, clinicHeal: 3, restHeal: 2, startEagles: 10, packSize: 8, packPrice: 10, packDraws: 5, sellValue: 1 };
 
 export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}): ExpeditionConfig {
   return {
@@ -30,6 +31,8 @@ export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}
     forceIds: forces.map((f) => f.id),
     lootPool,
     gambles: gambleDefs,
+    hazards: hazardDefs,
+    hazardNeeds,
     ladders: gambleLadders,
     ...expeditionDefaults,
     ...over

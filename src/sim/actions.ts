@@ -67,7 +67,8 @@ export function listActions(g: Game): Action[] {
       });
     }
   }
-  if (setup) return out;
+  // During setup the squad must deploy first. With nobody left to deploy (a small squad), it may act instead of stalling.
+  if (setup && out.length > 0) return out;
 
   const actors = actorsFor(g);
   const seen = new Set<string>();

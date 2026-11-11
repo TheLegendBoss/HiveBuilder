@@ -1,8 +1,9 @@
 import { gearInfo, isEquippable, isSlotted, starterItems } from '../data/gear';
+import { attributeOf } from '../data/gearCards';
 import { rollPack } from './packs';
 import { shuffleInPlace } from './rng';
 import type { Expedition, ExpeditionConfig, FightFx, LootItem, SectionFn } from './expedition';
-import type { UnitTemplate } from './types';
+import { ATTRS, type Attrs, type UnitTemplate } from './types';
 
 /** One result in the aftermath deck. Droids only for now (data/aftermath_deck_droid.csv). */
 export interface AftermathCard {
@@ -141,6 +142,20 @@ export function starterEquipped(t: UnitTemplate): LootItem[] {
  * The template a crew member goes on the road as: promotions add max HP, and the slotted gear sets the gear list,
  * the armor pool (Max soak) and the ammo pool.
  */
+/**
+ * A droid's test ratings: its chassis stats, one more in its best stat for every tier past the first (working: the
+ * design says "some stat points" and promotion does not ask for a choice yet), and +1 in each attribute that a piece of
+ * its slotted gear is good at.
+ */
+export function attrsOf(base: Attrs, tier: number, equipped: LootItem[]): Attrs {
+  const out: Attrs = { ...base };
+  const top = ATTRS.reduce((best, a) => (base[a] > base[best] ? a : best), ATTRS[0]!);
+  out[top] += tier - 1;
+  const gear = new Set(equipped.map((i) => gearInfo(i.name)).filter((i) => !!i && i.slot !== 'other').map((i) => attributeOf(i!.cls)));
+  for (const a of gear) out[a] += 1;
+  return out;
+}
+
 export function templateOf(c: Campaign, m: CrewMember): UnitTemplate {
   const eq = m.equipped ?? starterEquipped(m.base);
   const infos = eq.map((i) => gearInfo(i.name)).filter((i) => !!i);
@@ -154,6 +169,7 @@ export function templateOf(c: Campaign, m: CrewMember): UnitTemplate {
   };
   if (ammo > 0) t.ammo = ammo;
   else delete t.ammo;
+  if (m.base.attrs) t.attrs = attrsOf(m.base.attrs, m.tier, eq);
   return t;
 }
 

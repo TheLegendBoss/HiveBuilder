@@ -1,4 +1,4 @@
-import { cardDefs } from '../data/cards';
+import { cardDefs, gearCardSpecs } from '../data/cards';
 import type { GearAction } from '../data/gearActions';
 import { nextRandom } from './rng';
 import {
@@ -409,4 +409,12 @@ export function applyGearAction(g: Game, actor: Unit, ga: GearAction, targets: T
     } else hit(t);
   }
   spendBonuses(g, actor, ga.gear, ev);
+}
+
+// Loot gear's cards do what the gear's action does, a little better and for less fuel.
+for (const spec of gearCardSpecs) {
+  cardRules[spec.def.name] = {
+    options: (g, actor) => gearTargets(g, actor!, spec.action).map((targets) => ({ targets })),
+    apply: (g, actor, v, ev) => applyGearAction(g, actor!, spec.action, v.targets, ev)
+  };
 }

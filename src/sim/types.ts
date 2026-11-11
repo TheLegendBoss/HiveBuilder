@@ -1,6 +1,11 @@
 export type Side = 'P' | 'E';
 
 /** What a squad member or enemy is built from. Content lives in src/data. */
+/** The four test attributes. A test asks one of them against a threshold. */
+export type Attr = 'force' | 'wits' | 'nerve' | 'tech';
+export const ATTRS: Attr[] = ['force', 'wits', 'nerve', 'tech'];
+export type Attrs = Record<Attr, number>;
+
 export interface UnitTemplate {
   name: string;
   hp: number;
@@ -11,6 +16,8 @@ export interface UnitTemplate {
   /** gear source names, matching the `source` column of the deck CSV */
   gear: string[];
   ammo?: number;
+  /** test ratings for hazards: the stat plus the best slotted gear (default 2 each) */
+  attrs?: Attrs;
   /** weapon slots on this chassis (default 2) */
   weaponSlots?: number;
   /** enemy only: action ids in order */

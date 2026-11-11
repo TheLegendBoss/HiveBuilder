@@ -1,5 +1,6 @@
 import tscDeckCsv from '../../data/tsc_starting_deck.csv?raw';
 import { parseCsv } from '../sim/csv';
+import { buildGearCards } from './gearCards';
 import type { RarityId } from './palette';
 
 export interface CardDef {
@@ -35,4 +36,8 @@ export function parseDeck(csv: string): CardDef[] {
 }
 
 export const tscDeck: CardDef[] = parseDeck(tscDeckCsv);
-export const cardDefs: Record<string, CardDef> = Object.fromEntries(tscDeck.map((c) => [c.name, c]));
+
+/** Cards that loot gear brings with it, built from each item's actions. The deck for a squad adds them when carried. */
+export const gearCardSpecs = buildGearCards(new Set(tscDeck.map((c) => c.source)), new Set(tscDeck.map((c) => c.name)));
+
+export const cardDefs: Record<string, CardDef> = Object.fromEntries([...tscDeck, ...gearCardSpecs.map((s) => s.def)].map((c) => [c.name, c]));

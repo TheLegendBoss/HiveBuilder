@@ -1,7 +1,7 @@
 import type { RarityId } from '../data/palette';
 import { rollRarities } from './packs';
 import { nextRandom, shuffleInPlace } from './rng';
-import type { UnitTemplate } from './types';
+import type { Attr, UnitTemplate } from './types';
 
 export type RoomType = 'Fight' | 'Scavenge' | 'Gamble' | 'Hazard' | 'Market' | 'Rest' | 'Clinic' | 'Gate' | 'Control';
 export const ROOM_TYPES: RoomType[] = ['Fight', 'Scavenge', 'Gamble', 'Hazard', 'Market', 'Rest', 'Clinic', 'Gate', 'Control'];
@@ -53,6 +53,17 @@ export interface Room {
   gamble: number | null;
   /** Control rooms: which section function this is the control room of */
   control?: SectionFn | null;
+  /** Hazard rooms: the card drawn on first entry */
+  hazard?: number | null;
+}
+
+/** A Hazard card: one attribute test, either a guarded room with a reward or an obstacle that blocks the way. */
+export interface HazardDef {
+  id: number;
+  name: string;
+  attr: Attr;
+  kind: 'obstacle' | 'guarded';
+  blurb: string;
 }
 
 /** A loot card. `use` marks a consumable that works on the map. */
@@ -106,6 +117,11 @@ export interface ExpeditionConfig {
   /** items already in the pack when the squad leaves (from the HQ stash) */
   startPack?: LootItem[];
   gambles: GambleDef[];
+  hazards?: HazardDef[];
+  /** the test threshold at each tier as a low and a high end */
+  hazardNeeds?: Array<[number, number]>;
+  /** HP a Rest room restores across the squad */
+  restHeal?: number;
   /** ladders[gamble id][tier - 1] */
   ladders: Record<number, Ladder[]>;
   /** Market: Eagles for a pack of loot draws, and what a spare item sells for */
@@ -144,13 +160,32 @@ export interface GamblePending {
   owedLoot: number;
 }
 
+export interface HazardPending {
+  kind: 'hazard';
+  room: number;
+  def: HazardDef;
+  /** the number to reach */
+  need: number;
+  /** the squad's best rating in this attribute */
+  rating: number;
+  /** offer: not tried; short: tried and fell short, can push; over: finished */
+  stage: 'offer' | 'short' | 'over';
+  /** the results card drawn and the bonus it gave (low +0, mid +1, high +2) */
+  roll: { card: number; bonus: number } | null;
+  /** rations spent pushing */
+  pushed: number;
+  passed: boolean;
+  outcome: string | null;
+}
+
 export type Pending =
   | { kind: 'fight'; room: number; force: string; step: number; control?: SectionFn }
   | { kind: 'control'; room: number; fn: SectionFn }
   | { kind: 'gate'; room: number }
   | { kind: 'loot'; offers: LootItem[]; from: string; back?: Pending }
   | { kind: 'market'; room: number }
-  | GamblePending;
+  | GamblePending
+  | HazardPending;
 
 export interface ExpStats {
   moves: number;
@@ -182,6 +217,8 @@ export interface Expedition {
   section: number;
   rooms: Room[];
   at: number;
+  /** the room the squad stood in before the last move (a turned-back test steps back here) */
+  prev?: number;
   /** room cards left for this section */
   deck: RoomType[];
   /** the results deck the exit draws come off, top at the end */
@@ -278,7 +315,7 @@ function startSection(x: Expedition): void {
     x.deck.splice(x.deck.length - from, 0, 'Control');
   }
   const origin: Room = {
-    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null, gamble: null, control: null
+    id: 0, x: 0, y: 0, type: 'Gate', links: [], entered: true, cleared: true, entrance: true, force: null, exits: null, gamble: null, control: null, hazard: null
   };
   x.rooms.push(origin);
   x.at = 0;
@@ -301,7 +338,7 @@ function spawn(x: Expedition, room: Room, dx: number, dy: number): boolean {
   const type = x.deck.pop();
   if (type === undefined) return false;
   const next: Room = {
-    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null, gamble: null,
+    id: x.rooms.length, x: room.x + dx, y: room.y + dy, type, links: [], entered: false, cleared: false, entrance: false, force: null, exits: null, gamble: null, hazard: null,
     control: type === 'Control' ? sectionFn(x.cfg, x.section) : null
   };
   x.rooms.push(next);
@@ -403,6 +440,7 @@ export function move(x: Expedition, id: number): MoveResult {
     x.hp = x.hp.map((h) => Math.max(1, h - 1));
     say(x, 'Out of rations: the squad loses 1 HP each');
   }
+  x.prev = x.at;
   x.at = id;
   const room = currentRoom(x);
   if (!room.entered) {
@@ -434,9 +472,6 @@ function resolveRoom(x: Expedition, room: Room): string {
       say(x, `Clinic restores ${n} HP across the squad`);
       return `Clinic: ${n} HP restored`;
     }
-    case 'Rest':
-      room.cleared = true;
-      return 'Rest room: no exhausted cards to restore yet (stub)';
     case 'Scavenge':
       room.cleared = true;
       queueLoot(x, 1, 'Scavenge');
@@ -462,9 +497,27 @@ function resolveRoom(x: Expedition, room: Room): string {
       x.pending = { kind: 'gamble', room: room.id, def, ladder, stage: 'offer', rung: 0, last: null, outcome: null, owedLoot: 0 };
       return def.name;
     }
-    case 'Hazard':
+    case 'Hazard': {
+      const defs = x.cfg.hazards;
+      if (!defs?.length) {
+        room.cleared = true;
+        return 'Hazard: nothing to test here';
+      }
+      if (room.hazard == null) room.hazard = defs[Math.floor(nextRandom(x) * defs.length)]!.id;
+      const def = defs.find((h) => h.id === room.hazard)!;
+      const [lo, hi] = x.cfg.hazardNeeds?.[tierAt(x.cfg, x.section) - 1] ?? [5, 6];
+      const need = lo + (hi > lo && nextRandom(x) < 0.5 ? 1 : 0);
+      x.pending = {
+        kind: 'hazard', room: room.id, def, need, rating: hazardRating(x, def.attr), stage: 'offer', roll: null, pushed: 0, passed: false, outcome: null
+      };
+      return def.name;
+    }
+    case 'Rest': {
       room.cleared = true;
-      return 'Hazard: no attribute test yet, waved through (stub)';
+      const n = healSquad(x, x.cfg.restHeal ?? 2);
+      say(x, `Rest: the squad recovers ${n} HP`);
+      return `Rest: ${n} HP recovered`;
+    }
     case 'Market':
       x.pending = { kind: 'market', room: room.id };
       return 'Market';
@@ -790,4 +843,65 @@ export function retreat(x: Expedition): void {
   x.status = 'retreated';
   x.pending = null;
   say(x, x.groundLost ? 'Retreat: ground is lost' : 'Retreat from the checkpoint');
+}
+
+// ---------- hazards
+
+/** Most rations a test can be pushed with: the hand size, the same limit as exhausting cards. */
+export const MAX_PUSH = 7;
+
+/** The best rating any squad member has in this attribute. */
+export function hazardRating(x: Expedition, attr: Attr): number {
+  return Math.max(...x.cfg.squad.map((u) => u.attrs?.[attr] ?? 2));
+}
+
+const hazardPending = (x: Expedition): HazardPending => {
+  if (x.pending?.kind !== 'hazard') throw new Error('no hazard pending');
+  return x.pending;
+};
+
+function settleHazard(p: HazardPending): void {
+  const total = p.rating + (p.roll?.bonus ?? 0) + p.pushed;
+  if (total >= p.need) {
+    p.stage = 'over';
+    p.passed = true;
+    p.outcome = `${total} against ${p.need}: through. ${p.def.kind === 'guarded' ? 'The room beyond is open.' : 'The way is clear.'}`;
+  } else p.stage = 'short';
+}
+
+/** Try the test: the squad's best rating plus the band of a card off the results deck (low +0, mid +1, high +2). */
+export function testHazard(x: Expedition): void {
+  const p = hazardPending(x);
+  if (p.stage !== 'offer') throw new Error('already tried');
+  const card = drawResult(x);
+  p.roll = { card, bonus: card <= 5 ? 0 : card <= 9 ? 1 : 2 };
+  settleHazard(p);
+}
+
+/** Spend a ration for +1 on a test that fell short. */
+export function pushHazard(x: Expedition): void {
+  const p = hazardPending(x);
+  if (p.stage !== 'short') throw new Error('nothing to push');
+  if (x.rations <= 0) throw new Error('no rations to spend');
+  if (p.pushed >= MAX_PUSH) throw new Error('cannot push further');
+  x.rations--;
+  p.pushed++;
+  settleHazard(p);
+}
+
+export const canPushHazard = (x: Expedition, p: HazardPending): boolean => p.stage === 'short' && x.rations > 0 && p.pushed < MAX_PUSH;
+
+/** Close the hazard. Passed: the room is cleared and a guarded one pays a loot draw. Not passed: the squad steps back. */
+export function closeHazard(x: Expedition): void {
+  const p = hazardPending(x);
+  x.pending = null;
+  if (p.passed) {
+    const room = x.rooms[p.room]!;
+    room.cleared = true;
+    say(x, `${p.def.name}: passed${p.pushed ? `, spending ${p.pushed} ration${p.pushed === 1 ? '' : 's'}` : ''}`);
+    if (p.def.kind === 'guarded') queueLoot(x, 1, p.def.name);
+  } else {
+    x.at = x.prev ?? x.at;
+    say(x, `${p.def.name}: turned back`);
+  }
 }

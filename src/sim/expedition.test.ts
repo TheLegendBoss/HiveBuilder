@@ -3,7 +3,8 @@ import { starterRoomDeck, tscExpedition } from '../data/rooms';
 import {
   MAX_DOORS, bandOf, canAffordGamble, cashOutGamble, closeGamble, commitGamble, createExpedition, currentRoom, declineGamble, doorsFor,
   dropItem, finishFight, healSquad, leaveControl, leaveGate, leaveLoot, move, moves, pushGamble, queueLoot, retreat, takeGate, takeLoot, tierOf,
-  useItem, buyPack, canBuyPack, sellItem, leaveMarket, hasKey, openStorehouse, sectionFn, type Expedition, type GamblePending
+  useItem, buyPack, canBuyPack, sellItem, leaveMarket, hasKey, openStorehouse, sectionFn, closeHazard, pushHazard, testHazard, hazardRating, canPushHazard,
+  MAX_PUSH, type Expedition, type GamblePending, type HazardPending
 } from './expedition';
 
 /** Path of room ids from here to the nearest room matching `want`, over doors. */
@@ -41,7 +42,12 @@ function settle(x: Expedition): void {
     else if (p.kind === 'market') leaveMarket(x);
     else if (p.kind === 'gamble') declineGamble(x);
     else if (p.kind === 'control') leaveControl(x);
-    else leaveGate(x);
+    else if (p.kind === 'hazard') {
+      p.need = 0;
+      if (p.stage === 'offer') testHazard(x);
+      while (x.pending?.kind === 'hazard' && canPushHazard(x, x.pending)) pushHazard(x);
+      closeHazard(x);
+    } else leaveGate(x);
   }
 }
 
@@ -562,5 +568,101 @@ describe('control rooms', () => {
       return;
     }
     throw new Error('never reached the locked door without a key');
+  });
+});
+
+describe('hazard rooms', () => {
+  const atHazard = (seed = 12): Expedition => {
+    const x = fresh(seed);
+    x.at = 0;
+    x.rooms.length = 1;
+    const room = x.rooms[0]!;
+    room.links = [];
+    const h = { ...room, id: 1, x: 1, type: 'Hazard' as const, links: [0], entered: false, cleared: false, entrance: false, hazard: null };
+    room.links.push(1);
+    x.rooms.push(h);
+    move(x, 1);
+    return x;
+  };
+
+  it('opens a test with a rating and a threshold from the tier table', () => {
+    const x = atHazard();
+    const p = x.pending as HazardPending;
+    expect(p.kind).toBe('hazard');
+    expect(p.stage).toBe('offer');
+    expect(p.need).toBeGreaterThanOrEqual(5);
+    expect(p.need).toBeLessThanOrEqual(6);
+    expect(p.rating).toBe(hazardRating(x, p.def.attr));
+  });
+
+  it('adds the results band to the rating and passes when it reaches the number', () => {
+    const x = atHazard();
+    const p = x.pending as HazardPending;
+    p.need = 4;
+    p.rating = 4;
+    testHazard(x);
+    expect(p.passed).toBe(true);
+    closeHazard(x);
+    expect(x.rooms[1]!.cleared).toBe(true);
+    expect(x.pending === null || x.pending.kind === 'loot').toBe(true);
+  });
+
+  it('falls short, then each ration pushes the test by one', () => {
+    const x = atHazard();
+    const p = x.pending as HazardPending;
+    p.need = 20;
+    p.rating = 2;
+    testHazard(x);
+    expect(p.stage).toBe('short');
+    const rations = x.rations;
+    pushHazard(x);
+    expect(x.rations).toBe(rations - 1);
+    expect(p.pushed).toBe(1);
+    p.need = 2 + p.roll!.bonus + 2;
+    pushHazard(x);
+    expect(p.passed).toBe(true);
+  });
+
+  it('cannot push without rations or past the hand limit', () => {
+    const x = atHazard();
+    const p = x.pending as HazardPending;
+    p.need = 99;
+    testHazard(x);
+    x.rations = 0;
+    expect(canPushHazard(x, p)).toBe(false);
+    expect(() => pushHazard(x)).toThrow();
+    x.rations = 50;
+    for (let i = 0; i < MAX_PUSH; i++) pushHazard(x);
+    expect(canPushHazard(x, p)).toBe(false);
+  });
+
+  it('turning back steps the squad out of the room and leaves it to try again', () => {
+    const x = atHazard();
+    closeHazard(x);
+    expect(x.at).toBe(0);
+    expect(x.rooms[1]!.cleared).toBe(false);
+    move(x, 1);
+    expect(x.pending?.kind).toBe('hazard');
+  });
+
+  it('a guarded room pays a loot draw when passed', () => {
+    const x = atHazard();
+    const p = x.pending as HazardPending;
+    p.def = { ...p.def, kind: 'guarded' };
+    p.need = 1;
+    testHazard(x);
+    closeHazard(x);
+    expect(x.pending?.kind).toBe('loot');
+  });
+
+  it('a Rest room heals the squad', () => {
+    const x = fresh(12);
+    x.hp = x.hp.map(() => 1);
+    x.rooms.length = 1;
+    x.rooms[0]!.links = [1];
+    x.rooms.push({ ...x.rooms[0]!, id: 1, x: 1, type: 'Rest', links: [0], entered: false, cleared: false, entrance: false });
+    move(x, 1);
+    expect(x.hp.some((h) => h > 1)).toBe(true);
+    expect(x.rooms[1]!.cleared).toBe(true);
   });
 });
