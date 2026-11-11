@@ -93,6 +93,13 @@ const seedFromUrl = (): number | null => {
   return Number.isInteger(fromUrl) && fromUrl > 0 ? fromUrl : null;
 };
 
+/** Drop the campaign for good (it was lost, or a new one is starting). */
+export function endCampaign(): void {
+  session.campaign = null;
+  session.expedition = null;
+  session.debrief = null;
+}
+
 /** The sandbox campaign, started on first use. */
 export function campaign(): Campaign {
   return session.campaign ?? startCampaign(session.setup);

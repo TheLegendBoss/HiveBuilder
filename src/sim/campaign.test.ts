@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newTscCampaign, launchTsc } from '../data/campaign';
 import {
-  abandon, buyPack, canPromote, claimFoothold, claimProblem, launch, launchProblem, maxPurse, promote, readyCrew, repair, repairCost, returnHome, sellStash, templateOf,
+  abandon, buyPack, canContinue, canPromote, endStats, isLost, claimFoothold, claimProblem, launch, launchProblem, maxPurse, promote, readyCrew, repair, repairCost, returnHome, sellStash, templateOf,
   type Campaign
 } from './campaign';
 import { fightXp, type Expedition } from './expedition';
@@ -364,5 +364,61 @@ describe('footholds', () => {
     c.power = 9;
     go(c, 0);
     expect(claimProblem(c, 'power')).toBe('The crew are out');
+  });
+});
+
+describe('the end of a campaign', () => {
+  const wreck = (c: Campaign): void => {
+    for (const m of c.crew) m.damage = { name: 'Frame Damage', severity: 'major' };
+  };
+
+  it('a fresh campaign goes on, and so does one with a single fit droid', () => {
+    const c = newTscCampaign(2);
+    expect(canContinue(c)).toBe(true);
+    for (const m of c.crew.slice(1)) m.damage = { name: 'Frame Damage', severity: 'major' };
+    expect(isLost(c)).toBe(false);
+  });
+
+  it('is lost when every droid is badly damaged, even with Eagles for the repairs', () => {
+    const c = newTscCampaign(2);
+    wreck(c);
+    c.eagles = 500;
+    expect(canContinue(c)).toBe(false);
+    expect(isLost(c)).toBe(true);
+  });
+
+  it('is not lost while a minor repair can be paid, counting what the stash would sell for', () => {
+    const c = newTscCampaign(2);
+    wreck(c);
+    c.crew[0]!.damage = { name: 'Optics Damaged', severity: 'minor' };
+    c.eagles = 0;
+    expect(canContinue(c)).toBe(false);
+    c.eagles = repairCost(c, c.crew[0]!)!;
+    expect(canContinue(c)).toBe(true);
+    c.eagles = 0;
+    c.stash = Array.from({ length: repairCost(c, c.crew[0]!)! }, () => newTscCampaign(1).stash[0] ?? ({ id: 1, name: 'x', cls: '', text: '', use: null }));
+    expect(canContinue(c)).toBe(true);
+  });
+
+  it('is lost with no crew left, but a run in progress is never judged', () => {
+    const c = newTscCampaign(2);
+    c.crew = [];
+    expect(isLost(c)).toBe(true);
+    const d = newTscCampaign(2);
+    go(d);
+    d.crew = [];
+    expect(isLost(d)).toBe(false);
+  });
+
+  it('counts floors cleared and the best run for the end screen', () => {
+    const c = newTscCampaign(3);
+    const x = go(c);
+    x.status = 'done';
+    x.stats.sections = 3;
+    returnHome(c, x);
+    const e = endStats(c);
+    expect(e.floorsCleared).toBe(1);
+    expect(e.bestSections).toBe(3);
+    expect(e.expeditions).toBe(1);
   });
 });

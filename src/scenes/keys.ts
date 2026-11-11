@@ -8,6 +8,7 @@ export const SceneKeys = {
   Hub: 'Hub',
   Saves: 'Saves',
   Footholds: 'Footholds',
-  Loadout: 'Loadout'
+  Loadout: 'Loadout',
+  EndScreen: 'EndScreen'
 } as const;
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];

@@ -102,6 +102,10 @@ export interface Campaign {
   aftermath: AftermathCard[];
   expeditions: number;
   wipes: number;
+  /** floors finished (the last section's gate taken) */
+  floorsCleared?: number;
+  /** most sections cleared in a single run */
+  bestSections?: number;
   run: Run | null;
   nextId: number;
 }
@@ -477,6 +481,48 @@ export function returnHome(c: Campaign, x: Expedition): Debrief {
     }
   });
 
+  if (x.status === 'done') c.floorsCleared = (c.floorsCleared ?? 0) + 1;
+  c.bestSections = Math.max(c.bestSections ?? 0, x.stats.sections);
   c.run = null;
   return { status: x.status, lines };
+}
+
+// ---------- the end of a campaign
+
+/** Eagles the gang could find if it sold every spare item. */
+export const fundsOf = (c: Campaign): number => c.eagles + c.stash.length * c.cfg.sellValue;
+
+/**
+ * A campaign can go on while a crew member is fit, or a damaged one could be put right now: a minor repair is instant,
+ * a major one only finishes after another run, which needs someone fit to go. Anything else is a soft-lock, so it is the end.
+ */
+export function canContinue(c: Campaign): boolean {
+  if (readyCrew(c).length > 0) return true;
+  return c.crew.some((m) => m.damage?.severity === 'minor' && !m.repairing && (repairCost(c, m) ?? Infinity) <= fundsOf(c));
+}
+
+export const isLost = (c: Campaign): boolean => !c.run && !canContinue(c);
+
+export interface EndStats {
+  expeditions: number;
+  floorsCleared: number;
+  bestSections: number;
+  wipes: number;
+  lost: string[];
+  eagles: number;
+  power: number;
+  topTier: number;
+}
+
+export function endStats(c: Campaign): EndStats {
+  return {
+    expeditions: c.expeditions,
+    floorsCleared: c.floorsCleared ?? 0,
+    bestSections: c.bestSections ?? 0,
+    wipes: c.wipes,
+    lost: [...c.fallen],
+    eagles: c.eagles,
+    power: c.power,
+    topTier: c.crew.reduce((n, m) => Math.max(n, m.tier), 1)
+  };
 }

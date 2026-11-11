@@ -4,7 +4,7 @@ import { autosave, campaign, launchExpedition, session } from '../core/session';
 import { pageCount, rarityOf, stashView, tabCounts, type StashTab } from '../core/stash';
 import { mix, palette, rarityInfo } from '../data/palette';
 import {
-  buyPack, canBuyPack, canPromote, canRepair, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
+  buyPack, canBuyPack, canPromote, canRepair, isLost, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
   templateOf
 } from '../sim/campaign';
 import { Button } from '../ui/Button';
@@ -47,6 +47,11 @@ export class Hub extends ScreenScene {
 
   protected override onCreate(): void {
     this.starting = false;
+    if (!session.debrief && isLost(this.c)) {
+      // loaded or resumed into a campaign that cannot go on
+      this.scene.start(SceneKeys.EndScreen, { mode: 'lost' });
+      return;
+    }
     this.sellMode = false;
     this.cursor = 0;
     this.tab = 'all';
@@ -490,8 +495,11 @@ export class Hub extends ScreenScene {
       confirmLabel: 'Continue',
       signal: this.signal,
       onConfirm: () => {
+        const status = d.status;
         session.debrief = null;
         this.modal = null;
+        if (isLost(this.c)) return this.scene.start(SceneKeys.EndScreen, { mode: 'lost' });
+        if (status === 'done') return this.scene.start(SceneKeys.EndScreen, { mode: 'won' });
         this.note = 'Spend, promote, repair, then pick what to carry.';
         this.rebuild();
       }
