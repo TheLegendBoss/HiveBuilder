@@ -103,6 +103,8 @@ export interface ExpeditionConfig {
   forceIds: string[];
   /** sections in this floor */
   sections: number;
+  /** the section the squad starts in: the campaign's banked depth (default 0) */
+  startSection?: number;
   /** the depth dial: the tier of section 0 (default 1) and sections per tier step (default 2) */
   startTier?: number;
   ramp?: number;
@@ -122,6 +124,8 @@ export interface ExpeditionConfig {
   hazardNeeds?: Array<[number, number]>;
   /** HP a Rest room restores across the squad */
   restHeal?: number;
+  /** Eagles a room earns at each tier (design table); fight rewards grow with it, tier 1 being the printed number */
+  income?: number[];
   /** ladders[gamble id][tier - 1] */
   ladders: Record<number, Ladder[]>;
   /** Market: Eagles for a pack of loot draws, and what a spare item sells for */
@@ -240,6 +244,13 @@ export interface Expedition {
 /** XP each member earns for a won fight: threat 1 (every force so far is a patrol) times the fight's tier. Working. */
 export const fightXp = (step: number): number => step + 1;
 
+/** Eagles for a won fight: the printed reward at tier 1, scaled by the design's room income per tier below that. */
+export function fightEagles(cfg: Pick<ExpeditionConfig, 'income'>, step: number, base: number): number {
+  const inc = cfg.income;
+  if (!inc || !inc[0]) return base;
+  return Math.max(base, Math.round((base * (inc[Math.min(step, inc.length - 1)] ?? inc[0])) / inc[0]));
+}
+
 export const MAX_DOORS = 3;
 const DIRS: Array<[number, number]> = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 /** chance a door aimed at an existing, unconnected room joins up with it */
@@ -276,7 +287,7 @@ export function createExpedition(cfg: ExpeditionConfig): Expedition {
     xpEach: 0,
     downs: cfg.squad.map(() => 0),
     lootDeck: [],
-    section: 0,
+    section: Math.min(Math.max(0, cfg.startSection ?? 0), Math.max(0, cfg.sections - 1)),
     rooms: [],
     at: 0,
     deck: [],
@@ -546,10 +557,11 @@ export function finishFight(x: Expedition, won: boolean, hpAfter: number[], rewa
   x.hp = hpAfter.map((h, i) => Math.max(1, Math.min(x.cfg.squad[i]!.hp, h)));
   const room = x.rooms[p.room]!;
   room.cleared = true;
-  x.stats.eagles += reward.eagles;
-  x.eagles += reward.eagles;
+  const eagles = fightEagles(x.cfg, p.step, reward.eagles);
+  x.stats.eagles += eagles;
+  x.eagles += eagles;
   x.xpEach += fightXp(p.step);
-  say(x, `Fight won: ${reward.eagles} Eagles, ${fightXp(p.step)} XP each`);
+  say(x, `Fight won: ${eagles} Eagles, ${fightXp(p.step)} XP each`);
   const def = p.control ? controlOf(x, p.control) : undefined;
   if (def) {
     capture(x, def, p.room, reward.loot);

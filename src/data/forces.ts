@@ -207,11 +207,14 @@ export const bosses: Force[] = [runawayDynamo, foundryForeman, theWarden, broodQ
  * Only the Straggler band is tiered in the CSV; the sandbox scales all of them so the ramp has teeth
  * (working rule, see decisions.md).
  */
+/** Patrol growth per tier step: +1 HP, and +1 damage every `dmgEvery` steps (1 is the CSV's +1 and +1). Working. */
+export const growth = { dmgEvery: 2 };
+
 export function scaleForce(f: Force, step: number): Force {
   if (step <= 0) return f;
   // a boss grows +2 HP and +1 damage per two tier steps; patrols grow +1 and +1 per step
   const hpUp = f.boss ? 2 * Math.floor(step / 2) : step;
-  const dmgUp = f.boss ? Math.floor(step / 2) : step;
+  const dmgUp = f.boss ? Math.floor(step / 2) : Math.floor((step + growth.dmgEvery - 1) / growth.dmgEvery);
   const t = (u: UnitTemplate): UnitTemplate => ({ ...u, hp: u.hp + hpUp });
   const actions: Record<string, EnemyActionDef> = {};
   for (const [k, a] of Object.entries(f.actions)) actions[k] = a.kind === 'attack' && a.dmg > 0 ? { ...a, dmg: a.dmg + dmgUp } : a;

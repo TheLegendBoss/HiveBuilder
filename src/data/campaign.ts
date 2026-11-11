@@ -23,7 +23,7 @@ export const campaignDefaults = {
   startEagles: 30,
   promoCosts: [20, 40, 80, 160],
   maxTier: 5,
-  hpPerTier: 1,
+  hpPerTier: 2,
   minorRepair: 1,
   majorRepair: 3,
   floorBonusXp: 5,

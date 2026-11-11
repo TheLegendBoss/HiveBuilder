@@ -25,7 +25,7 @@ export const setupLimits = {
 
 export type SetupDial = keyof typeof setupLimits;
 
-export const defaultSetup: SandboxSetup = { faction: 'tsc', startTier: 1, ramp: 2, sections: 3, startEagles: 30, startItems: 0 };
+export const defaultSetup: SandboxSetup = { faction: 'tsc', startTier: 1, ramp: 2, sections: 14, startEagles: 30, startItems: 0 };
 
 /** Pull every dial into range. Anything that is not a number falls back to the default. */
 export function clampSetup(raw: Partial<SandboxSetup> | null | undefined): SandboxSetup {

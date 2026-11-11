@@ -744,7 +744,7 @@ export class ExpeditionMap extends ScreenScene {
       x.status === 'wiped'
         ? `Two lanes fell and the downed are left behind. The purse (${x.eagles} Eagles) and the pack (${x.pack.length} items) are lost.`
         : `Coming home with ${x.eagles} Eagles and ${x.pack.length} items. ${x.xpEach} XP each${x.status === 'done' ? ', plus 5 for the floor' : ''}.`,
-      x.status === 'retreated' && x.groundLost ? 'Ground lost on the floor (not wired yet).' : x.status === 'done' ? 'The squad heals fully at home.' : '',
+      x.status === 'retreated' && x.groundLost ? 'Ground lost: the last section cleared has to be cleared again.' : x.status === 'done' ? 'The squad heals fully at home.' : '',
       x.captures.length && x.status !== 'wiped'
         ? `Control rooms taken: ${x.captures.map((c) => controlRooms.find((q) => q.fn === c.fn)!.room).join(', ')}. Claim them at the HQ with power.`
         : x.captures.length

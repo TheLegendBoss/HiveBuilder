@@ -102,6 +102,8 @@ export interface Campaign {
   aftermath: AftermathCard[];
   expeditions: number;
   wipes: number;
+  /** sections of the floor banked by earlier trips: the next expedition starts here */
+  depth?: number;
   /** floors finished (the last section's gate taken) */
   floorsCleared?: number;
   /** most sections cleared in a single run */
@@ -311,7 +313,12 @@ export interface Loadout {
   purse: number;
   /** stash indexes going in the pack */
   pack: number[];
+  /** the section to start in: 0 up to the banked depth (default: the banked depth) */
+  startSection?: number;
 }
+
+/** The deepest section this campaign can start in. */
+export const frontier = (c: Campaign, sections: number): number => Math.max(0, Math.min(c.depth ?? 0, sections - 1));
 
 /** Why the squad cannot leave, or null when it can. */
 export function launchProblem(c: Campaign, l: Loadout): string | null {
@@ -319,6 +326,7 @@ export function launchProblem(c: Campaign, l: Loadout): string | null {
   if (readyCrew(c).length === 0) return 'Nobody is fit to go';
   if (l.purse < 0 || l.purse > c.eagles) return 'Not enough Eagles for that purse';
   if (l.pack.length > c.cfg.packSize) return 'The pack is full';
+  if (l.startSection !== undefined && (l.startSection < 0 || l.startSection > (c.depth ?? 0))) return 'That section is not banked yet';
   if (new Set(l.pack).size !== l.pack.length || l.pack.some((i) => !c.stash[i])) return 'Bad pack choice';
   return null;
 }
@@ -481,7 +489,19 @@ export function returnHome(c: Campaign, x: Expedition): Debrief {
     }
   });
 
-  if (x.status === 'done') c.floorsCleared = (c.floorsCleared ?? 0) + 1;
+  // Banked depth: sections cleared are kept when the squad comes home. A retreat away from a checkpoint loses the last one.
+  const base = x.cfg.startSection ?? 0;
+  if (x.status === 'done') {
+    c.floorsCleared = (c.floorsCleared ?? 0) + 1;
+    c.depth = 0;
+  } else if (x.status === 'retreated') {
+    const kept = Math.max(0, x.stats.sections - (x.groundLost ? 1 : 0));
+    if (kept > 0) {
+      c.depth = Math.max(c.depth ?? 0, base + kept);
+      lines.push(`The next trip starts in section ${c.depth + 1} of ${x.cfg.sections}.`);
+    }
+    if (x.groundLost && x.stats.sections > 0) lines.push('Ground lost: the last section cleared has to be cleared again.');
+  }
   c.bestSections = Math.max(c.bestSections ?? 0, x.stats.sections);
   c.run = null;
   return { status: x.status, lines };

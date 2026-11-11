@@ -78,7 +78,7 @@ describe('tier-1 forces', () => {
   it('scales HP and damage per tier step', () => {
     const s = tscVsForce(stragglerBand, 2);
     expect(s.enemyStart[0]!.hp).toBe(6);
-    expect(s.enemyActions['rifle']!.dmg).toBe(4);
+    expect(s.enemyActions['rifle']!.dmg).toBe(3); // +1 damage every second step
     expect(s.enemyActions['cover']!.soak).toBe(1);
   });
 

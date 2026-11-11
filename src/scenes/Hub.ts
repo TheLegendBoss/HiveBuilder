@@ -3,8 +3,10 @@ import { ownedFlags, ownedNames } from '../core/packRip';
 import { autosave, campaign, launchExpedition, session } from '../core/session';
 import { pageCount, rarityOf, stashView, tabCounts, type StashTab } from '../core/stash';
 import { mix, palette, rarityInfo } from '../data/palette';
+import { expeditionDefaults } from '../data/rooms';
+import { tierAt } from '../sim/expedition';
 import {
-  buyPack, canBuyPack, canPromote, canRepair, isLost, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
+  buyPack, canBuyPack, canPromote, canRepair, frontier, isLost, launchProblem, maxPurse, perkSlots, promoCost, promote, readyCrew, repair, repairCost, sellStash,
   templateOf
 } from '../sim/campaign';
 import { Button } from '../ui/Button';
@@ -36,6 +38,8 @@ export class Hub extends ScreenScene {
   private cursor = 0;
   private tab: StashTab = 'all';
   private starting = false;
+  /** the section the next trip starts in (0 up to the banked depth) */
+  private startAt = 0;
 
   constructor() {
     super(SceneKeys.Hub);
@@ -58,6 +62,7 @@ export class Hub extends ScreenScene {
     this.note = session.debrief ? '' : 'Spend, promote, repair, then pick what to carry.';
     this.pack = new Set();
     this.purse = Math.min(10, maxPurse(this.c));
+    this.startAt = frontier(this.c, session.setup.sections);
     this.input.keyboard?.on('keydown', this.onKey, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onKey, this));
   }
@@ -150,8 +155,13 @@ export class Hub extends ScreenScene {
     this.rebuild();
   }
 
+  private stepStart(dir: number): void {
+    this.startAt = Math.max(0, Math.min(frontier(this.c, session.setup.sections), this.startAt + dir));
+    this.rebuild();
+  }
+
   private loadout() {
-    return { purse: this.purse, pack: [...this.pack].sort((a, b) => a - b) };
+    return { purse: this.purse, pack: [...this.pack].sort((a, b) => a - b), startSection: this.startAt };
   }
 
   private start(): void {
@@ -210,6 +220,8 @@ export class Hub extends ScreenScene {
     }
     if (lower === 'a') return this.autoPack();
     if (lower === 'c') return this.clearPack();
+    if (k === '[') return this.stepStart(-1);
+    if (k === ']') return this.stepStart(1);
     if (k === '-') return this.stepPurse(-1);
     if (k === '+' || k === '=') return this.stepPurse(1);
     if (k === 'PageDown') return this.stepPage(1);
@@ -255,7 +267,7 @@ export class Hub extends ScreenScene {
     const title = stencilText(this, 40, 10, 'Tenebrae HQ', 44, palette.text, { spacing: 0.05, fixed: true });
     root.add(title);
     root.add(
-      bodyText(this, 44, title.y + title.height + 2, `Sandbox campaign · expedition ${c.expeditions + 1}${c.fallen.length ? ` · ${c.fallen.length} lost` : ''}`, 16, palette.textMuted)
+      bodyText(this, 44, title.y + title.height + 2, `Sandbox campaign · expedition ${c.expeditions + 1} · frontier section ${Math.min(c.depth ?? 0, session.setup.sections - 1) + 1} of ${session.setup.sections}${c.fallen.length ? ` · ${c.fallen.length} lost` : ''}`, 16, palette.textMuted)
     );
     const counter = (x: number, label: string, value: string, hot = false): void => {
       root.add(bodyText(this, x, 14, label, 14, palette.textMuted, { spacing: 0.14 }));
@@ -477,7 +489,22 @@ export class Hub extends ScreenScene {
     drawLamp(lamp, rx + 10, LOAD.y + 160, 8, problem ? palette.danger : signal);
     root.add(lamp);
     root.add(
-      bodyText(this, rx + 32, LOAD.y + 160, problem ?? `${fit} CREW GO · RATIONS 24 · SECTIONS 3`, 15, problem ? palette.danger : palette.text, { originY: 0.5, wrap: 390 })
+      bodyText(this, rx + 32, LOAD.y + 160, problem ?? `${fit} CREW GO · RATIONS ${expeditionDefaults.rations}`, 15, problem ? palette.danger : palette.text, { originY: 0.5, wrap: 390 })
+    );
+    const total = session.setup.sections;
+    const top = frontier(c, total);
+    root.add(bodyText(this, rx, LOAD.y + 196, 'START IN', 14, palette.textMuted, { spacing: 0.14 }));
+    root.add(
+      bodyText(
+        this, rx, LOAD.y + 216, `SECTION ${this.startAt + 1} OF ${total} · TIER ${tierAt({ startTier: session.setup.startTier, ramp: session.setup.ramp }, this.startAt)}${this.startAt === top && top > 0 ? ' · FRONTIER' : ''}`,
+        20, palette.text, { weight: '700' }
+      )
+    );
+    root.add(
+      new Button(this, { x: rx + 300, y: LOAD.y + 190, w: 56, h: 56, label: '<', size: 26, state: this.startAt > 0 ? 'live' : 'offline', signal, align: 'center', onClick: () => this.stepStart(-1) })
+    );
+    root.add(
+      new Button(this, { x: rx + 368, y: LOAD.y + 190, w: 56, h: 56, label: '>', size: 26, state: this.startAt < top ? 'live' : 'offline', signal, align: 'center', onClick: () => this.stepStart(1) })
     );
     root.add(
       new Button(this, {

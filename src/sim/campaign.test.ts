@@ -164,7 +164,7 @@ describe('promotion', () => {
     expect(m.tier).toBe(2);
     expect(m.xp).toBe(5);
     expect(c.eagles).toBe(5);
-    expect(templateOf(c, m).hp).toBe(hp + 1);
+    expect(templateOf(c, m).hp).toBe(hp + c.cfg.hpPerTier);
     expect(() => promote(c, m)).toThrow();
   });
 
@@ -187,8 +187,8 @@ describe('promotion', () => {
     c.eagles = 40;
     promote(c, m);
     const x = go(c, 0);
-    expect(x.cfg.squad[3]!.hp).toBe(m.base.hp + 1);
-    expect(x.hp[3]).toBe(m.base.hp + 1);
+    expect(x.cfg.squad[3]!.hp).toBe(m.base.hp + c.cfg.hpPerTier);
+    expect(x.hp[3]).toBe(m.base.hp + c.cfg.hpPerTier);
   });
 });
 
@@ -420,5 +420,51 @@ describe('the end of a campaign', () => {
     expect(e.floorsCleared).toBe(1);
     expect(e.bestSections).toBe(3);
     expect(e.expeditions).toBe(1);
+  });
+});
+
+describe('banked depth', () => {
+  const trip = (c: Campaign, sections: number, atCheckpoint: boolean, status: Expedition['status'] = 'retreated'): Expedition => {
+    const x = launchTsc(c, { purse: 0, pack: [] }, 5, { sections: 14, startSection: c.depth ?? 0 });
+    x.stats.sections = sections;
+    x.groundLost = !atCheckpoint;
+    x.status = status;
+    return x;
+  };
+
+  it('a retreat from a checkpoint keeps every section cleared, and the next trip starts there', () => {
+    const c = newTscCampaign(3);
+    returnHome(c, trip(c, 2, true));
+    expect(c.depth).toBe(2);
+    const next = launchTsc(c, { purse: 0, pack: [] }, 6, { sections: 14, startSection: c.depth });
+    expect(next.section).toBe(2);
+    next.stats.sections = 1;
+    next.groundLost = false;
+    next.status = 'retreated';
+    returnHome(c, next);
+    expect(c.depth).toBe(3);
+  });
+
+  it('a retreat away from a checkpoint loses the last section cleared', () => {
+    const c = newTscCampaign(3);
+    returnHome(c, trip(c, 3, false));
+    expect(c.depth).toBe(2);
+  });
+
+  it('a wipe keeps nothing, and a finished floor starts over', () => {
+    const c = newTscCampaign(3);
+    c.depth = 4;
+    returnHome(c, trip(c, 2, true, 'wiped'));
+    expect(c.depth).toBe(4);
+    returnHome(c, trip(c, 10, true, 'done'));
+    expect(c.depth).toBe(0);
+    expect(c.floorsCleared).toBe(1);
+  });
+
+  it('starts in the banked section, at that section tier', () => {
+    const c = newTscCampaign(3);
+    const x = launchTsc(c, { purse: 0, pack: [] }, 7, { sections: 14, startSection: 6 });
+    expect(x.section).toBe(6);
+    expect(x.log.join(' ')).toMatch(/Section 7 of 14, tier 4/);
   });
 });

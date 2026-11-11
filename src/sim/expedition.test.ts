@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { starterRoomDeck, tscExpedition } from '../data/rooms';
 import {
+  fightEagles,
   MAX_DOORS, bandOf, canAffordGamble, cashOutGamble, closeGamble, commitGamble, createExpedition, currentRoom, declineGamble, doorsFor,
   dropItem, finishFight, healSquad, leaveControl, leaveGate, leaveLoot, move, moves, pushGamble, queueLoot, retreat, takeGate, takeLoot, tierOf,
   useItem, buyPack, canBuyPack, sellItem, leaveMarket, hasKey, openStorehouse, sectionFn, closeHazard, pushHazard, testHazard, hazardRating, canPushHazard,
@@ -664,5 +665,15 @@ describe('hazard rooms', () => {
     move(x, 1);
     expect(x.hp.some((h) => h > 1)).toBe(true);
     expect(x.rooms[1]!.cleared).toBe(true);
+  });
+});
+
+describe('fight Eagles by tier', () => {
+  it('pays the printed reward at tier 1 and grows with the room income table', () => {
+    const cfg = { income: [10, 16, 21, 27, 33, 39, 44, 50] };
+    expect(fightEagles(cfg, 0, 2)).toBe(2);
+    expect(fightEagles(cfg, 2, 2)).toBe(4);
+    expect(fightEagles(cfg, 6, 2)).toBe(9);
+    expect(fightEagles({}, 5, 2)).toBe(2);
   });
 });

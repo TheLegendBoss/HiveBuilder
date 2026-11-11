@@ -3,7 +3,7 @@ import type { Settings } from '../data/settings';
 import { launchTsc, newSandboxCampaign, reattachConfig } from '../data/campaign';
 import { defaultSetup, type SandboxSetup } from '../data/sandbox';
 import { tscExpedition } from '../data/rooms';
-import type { Campaign, Debrief, Loadout } from '../sim/campaign';
+import { frontier, type Campaign, type Debrief, type Loadout } from '../sim/campaign';
 import { createExpedition, type Expedition } from '../sim/expedition';
 import { loadSettings, saveSettings } from './settingsStore';
 import { SAVE_VERSION, readSlot, writeSlot, type SaveGame, type SlotId } from './saves';
@@ -109,6 +109,7 @@ export function campaign(): Campaign {
 export function launchExpedition(loadout: Loadout): Expedition {
   const seed = seedFromUrl() ?? Math.floor(Math.random() * 1e9);
   const { startTier, ramp, sections } = session.setup;
-  session.expedition = launchTsc(campaign(), loadout, seed, { startTier, ramp, sections });
+  const c = campaign();
+  session.expedition = launchTsc(c, loadout, seed, { startTier, ramp, sections, startSection: Math.min(loadout.startSection ?? frontier(c, sections), sections - 1) });
   return session.expedition;
 }

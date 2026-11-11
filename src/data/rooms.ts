@@ -1,4 +1,4 @@
-import { hazardDefs, hazardNeeds } from './hazards';
+import { hazardDefs, hazardNeeds, roomIncome } from './hazards';
 import roomDeckCsv from '../../data/starter_room_deck.csv?raw';
 import { parseCsv } from '../sim/csv';
 import { ROOM_TYPES, finishFight, type Expedition, type ExpeditionConfig, type RoomType } from '../sim/expedition';
@@ -33,6 +33,7 @@ export function tscExpedition(seed: number, over: Partial<ExpeditionConfig> = {}
     gambles: gambleDefs,
     hazards: hazardDefs,
     hazardNeeds,
+    income: roomIncome,
     ladders: gambleLadders,
     ...expeditionDefaults,
     ...over

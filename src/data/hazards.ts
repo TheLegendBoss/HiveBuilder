@@ -17,3 +17,6 @@ export const hazardNeeds: Array<[number, number]> = parseCsv(tiersCsv).map((r) =
   const [lo, hi] = r.hazard_threshold!.split(' to ').map(Number);
   return [lo!, hi!] as [number, number];
 });
+
+/** Room income in Eagles at each tier, from the same design table. */
+export const roomIncome: number[] = parseCsv(tiersCsv).map((r) => Number(r.room_income_eagles));
