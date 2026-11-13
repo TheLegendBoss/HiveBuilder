@@ -10,7 +10,7 @@ import type { Action, Target } from '../sim/types';
 export const gearKey = (a: Action): string => `${a.gear ?? ''}|${a.label}`;
 
 export interface Sel {
-  item: { kind: 'card'; name: string } | { kind: 'gear'; label: string } | { kind: 'deploy'; unit: number } | { kind: 'cycle' };
+  item: { kind: 'card'; name: string } | { kind: 'gear'; label: string } | { kind: 'deploy'; unit: number } | { kind: 'cycle' } | { kind: 'putout' };
   actor?: number;
   targets: Target[];
   variant?: string;
@@ -31,6 +31,7 @@ export function matches(a: Action, sel: Sel): boolean {
   if (it.kind === 'gear' && !(a.kind === 'basic' && (a.label === it.label || gearKey(a) === it.label))) return false;
   if (it.kind === 'deploy' && !(a.kind === 'deploy' && a.unit === it.unit)) return false;
   if (it.kind === 'cycle' && a.kind !== 'cycle') return false;
+  if (it.kind === 'putout' && a.kind !== 'putout') return false;
   if (sel.actor !== undefined && a.actor !== sel.actor) return false;
   if (sel.lane !== undefined && a.lane !== sel.lane) return false;
   if (sel.variant !== undefined && a.variant !== sel.variant) return false;

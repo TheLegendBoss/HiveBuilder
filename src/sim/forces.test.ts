@@ -1,27 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { forces, ratSwarm, stragglerBand, tollGang } from '../data/forces';
 import { tscVsForce } from '../data/scenarios';
-import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
 import { enemyAct, enemyPlan } from './enemy';
 import { bodiesInLane, createGame, inLane, unitById } from './state';
-import { beginTurn } from './turn';
+import { startFight } from './testkit';
 
-/** Play the player's setup rounds by hand and let the enemy deploy. */
+/** Deploy the squad's three, ready up, and let the enemy's opening turn play out. */
 function setup(g: ReturnType<typeof createGame>): void {
-  for (let lane = 0; lane < 3; lane++) {
-    beginTurn(g);
-    const a = listActions(g).find((x) => x.kind === 'deploy' && x.lane === lane)!;
-    perform(g, a);
-    enemyAct(g);
-  }
+  startFight(g);
 }
 
 describe('tier-1 forces', () => {
   it('deploys the CSV layout during setup', () => {
     const g = createGame(tscVsForce(ratSwarm), 3);
     setup(g);
-    expect(inLane(g, 'E', 0)).toHaveLength(2);
+    expect(inLane(g, 'E', 0)).toHaveLength(3); // the CSV pair plus the pooled-action extra body
     expect(inLane(g, 'E', 1).map((u) => u.name)).toEqual(['Brood Rat']);
     expect(inLane(g, 'E', 2)).toHaveLength(2);
     expect(g.enemyDeck).toHaveLength(2);
@@ -78,7 +72,7 @@ describe('tier-1 forces', () => {
   it('scales HP and damage per tier step', () => {
     const s = tscVsForce(stragglerBand, 2);
     expect(s.enemyStart[0]!.hp).toBe(6);
-    expect(s.enemyActions['rifle']!.dmg).toBe(3); // +1 damage every second step
+    expect(s.enemyActions['rifle']!.dmg).toBe(5); // +1 damage every second step (2 -> 3), then x1.5 for the pooled-action tuning
     expect(s.enemyActions['cover']!.soak).toBe(1);
   });
 

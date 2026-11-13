@@ -210,7 +210,35 @@ export const bosses: Force[] = [runawayDynamo, foundryForeman, theWarden, broodQ
 /** Patrol growth per tier step: +1 HP, and +1 damage every `dmgEvery` steps (1 is the CSV's +1 and +1). Working. */
 export const growth = { dmgEvery: 2 };
 
+/**
+ * Pooled-action tuning. The squad gets one action per body, so a patrol brings more bodies and hits harder, rather than
+ * just soaking more HP (which only makes fights longer). `extraBodies` copies of the weakest starting unit land in the
+ * outer lanes first; `dmgMult` and `hpMult` apply to every force after tier growth. Patrols only, bosses stand alone.
+ */
+export const pooled = { extraBodies: 1, dmgMult: 1.5, hpMult: 1 };
+
+const EXTRA_LANES = [0, 2, 1, 0, 2, 1];
+
 export function scaleForce(f: Force, step: number): Force {
+  const grown = growForce(f, step);
+  if (f.boss) return grown;
+  const hp = (u: UnitTemplate): UnitTemplate => (pooled.hpMult === 1 ? u : { ...u, hp: Math.max(1, Math.round(u.hp * pooled.hpMult)) });
+  const actions: Record<string, EnemyActionDef> = {};
+  for (const [k, a] of Object.entries(grown.actions)) {
+    actions[k] = a.kind === 'attack' && a.dmg > 0 && pooled.dmgMult !== 1 ? { ...a, dmg: Math.max(1, Math.round(a.dmg * pooled.dmgMult)) } : a;
+  }
+  const weakest = hp(grown.start[0]!);
+  const extra = Array.from({ length: pooled.extraBodies }, (_, i) => ({ unit: { ...weakest }, lane: EXTRA_LANES[i % EXTRA_LANES.length]! }));
+  return {
+    ...grown,
+    start: grown.start.map(hp) as Force['start'],
+    also: [...grown.also.map((x) => ({ ...x, unit: hp(x.unit) })), ...extra],
+    deck: grown.deck.map(hp),
+    actions
+  };
+}
+
+function growForce(f: Force, step: number): Force {
   if (step <= 0) return f;
   // a boss grows +2 HP and +1 damage per two tier steps; patrols grow +1 and +1 per step
   const hpUp = f.boss ? 2 * Math.floor(step / 2) : step;

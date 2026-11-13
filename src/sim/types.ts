@@ -78,8 +78,6 @@ export interface Unit {
   suppressed: number;
   /** rounds left on fire; the unit takes 1 damage at the end of each round (working: stands in for the burn cards) */
   burning: number;
-  /** squad units only: rounds a stun outlasts the round it landed in */
-  stunWait: number;
   /** enemy only: the action it is winding up, if any */
   charging: string | null;
   counter: boolean;
@@ -114,6 +112,12 @@ export type Ev =
   | { t: 'discard'; names: string[] }
   | { t: 'results'; cards: number[] }
   | { t: 'initiative'; squad: InitiativeDraw; enemy: InitiativeDraw; first: Side }
+  /** the deployment draw: the winner deploys second, so it sees the other side's lineup */
+  | { t: 'deployDraw'; squad: InitiativeDraw; enemy: InitiativeDraw; second: Side }
+  /** a new round opens (its initiative event follows) */
+  | { t: 'round'; round: number }
+  /** a side's turn opens with this many actions */
+  | { t: 'turn'; side: Side; actions: number }
   /** an attack leaving `from` (a unit, or null for no one in particular) for `to`; the damage events follow it */
   | { t: 'strike'; from: number | null; to: Target; melee: boolean; dmg: number }
   | { t: 'intentSkip'; unit: number }
@@ -149,10 +153,9 @@ export interface Scenario {
   linked?: Array<{ leader: string; followers: string }>;
   /** waiting units, drawn from the front */
   enemyDeck: UnitTemplate[];
-  /** extra units that land in a lane in the same setup round as that lane's first unit */
+  /** extra units that deploy with the rest of the enemy force, in the given lane */
   enemyAlso?: Array<{ unit: UnitTemplate; lane: number }>;
   enemyActions: Record<string, EnemyActionDef>;
-  setupRounds: number;
   /** most live-or-downed bodies per lane per side; null means no cap */
   laneCap: number | null;
   /** most cards a discard-and-draw can throw away */
@@ -186,15 +189,26 @@ export interface Game {
   result: 'win' | 'loss' | null;
   /** how a fight ended: lanes taken, the board cleared, a boss killed, or a hold-out survived */
   how: 'lanes' | 'cleared' | 'boss' | 'held' | null;
-  /** which side takes the first action of each round (the initiative winner; the squad until a roll says otherwise) */
+  /** which side takes the first turn of this round (the initiative winner, drawn every round) */
   first: Side;
+  /** deployment comes first (any lineup, no cap, then no more deploying), then the fight */
+  phase: 'deploy' | 'fight';
+  /** which side deploys first (the loser of the deployment draw) */
+  deployFirst: Side;
+  /** the enemy force is on the board */
+  enemyDeployed: boolean;
+  /** actions the squad has left this turn (one per body that can act when the turn opened) */
+  pool: number;
+  /** actions the enemy has left this turn */
+  epool: number;
   nextId: number;
   nextIid: number;
   arrivals: number;
   stats: Record<string, number>;
 }
 
-export type ActionKind = 'play' | 'basic' | 'deploy' | 'cycle';
+/** deploy and ready belong to the deployment phase; pass ends the turn early; putout clears Burning */
+export type ActionKind = 'play' | 'basic' | 'deploy' | 'cycle' | 'ready' | 'pass' | 'putout';
 
 /** A fully specified thing the player can do right now. */
 export interface Action {

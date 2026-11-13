@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
-import { enemyAct, enemyPlan } from './enemy';
 import { rollInitiative } from './initiative';
-import { checkResult, createGame, enemyHasForces, inLane } from './state';
-import { beginEnemyTurn, beginTurn } from './turn';
+import { checkResult, createGame, enemyHasForces } from './state';
+import { openFight } from './turn';
+import { endTurn, runEnemy, startFight } from './testkit';
 import type { Ev, Game } from './types';
 
 /** Stack the top of the results deck: the squad draws `squad`, then the enemy draws `enemy`. */
@@ -13,13 +13,6 @@ function stacked(seed: number, squad: number, enemy: number): Game {
   const g = createGame(tscVsScavvers, seed);
   g.results.push(enemy, squad);
   return g;
-}
-
-const lanes: Record<string, number> = { 'Line A': 0, Vanguard: 1, 'Line B': 2 };
-
-function deployNext(g: Game): void {
-  const a = listActions(g).find((x) => x.kind === 'deploy' && lanes[g.units.find((u) => u.id === x.unit)!.name] === x.lane && g.units.find((u) => u.id === x.unit)!.lane === null)!;
-  perform(g, a);
 }
 
 describe('initiative', () => {
@@ -37,32 +30,38 @@ describe('initiative', () => {
     }
   });
 
-  it('with the enemy first, the enemy deploys first and the squad action closes the round', () => {
-    const g = stacked(3, 2, 11);
-    rollInitiative(g);
+  it('with the enemy first, its whole turn plays before the squad acts, and the squad closes the round', () => {
+    const g = createGame(tscVsScavvers, 3);
+    openFight(g);
+    for (const name of ['Line A', 'Vanguard', 'Line B']) {
+      const u = g.units.find((x) => x.name === name && x.side === 'P')!;
+      perform(g, listActions(g).find((a) => a.kind === 'deploy' && a.unit === u.id && a.lane === g.units.filter((x) => x.side === 'P' && x.lane !== null).length)!);
+    }
+    g.results.push(13, 1); // the enemy draws 13, the squad 1: the enemy goes first in round 1
+    perform(g, listActions(g).find((a) => a.kind === 'ready')!);
     expect(g.first).toBe('E');
-    // Round 1: enemy, then squad.
-    beginEnemyTurn(g);
     expect(g.round).toBe(1);
-    enemyAct(g);
-    expect(inLane(g, 'E', 0)).toHaveLength(1);
-    expect(g.turn).toBe('P');
-    beginTurn(g);
-    expect(g.round).toBe(1);
-    // The squad can see that the enemy's next deployment is round 2's.
-    expect(enemyPlan(g).text).toContain(g.units.find((u) => u.id === g.enemyStart[1])!.name);
-    deployNext(g);
     expect(g.turn).toBe('E');
+    runEnemy(g);
+    expect(g.turn).toBe('P');
     expect(g.round).toBe(1);
-    beginEnemyTurn(g);
+    expect(g.pool).toBe(3);
+    endTurn(g); // the squad ends round 1; round 2 opens with a fresh draw
     expect(g.round).toBe(2);
   });
 
-  it('plays whole fights with the enemy first', () => {
+  it('redraws initiative every round, so one side can take two turns in a row', () => {
+    const g = createGame(tscVsScavvers, 5);
+    startFight(g); // round 1: the squad first
+    expect(g.first).toBe('P');
+    endTurn(g); // the enemy goes second in round 1, then round 2: stacked so the squad wins again
+    expect(g.round).toBe(2);
+    expect(g.first).toBe('P');
+  });
+
+  it('plays whole fights through, whoever wins each draw', () => {
     for (let seed = 1; seed <= 12; seed++) {
-      const g = stacked(seed, 1, 13);
-      rollInitiative(g);
-      expect(g.first).toBe('E');
+      const g = createGame(tscVsScavvers, seed);
       expect(autoPlay(g, 120)).not.toBe('timeout');
     }
   });
@@ -71,19 +70,14 @@ describe('initiative', () => {
 describe('a cleared board ends the fight', () => {
   function afterSetup(seed: number): Game {
     const g = createGame(tscVsScavvers, seed);
-    for (let i = 0; i < 3; i++) {
-      beginTurn(g);
-      deployNext(g);
-      enemyAct(g);
-    }
-    beginTurn(g);
+    startFight(g);
     return g;
   }
 
   it('does not end during setup while the first enemies are still due', () => {
     const g = createGame(tscVsScavvers, 1);
-    beginTurn(g);
-    deployNext(g);
+    openFight(g);
+    expect(g.phase).toBe('deploy');
     expect(enemyHasForces(g)).toBe(true);
     checkResult(g, []);
     expect(g.result).toBeNull();

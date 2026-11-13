@@ -5,31 +5,27 @@ import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
 import { enemyAct, enemyPlan } from './enemy';
 import { createGame, endRound, inLane } from './state';
-import { beginTurn } from './turn';
+import { endTurn, startFight } from './testkit';
+import { playerBodies } from './turn';
 import type { Ev } from './types';
 
-/** Play the player's setup rounds by hand and let the enemy deploy. */
+/** Deploy the squad's three, ready up, and let the enemy's opening turn play out. */
 function setup(g: ReturnType<typeof createGame>): void {
-  for (let lane = 0; lane < 3; lane++) {
-    beginTurn(g);
-    const a = listActions(g).find((x) => x.kind === 'deploy' && x.lane === lane)!;
-    perform(g, a);
-    enemyAct(g);
-  }
+  startFight(g);
 }
 
 /** Make `u` the enemy unit that acts next (the sim walks the enemy lane by lane). */
 function pointAt(g: ReturnType<typeof createGame>, u: { id: number }): void {
   const order = [0, 1, 2].flatMap((L) => inLane(g, 'E', L));
   g.eptr = order.findIndex((x) => x.id === u.id);
-  g.round = Math.max(g.round, g.scenario.setupRounds + 1);
   g.turn = 'E';
+  g.epool = 99;
 }
 
 /** The squad does something harmless: throw one card away. */
 function idle(g: ReturnType<typeof createGame>): void {
-  beginTurn(g);
   perform(g, listActions(g).find((a) => a.kind === 'cycle')!, [g.hand[0]!.iid]);
+  endTurn(g);
 }
 
 describe('statuses', () => {
@@ -47,16 +43,15 @@ describe('statuses', () => {
     expect(hp - (u.hp + u.armor + u.builtin)).toBe(2);
   });
 
-  it('a stun on a squad member outlasts the round it landed in, then clears', () => {
+  it('a stunned squad member is left out of the action pool, and the stun wears off with the turn it cost', () => {
     const g = createGame(tscVsForce(theWarden), 2);
-    setup(g);
-    const u = inLane(g, 'P', 0)[0]!;
-    u.stunned = true;
-    u.stunWait = 1;
-    endRound(g, []);
-    expect(u.stunned).toBe(true);
-    endRound(g, []);
-    expect(u.stunned).toBe(false);
+    startFight(g);
+    const v = inLane(g, 'P', 0)[0]!;
+    const bodies = playerBodies(g);
+    v.stunned = true;
+    expect(playerBodies(g)).toBe(bodies - 1);
+    endTurn(g);
+    expect(v.stunned).toBe(false);
   });
 
   it('squad slots can start a fight Suppressed or Stunned', () => {
@@ -112,10 +107,9 @@ describe('bosses', () => {
     let guard = 0;
     while (!g.result && guard++ < 20) {
       idle(g);
-      enemyAct(g);
     }
     expect(g.result).toBe('win');
-    expect(g.round).toBe(g.scenario.setupRounds + 6);
+    expect(g.round).toBe(g.scenario.surviveRounds);
   });
 
   it('Arc Surge hits every unit in the most crowded squad lane', () => {

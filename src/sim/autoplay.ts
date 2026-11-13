@@ -2,8 +2,11 @@ import { cardDefs } from '../data/cards';
 import { deadCards, listActions, perform, suggestBurn } from './actions';
 import { enemyAct } from './enemy';
 import { nextRandom } from './rng';
-import { inLane, totalSoakHp, unitById } from './state';
-import { beginEnemyTurn, beginTurn } from './turn';
+import { inLane, inSetup, totalSoakHp, unitById } from './state';
+
+/** Tuning knob for the stand-in: does it put every unit on the board, or only the three setup units? */
+export const botPolicy = { deployAll: true };
+import { openFight } from './turn';
 import type { Action, Game, Target, Unit } from './types';
 
 /**
@@ -52,7 +55,10 @@ export function scoreAction(g: Game, a: Action): number {
 
   if (a.kind === 'deploy') {
     const u = unitById(g, a.unit!);
-    if (g.round <= g.scenario.setupRounds) return SETUP_LANES[u.name] === a.lane ? 100 : 50;
+    if (SETUP_LANES[u.name] !== undefined) return SETUP_LANES[u.name] === a.lane ? 100 : 50;
+    if (!botPolicy.deployAll) return -200;
+    // everyone else goes where the enemy is thickest
+    if (inSetup(g)) return 60 + 5 * inLane(g, 'E', a.lane!).length;
     const L = a.lane!;
     if (u.name === 'Heavy') return 1.2 + 0.8 * inLane(g, 'E', L).length + (inLane(g, 'P', L).length ? 0.5 : 0);
     if (u.name === 'Repair') {
@@ -61,6 +67,9 @@ export function scoreAction(g: Game, a: Action): number {
     }
     return inLane(g, 'P', L).length ? 0.3 : 1.5;
   }
+  if (a.kind === 'ready') return -1;
+  if (a.kind === 'pass') return -50;
+  if (a.kind === 'putout') return 1.2 * (tgt?.burning ?? 0) + 0.4 - fuelCost;
   if (a.kind === 'cycle') {
     const dead = deadCards(g, listActions(g)).size;
     return 0.35 * Math.min(g.scenario.cycleLimit, dead);
@@ -186,18 +195,15 @@ export function chooseAction(g: Game): Choice | null {
 
 /** Play a whole fight with the stand-in player. Returns the result, or 'timeout'. */
 export function autoPlay(g: Game, maxRounds = 80): 'win' | 'loss' | 'timeout' {
-  while (!g.result && g.round < maxRounds) {
-    if (g.first === 'E') {
-      beginEnemyTurn(g);
+  openFight(g);
+  for (let step = 0; !g.result && g.round < maxRounds && step < 6000; step++) {
+    if (g.turn === 'E') {
       enemyAct(g);
-      if (g.result) break;
+      continue;
     }
-    beginTurn(g);
     const c = chooseAction(g);
     if (!c) return 'timeout';
     perform(g, c.action, c.cards);
-    if (g.result) break;
-    if (g.first === 'P') enemyAct(g);
   }
   return g.result ?? 'timeout';
 }

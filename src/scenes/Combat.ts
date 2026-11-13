@@ -11,9 +11,8 @@ import { fuelAvailable, listActions, perform, suggestBurn } from '../sim/actions
 import { needsActor } from '../sim/cards';
 import { chooseAction } from '../sim/autoplay';
 import { enemyAct, enemyPlan } from '../sim/enemy';
-import { rollInitiative } from '../sim/initiative';
 import { createGame, inLane, inSetup, isLive, unitById } from '../sim/state';
-import { beginEnemyTurn, beginTurn } from '../sim/turn';
+import { openFight } from '../sim/turn';
 import type { Action, Ev, Game, Target, Unit } from '../sim/types';
 import { Button } from '../ui/Button';
 import { drawCable } from '../ui/Cable';
@@ -75,11 +74,17 @@ export class Combat extends ScreenScene {
   /** a squad member the player clicked on to act with; the next ability they pick uses this unit */
   private chosenUnit: number | null = null;
   private busy = false;
+  /** actions each side had when its current turn opened, for the pips */
+  private poolStart = 0;
+  private enemyPoolStart = 0;
   /** which hand fills the tray: the squad's unit cards or the action cards */
   private handView: 'units' | 'actions' = 'units';
   private loadoutPane: Phaser.GameObjects.Container | null = null;
   /** the initiative roll is on screen */
   private intro = false;
+  /** the deployment draw that opens the fight (shown as the intro) */
+  private deployDraw: Extract<Ev, { t: 'deployDraw' }> | null = null;
+  /** this round's initiative draw (the chips in the top bar) */
   private initiative: Extract<Ev, { t: 'initiative' }> | null = null;
   private fx: Phaser.GameObjects.Container | null = null;
   private fxMs = 0;
@@ -137,18 +142,19 @@ export class Combat extends ScreenScene {
     this.outcomeOpen = false;
     this.showLog = false;
     this.logHistory = [];
-    this.logLine = 'Rolling for initiative…';
+    this.logLine = 'Drawing for deployment…';
     this.pos.clear();
     this.fxQueue = [];
     this.fxMs = 0;
     this.dragging = null;
     this.dragCand = null;
     this.fx = null;
-    this.absorb(rollInitiative(this.sim));
-    this.initiative = this.fxQueue.find((e): e is Extract<Ev, { t: 'initiative' }> => e.t === 'initiative') ?? null;
+    this.initiative = null;
+    this.absorb(openFight(this.sim));
+    this.deployDraw = this.fxQueue.find((e): e is Extract<Ev, { t: 'deployDraw' }> => e.t === 'deployDraw') ?? null;
     this.fxQueue = [];
-    if (this.sim.first === 'P') this.absorb(beginTurn(this.sim));
     this.derive();
+    this.autoHand();
     this.input.keyboard?.on('keydown', this.onKey, this);
     this.input.on('pointermove', this.onPointerMove, this);
     this.input.on('pointerup', this.onPointerUp, this);
@@ -176,7 +182,7 @@ export class Combat extends ScreenScene {
     this.trimBurn();
   }
 
-  /** Open on the unit hand while the squad is being deployed, on the action hand once the fight is on (reserves can still be fetched with the tab or H). */
+  /** Open on the unit hand while the squad is being deployed, on the action hand once the fight is on (the tab or H flips it). */
   private autoHand(): void {
     this.handView = inSetup(this.sim) && this.actions.some((a) => a.kind === 'deploy') ? 'units' : 'actions';
   }
@@ -217,7 +223,14 @@ export class Combat extends ScreenScene {
 
   private absorb(ev: Ev[]): void {
     const lines: string[] = [];
-    for (const e of ev) if (e.t === 'log') lines.push(e.text);
+    for (const e of ev) {
+      if (e.t === 'log') lines.push(e.text);
+      else if (e.t === 'initiative') this.initiative = e;
+      else if (e.t === 'turn') {
+        if (e.side === 'P') this.poolStart = e.actions;
+        else this.enemyPoolStart = e.actions;
+      }
+    }
     if (lines.length) {
       this.logLine = lines.join(' · ');
       this.logHistory.push(...lines);
@@ -409,29 +422,54 @@ export class Combat extends ScreenScene {
     this.chosenUnit = null;
     this.clearSel();
     this.absorb(ev);
-    this.busy = true;
     this.derive();
-    this.rebuild();
-    if (this.sim.result) this.time.delayedCall(this.beat(900), () => this.openOutcome());
-    else this.time.delayedCall(this.beat(750), () => this.enemyTurn());
-  }
-
-  private enemyTurn(): void {
-    this.absorb(beginEnemyTurn(this.sim));
-    this.absorb(enemyAct(this.sim));
-    this.derive();
-    this.rebuild();
-    if (this.sim.result) {
-      this.time.delayedCall(this.beat(900), () => this.openOutcome());
+    if (this.sim.result || this.enemyHasTurn()) {
+      // The turn is over (or the fight is): lock the board while the other side moves.
+      this.busy = true;
+      this.rebuild();
+      this.settle(750);
       return;
     }
-    this.time.delayedCall(this.beat(550), () => {
-      this.absorb(beginTurn(this.sim));
-      this.busy = false;
+    // The squad still has actions (or is still deploying): stay snappy, effects play while the next pick is made.
+    this.autoHand();
+    this.rebuild();
+  }
+
+  private enemyHasTurn(): boolean {
+    return this.sim.phase === 'fight' && this.sim.turn === 'E' && !this.sim.result;
+  }
+
+  /** Wait for the effects on screen to play out, then let the game move on. */
+  private settle(base: number): void {
+    this.time.delayedCall(this.beat(this.sim.result ? 900 : base), () => this.advance());
+  }
+
+  /** The enemy takes its actions one at a time; when it is the squad's turn again, the board unlocks. */
+  private advance(): void {
+    const g = this.sim;
+    if (g.result) {
+      this.openOutcome();
+      return;
+    }
+    if (this.enemyHasTurn()) {
+      this.absorb(enemyAct(g));
       this.derive();
-      this.autoHand();
       this.rebuild();
-    });
+      this.settle(this.enemyHasTurn() ? 600 : 450);
+      return;
+    }
+    this.busy = false;
+    this.derive();
+    this.autoHand();
+    this.rebuild();
+  }
+
+  /** Ready (deployment) or End turn (the rest of the pool is let go). */
+  private endTurn(): void {
+    if (this.busy || this.sim.result) return;
+    const a = this.actions.find((x) => x.kind === 'ready') ?? this.actions.find((x) => x.kind === 'pass');
+    if (!a) return;
+    this.perform(a);
   }
 
   private openOutcome(): void {
@@ -535,6 +573,10 @@ export class Combat extends ScreenScene {
       this.select({ kind: 'gear', label: gear[(cur + 1) % gear.length]! }, mine.length ? this.chosenUnit! : undefined);
       return;
     }
+    if (key.toLowerCase() === 't') {
+      this.endTurn();
+      return;
+    }
     if (key.toLowerCase() === 'r') {
       const reserve = this.reserve();
       if (!reserve.length) return;
@@ -612,7 +654,7 @@ export class Combat extends ScreenScene {
     const g = this.sim;
     const opts = this.options();
     const focus = opts.length ? opts[Math.min(this.focusIdx, opts.length - 1)]! : null;
-    const plan = g.turn === 'P' && !g.result ? enemyPlan(g) : null;
+    const plan = g.turn === 'P' && g.phase === 'fight' && !g.result ? enemyPlan(g) : null;
 
     this.drawTopBar(root, signal);
     for (let L = 0; L < 3; L++) this.drawLaneBg(root, L);
@@ -643,21 +685,50 @@ export class Combat extends ScreenScene {
       ? g.result === 'win'
         ? 'FIGHT WON'
         : 'RETREAT'
-      : this.busy
+      : this.intro
+        ? 'DRAWING CARDS'
+        : this.busy
         ? 'ENEMY ACTING'
         : inSetup(g)
-          ? 'SETUP · DEPLOY'
-          : 'YOUR ACTION';
-    const round = stencilText(this, 784, 8, `Round ${g.round}`, 36, palette.text, { spacing: 0.06 });
+          ? 'DEPLOYMENT'
+          : 'YOUR TURN';
+    const round = stencilText(this, 784, 8, g.phase === 'deploy' ? 'Deploy' : `Round ${g.round}`, 36, palette.text, { spacing: 0.06 });
     root.add(round);
-    root.add(bodyText(this, 784, round.y + round.height, phase, 18, this.busy ? palette.danger : signal, { spacing: 0.1 }));
+    const phaseT = bodyText(this, 784, round.y + round.height, phase, 18, this.busy ? palette.danger : signal, { spacing: 0.1 });
+    root.add(phaseT);
+    this.drawPool(root, phaseT.x + phaseT.width + 14, phaseT.y + phaseT.height / 2, signal);
     const r1 = bodyText(this, 1880, 10, `RESULTS DECK ${g.results.length}/52`, 18, palette.textMuted, { originX: 1, spacing: 0.06 });
     root.add(r1);
     root.add(bodyText(this, 1880, r1.y + r1.height + 4, `SEED ${this.seed} · DEPTH 1 · MIDDLE HIVE`, 16, palette.textMuted, { originX: 1, spacing: 0.06 }));
     this.drawInitiativeChips(root, signal);
   }
 
-  /** The two initiative cards from the opening roll, the winner filled. */
+  /** One pip per action: the squad's pool on its turn, the enemy's on theirs. Filled pips are still to spend. */
+  private drawPool(root: Phaser.GameObjects.Container, x: number, cy: number, signal: number): void {
+    const g = this.sim;
+    if (g.result || g.phase !== 'fight') return;
+    const enemy = g.turn === 'E';
+    const left = enemy ? g.epool : g.pool;
+    const total = Math.max(left, enemy ? this.enemyPoolStart : this.poolStart);
+    if (total > 10) {
+      root.add(bodyText(this, x, cy, `${left}/${total}`, 18, enemy ? palette.danger : signal, { originY: 0.5, weight: '700' }));
+      return;
+    }
+    const gg = this.add.graphics();
+    for (let i = 0; i < total; i++) {
+      const px = x + 8 + i * 20;
+      if (i < left) {
+        gg.fillStyle(enemy ? palette.danger : signal, 1);
+        gg.fillCircle(px, cy, 7);
+      } else {
+        gg.lineStyle(2, palette.line, 1);
+        gg.strokeCircle(px, cy, 6);
+      }
+    }
+    root.add(gg);
+  }
+
+  /** The two initiative cards of this round's draw, the winner filled. */
   private drawInitiativeChips(root: Phaser.GameObjects.Container, signal: number): void {
     const ini = this.initiative;
     if (!ini || this.intro) return;
@@ -665,7 +736,7 @@ export class Combat extends ScreenScene {
       { label: 'SQUAD', d: ini.squad, first: ini.first === 'P' },
       { label: 'ENEMY', d: ini.enemy, first: ini.first === 'E' }
     ];
-    root.add(bodyText(this, 1060, 12, `INITIATIVE · ${ini.first === 'P' ? 'SQUAD' : 'ENEMY'} FIRST`, 14, palette.textMuted, { spacing: 0.12 }));
+    root.add(bodyText(this, 1060, 12, `ROUND ${this.sim.round} INITIATIVE · ${ini.first === 'P' ? 'SQUAD' : 'ENEMY'} FIRST`, 14, palette.textMuted, { spacing: 0.12 }));
     chips.forEach((c, i) => {
       const x = 1060 + i * 190;
       const y = 36;
@@ -775,7 +846,7 @@ export class Combat extends ScreenScene {
     const g = this.sim;
     const hp = g.laneHP[side][L]!;
     const max = g.scenario.battlefield.laneHp[L]!;
-    const open = side === 'E' && !hasFoes && g.round > g.scenario.setupRounds;
+    const open = side === 'E' && !hasFoes && g.phase === 'fight';
     let label = side === 'E' ? 'ENEMY HP' : 'YOUR HP';
     let color: number = palette.textMuted;
     if (hp === 0) {
@@ -916,7 +987,7 @@ export class Combat extends ScreenScene {
   /** Two tabs flip the tray between the squad's unit cards and the action hand (H does the same). */
   private drawHandTabs(root: Phaser.GameObjects.Container, signal: number): void {
     const g = this.sim;
-    const left = this.reserve().length;
+    const left = inSetup(g) ? this.reserve().length : 0;
     const tabs: Array<{ id: 'units' | 'actions'; label: string; w: number }> = [
       { id: 'units', label: left ? `UNIT HAND · ${left}` : 'UNIT HAND', w: left ? 170 : 130 },
       { id: 'actions', label: `ACTION HAND ${g.hand.length}/${g.scenario.handSize}`, w: 180 }
@@ -999,7 +1070,7 @@ export class Combat extends ScreenScene {
     const w = Math.min(250, Math.floor((maxW - (squad.length - 1) * gap) / Math.max(1, squad.length)));
     const inReserve = squad.filter((u) => u.lane === null && isLive(u)).length;
     root.add(bodyText(this, TRAY.x + 22, y + 12, 'SQUAD', 16, palette.textMuted, { originY: 0.5, spacing: 0.12 }));
-    root.add(bodyText(this, TRAY.x + 22, y + 34, inReserve ? `${inReserve} TO DEPLOY` : 'ALL DEPLOYED', 14, inReserve ? signal : palette.textMuted, { originY: 0.5, spacing: 0.08 }));
+    root.add(bodyText(this, TRAY.x + 22, y + 34, !inSetup(g) ? (inReserve ? `${inReserve} BENCHED` : 'ALL IN') : inReserve ? `${inReserve} TO DEPLOY` : 'ALL DEPLOYED', 14, inReserve && inSetup(g) ? signal : palette.textMuted, { originY: 0.5, spacing: 0.08 }));
     const picked = this.sel?.item.kind === 'deploy' ? this.sel.item.unit : null;
     squad.forEach((u, i) => {
       const x = HAND_X0 + i * (w + gap);
@@ -1014,7 +1085,7 @@ export class Combat extends ScreenScene {
       gg.lineStyle(on ? 4 : can ? 2.5 : viewed ? 2.5 : 1.5, on || can || viewed ? signal : palette.line, 1);
       gg.strokeRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2);
       tile.add(gg);
-      const tag = u.downed ? 'DOWNED' : reserve ? (can ? 'DEPLOY' : 'WAIT') : `LANE ${u.lane! + 1}`;
+      const tag = u.downed ? 'DOWNED' : reserve ? (can ? 'DEPLOY' : inSetup(g) ? 'WAIT' : 'BENCHED') : `LANE ${u.lane! + 1}`;
       const tagCol = u.downed ? palette.danger : can ? signal : palette.textMuted;
       const tg = bodyText(this, w / 2 - 10, -h / 2 + 15, tag, 14, tagCol, { originX: 1, originY: 0.5, spacing: 0.08 });
       const nm = stencilText(this, -w / 2 + 10, -h / 2 + 4, u.name, 22, reserve || on ? palette.text : palette.textMuted, { spacing: 0.04 });
@@ -1291,11 +1362,30 @@ export class Combat extends ScreenScene {
         if (i === 0) this.gearBtn = { x: PANEL.x + 22 + W / 2, y: PANEL.y + y + bh / 2, w: W, h: bh };
         y += bh + 6;
       });
-      if (!labels.length) line(this.busy ? 'WAIT FOR YOUR ACTION' : 'NO GEAR ACTION READY', 16, palette.textMuted, 8);
+      const fire = this.actions.find((a) => a.kind === 'putout' && a.actor === unit.id);
+      if (fire) {
+        const on = this.sel?.item.kind === 'putout';
+        const bh = 36;
+        const b = this.add.container(22 + W / 2, y + bh / 2);
+        const gg = this.add.graphics();
+        gg.fillStyle(on ? mix(signal, palette.bg, 0.85) : palette.panelDeep, 1);
+        gg.fillRect(-W / 2, -bh / 2, W, bh);
+        gg.lineStyle(on ? 3 : 1.5, on ? signal : palette.danger, 1);
+        gg.strokeRect(-W / 2, -bh / 2, W, bh);
+        b.add(gg);
+        b.add(bodyText(this, -W / 2 + 12, 0, 'PUT OUT FIRE', 18, palette.text, { originY: 0.5 }));
+        b.add(bodyText(this, W / 2 - 12, 0, `FUEL ${fire.fuel}`, 16, palette.textMuted, { originX: 1, originY: 0.5 }));
+        b.setSize(W, bh);
+        b.setInteractive({ useHandCursor: true });
+        b.on('pointerup', () => (on ? (this.clearSel(), this.refresh()) : this.select({ kind: 'putout' }, unit.id)));
+        p.add(b);
+        y += bh + 6;
+      }
+      if (!labels.length && !fire) line(this.busy ? 'WAIT FOR YOUR ACTION' : 'NO GEAR ACTION READY', 16, palette.textMuted, 8);
     }
 
     // Prompt for the current step: the biggest size that fits above the buttons.
-    const limit = PANEL.h - 14 - 46 - 10;
+    const limit = PANEL.h - 14 - 46 - 8 - 46 - 10;
     const text = this.prompt(opts, focus);
     for (const size of [18, 16, 14]) {
       const t = bodyText(this, 22, y, text, size, palette.text, { wrap: W, lineSpacing: 4 });
@@ -1323,7 +1413,7 @@ export class Combat extends ScreenScene {
     // Buttons. Confirm only exists when something is left to confirm: the optional second target or the discard picks.
     const confirmNow = !!this.sel && !!this.step && this.step.step === 'ready' && needsConfirm(this.step, this.sel);
     const bw = (W - 10) / 2;
-    const by = PANEL.h - 14 - 46;
+    const by = PANEL.h - 14 - 46 - 8 - 46;
     p.add(
       new Button(this, {
         x: 22, y: by, w: bw, h: 46, label: confirmNow ? (this.sel?.item.kind === 'cycle' ? 'Discard' : 'Fire') : 'Cancel', size: 26,
@@ -1344,6 +1434,17 @@ export class Combat extends ScreenScene {
         onClick: () => (this.sel?.item.kind === 'cycle' ? this.confirm() : this.select({ kind: 'cycle' }))
       })
     );
+    // Ready closes deployment; End turn lets the rest of the pool go.
+    const deploying = inSetup(g);
+    const canEnd = !this.busy && !g.result && this.actions.some((a) => a.kind === (deploying ? 'ready' : 'pass'));
+    p.add(
+      new Button(this, {
+        x: 22, y: by + 54, w: W, h: 46, size: 26, signal, accent: canEnd,
+        label: deploying ? 'Ready · start the fight' : `End turn${g.phase === 'fight' && g.turn === 'P' ? ` · ${g.pool} left` : ''}`,
+        state: canEnd ? 'live' : 'offline',
+        onClick: () => this.endTurn()
+      })
+    );
   }
 
   private prompt(opts: Opt[], focus: Opt | null): string {
@@ -1352,23 +1453,25 @@ export class Combat extends ScreenScene {
       if (g.result === 'loss') return 'Two of your lanes fell. Retreat.';
       return g.how === 'cleared' ? 'The enemy has nobody left on the board. The fight is won.' : g.how === 'boss' ? 'The boss is down. The fight is won.' : g.how === 'held' ? 'The squad held. The fight is won.' : 'Two enemy lanes are captured. The fight is won.';
     }
-    if (this.intro) return 'Rolling for initiative…';
+    if (this.intro) return 'Drawing for deployment…';
     if (this.busy) return 'Enemy acting…';
     const s = this.step;
     if (!this.sel || !s) {
       if (inSetup(g)) {
         const empty = [0, 1, 2].filter((L) => !g.units.some((u) => u.side === 'P' && u.lane === L)).length;
-        return `SETUP: click a unit card in your unit hand, then a lane, or drag the card onto a lane. ${empty} lane${empty === 1 ? '' : 's'} still empty.`;
+        const out = this.reserve().length;
+        const blind = g.deployFirst === 'P' ? ' The enemy deploys after you: you are blind.' : ' The enemy is on the board.';
+        return `DEPLOYMENT: click a unit card, then a lane, or drag it onto a lane. Any unit, any lane, no cap.${blind} Every unit on the board is one action each turn. Not deployed yet: ${out}${empty ? ` · empty lanes: ${empty}` : ''}. Press Ready when you are set: nobody deploys after that.`;
       }
       if (this.chosenUnit !== null) return `${unitById(g, this.chosenUnit).name} is ready. Pick one of its abilities below, or a card from your hand.`;
-      return 'Click a unit to act with it, play a card (1-7), or Cycle (E). Click a unit card in your unit hand to deploy it.';
+      return `${g.pool} action${g.pool === 1 ? '' : 's'} left. Click a unit to act with it, play a card (1-7), Cycle (E), or End turn (T). Every action costs one.`;
     }
     if (this.sel.item.kind === 'cycle') {
       return `DISCARD & DRAW: click or press 1-7 to mark up to ${g.scenario.cycleLimit} cards (${this.cycleSet.length} marked), then Discard.`;
     }
     const aid = this.stepActor();
     const what =
-      this.sel.item.kind === 'card' ? this.sel.item.name : this.sel.item.kind === 'gear' ? this.sel.item.label.split('|').pop()! : `Deploy ${unitById(g, this.sel.item.unit).name}`;
+      this.sel.item.kind === 'card' ? this.sel.item.name : this.sel.item.kind === 'gear' ? this.sel.item.label.split('|').pop()! : this.sel.item.kind === 'putout' ? 'Put Out' : `Deploy ${unitById(g, this.sel.item.unit).name}`;
     const head = `${what}${aid !== null && this.sel.item.kind !== 'deploy' ? ' · ' + unitById(g, aid).name : ''}`;
     const bits: string[] = [head];
     switch (s.step) {
@@ -1700,6 +1803,15 @@ export class Combat extends ScreenScene {
           });
           t += 120;
         }
+      } else if (e.t === 'round') {
+        at(() => this.floater(`ROUND ${e.round}`, 720, 330, palette.text, 44, 20, 1300));
+        t += 200;
+      } else if (e.t === 'initiative') {
+        at(() => this.floater(e.first === 'P' ? 'YOU GO FIRST' : 'ENEMY GOES FIRST', 720, 390, e.first === 'P' ? this.signal : palette.danger, 30, 20, 1300));
+        t += 260;
+      } else if (e.t === 'turn' && e.actions > 0) {
+        at(() => this.floater(e.side === 'P' ? `YOUR TURN · ${e.actions} ACTION${e.actions === 1 ? '' : 'S'}` : `ENEMY TURN · ${e.actions} ACTION${e.actions === 1 ? '' : 'S'}`, 720, 440, e.side === 'P' ? this.signal : palette.danger, 26, 20, 1300));
+        t += 200;
       } else if (e.t === 'results') {
         at(() => this.floater('RESULTS ' + e.cards.map((v) => `${v} ${band(v)}`).join(' → '), 720, 380, palette.text, 30));
       } else if (e.t === 'draw' && e.reshuffled) {
@@ -1713,9 +1825,10 @@ export class Combat extends ScreenScene {
 
   private introLayer: Phaser.GameObjects.Container | null = null;
 
-  /** Two results cards turn over: the higher one acts first. Click or press a key to move on. */
+  /** Two results cards turn over for the deployment draw: the higher one deploys second. Click or press a key to move on. */
   private playIntro(): void {
-    const ini = this.initiative;
+    const dd = this.deployDraw;
+    const ini = dd ? { squad: dd.squad, enemy: dd.enemy, win: dd.second } : null;
     if (!this.intro) return;
     // With animation off the roll is just the chip in the top bar.
     if (!ini || session.settings.animSpeed === 0) {
@@ -1730,15 +1843,15 @@ export class Combat extends ScreenScene {
     const dim = this.add.rectangle(960, 540, 1920, 1080, palette.bg, 0.9).setInteractive();
     dim.on('pointerup', () => this.endIntro());
     layer.add(dim);
-    layer.add(stencilText(this, 960, 150, 'Rolling for initiative', 72, palette.text, { originX: 0.5, spacing: 0.06, fixed: true }));
-    layer.add(bodyText(this, 960, 232, 'The higher card acts first. Suits only break a tie.', 22, palette.textMuted, { originX: 0.5 }));
+    layer.add(stencilText(this, 960, 150, 'Drawing for deployment', 72, palette.text, { originX: 0.5, spacing: 0.06, fixed: true }));
+    layer.add(bodyText(this, 960, 232, 'The higher card deploys second, and sees the other lineup. Suits only break a tie.', 22, palette.textMuted, { originX: 0.5 }));
 
     const W = 250;
     const H = 350;
     const rank = (v: number): string => (v === 1 ? 'A' : v === 11 ? 'J' : v === 12 ? 'Q' : v === 13 ? 'K' : String(v));
     const sides = [
-      { x: 640, label: 'YOUR SQUAD', d: ini.squad, win: ini.first === 'P' },
-      { x: 1280, label: this.sim.scenario.enemyName.toUpperCase(), d: ini.enemy, win: ini.first === 'E' }
+      { x: 640, label: 'YOUR SQUAD', d: ini.squad, win: ini.win === 'P' },
+      { x: 1280, label: this.sim.scenario.enemyName.toUpperCase(), d: ini.enemy, win: ini.win === 'E' }
     ];
     const cardsAt: Array<{ face: Phaser.GameObjects.Container; back: Phaser.GameObjects.Container; win: boolean }> = [];
     sides.forEach((sd) => {
@@ -1787,12 +1900,14 @@ export class Combat extends ScreenScene {
         layer.add(frame);
         if (!c.win) c.face.setAlpha(0.55);
       });
-      const first = ini.first === 'P' ? 'YOUR SQUAD' : this.sim.scenario.enemyName.toUpperCase();
-      layer.add(stencilText(this, 960, 760, `${first} ACTS FIRST`, 64, sig, { originX: 0.5, spacing: 0.06, fixed: true }));
+      const second = ini.win === 'P' ? 'YOUR SQUAD' : this.sim.scenario.enemyName.toUpperCase();
+      layer.add(stencilText(this, 960, 760, `${second} DEPLOYS SECOND`, 64, sig, { originX: 0.5, spacing: 0.06, fixed: true }));
       if (ini.squad.value === ini.enemy.value) {
         layer.add(bodyText(this, 960, 860, 'Tied on value: the higher suit wins (spades, hearts, diamonds, clubs).', 22, palette.textMuted, { originX: 0.5 }));
-      } else if (ini.first === 'E') {
-        layer.add(bodyText(this, 960, 860, 'They get the first move: expect to take the first hit.', 22, palette.textMuted, { originX: 0.5 }));
+      } else if (ini.win === 'E') {
+        layer.add(bodyText(this, 960, 860, 'You deploy blind: they will see your lineup before they commit.', 22, palette.textMuted, { originX: 0.5 }));
+      } else {
+        layer.add(bodyText(this, 960, 860, 'The enemy is already on the board. Choose who to bring.', 22, palette.textMuted, { originX: 0.5 }));
       }
       layer.add(bodyText(this, 960, 960, 'Click or press any key to continue', 20, palette.textMuted, { originX: 0.5, spacing: 0.1 }));
     };
@@ -1811,15 +1926,10 @@ export class Combat extends ScreenScene {
     if (layer) {
       this.tweens.add({ targets: layer, alpha: 0, duration: this.anim(220), onComplete: () => layer.destroy() });
     }
-    if (this.sim.first === 'E') {
-      this.rebuild();
-      this.later(300, () => this.enemyTurn());
-    } else {
-      this.busy = false;
-      this.derive();
-      this.autoHand();
-      this.rebuild();
-    }
+    this.busy = false;
+    this.derive();
+    this.autoHand();
+    this.rebuild();
   }
 
   // ---------- drag a unit card onto a lane

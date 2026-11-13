@@ -23,7 +23,6 @@ export function makeUnit(g: Game, side: Side, t: UnitTemplate): Unit {
     exposed: false,
     suppressed: 0,
     burning: 0,
-    stunWait: 0,
     charging: null,
     counter: false,
     sight: false,
@@ -67,6 +66,11 @@ export function createGame(scenario: Scenario, seed: number, opts: GameOptions =
     result: null,
     how: null,
     first: 'P',
+    phase: 'deploy',
+    deployFirst: 'P',
+    enemyDeployed: false,
+    pool: 0,
+    epool: 0,
     nextId: 1,
     nextIid: 1,
     arrivals: 0,
@@ -269,7 +273,7 @@ export function closeRound(g: Game, ev: Ev[]): void {
   endRound(g, ev);
   checkResult(g, ev);
   const hold = g.scenario.surviveRounds;
-  if (!g.result && hold !== undefined && g.round >= g.scenario.setupRounds + hold) {
+  if (!g.result && hold !== undefined && g.round >= hold) {
     g.result = 'win';
     g.how = 'held';
     ev.push({ t: 'log', text: 'The reactor shuts down. The squad held.' });
@@ -289,13 +293,6 @@ export function endRound(g: Game, ev: Ev[]): void {
         ev.push({ t: 'status', unit: u.id, status: 'burning', on: false });
       }
     }
-    if (u.side === 'P' && u.stunned) {
-      if (u.stunWait > 0) u.stunWait -= 1;
-      else {
-        u.stunned = false;
-        ev.push({ t: 'status', unit: u.id, status: 'stunned', on: false });
-      }
-    }
     if (u.suppressed > 0) {
       u.suppressed -= 1;
       if (u.suppressed === 0) ev.push({ t: 'status', unit: u.id, status: 'suppressed', on: false });
@@ -307,6 +304,7 @@ export function endRound(g: Game, ev: Ev[]): void {
   }
 }
 
+/** Deployment: before round 1, while lineups are picked. */
 export function inSetup(g: Game): boolean {
-  return g.round <= g.scenario.setupRounds;
+  return g.phase === 'deploy';
 }

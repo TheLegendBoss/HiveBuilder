@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { tscVsScavvers, tscVsScavversPaper } from '../data/scenarios';
 import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
-import { enemyAct, enemyPlan } from './enemy';
 import { parseCsv } from './csv';
 import { createGame, hitUnit, inLane } from './state';
-import { beginTurn } from './turn';
+import { endTurn, startFight } from './testkit';
+import { enemyBodies, openFight, playerBodies } from './turn';
 import { tscDeck } from '../data/cards';
 
 describe('csv and card data', () => {
@@ -19,38 +19,69 @@ describe('csv and card data', () => {
   });
 });
 
-describe('setup and turns', () => {
-  it('only allows deploying into empty lanes during setup', () => {
+describe('deployment and turns', () => {
+  it('opens with deployment: any unit into any lane, no cap, nothing else until Ready', () => {
     const g = createGame(tscVsScavvers, 1);
-    beginTurn(g);
-    const acts = listActions(g);
+    openFight(g);
+    expect(g.phase).toBe('deploy');
+    let acts = listActions(g);
     expect(acts.every((a) => a.kind === 'deploy')).toBe(true);
-    expect(g.hand).toHaveLength(7);
-    const first = acts.find((a) => a.lane === 0)!;
-    perform(g, first);
-    expect(g.turn).toBe('E');
-    expect(enemyPlan(g).kind).toBe('deploy');
-    enemyAct(g);
-    expect(inLane(g, 'E', 0)).toHaveLength(1);
-    beginTurn(g);
-    expect(listActions(g).some((a) => a.lane === 0)).toBe(false);
+    expect(acts.filter((a) => a.lane === 0)).toHaveLength(5);
+    // Everyone can stand in one lane.
+    for (const u of g.units.filter((x) => x.side === 'P')) perform(g, listActions(g).find((a) => a.kind === 'deploy' && a.unit === u.id && a.lane === 0)!);
+    expect(inLane(g, 'P', 0)).toHaveLength(5);
+    acts = listActions(g);
+    expect(acts.map((a) => a.kind)).toEqual(['ready']);
   });
 
-  it('opens up cards and gear actions after the three setup rounds', () => {
-    const g = createGame(tscVsScavvers, 2);
-    const lanes: Record<string, number> = { 'Line A': 0, Vanguard: 1, 'Line B': 2 };
-    for (let i = 0; i < 3; i++) {
-      beginTurn(g);
-      const a = listActions(g).find((x) => lanes[g.units.find((u) => u.id === x.unit)!.name] === x.lane)!;
-      perform(g, a);
-      enemyAct(g);
+  it('the enemy puts its whole starting force on the board, either before or after the squad', () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      const g = createGame(tscVsScavvers, seed);
+      openFight(g);
+      perform(g, listActions(g).find((a) => a.kind === 'deploy')!);
+      perform(g, listActions(g).find((a) => a.kind === 'ready')!);
+      expect(g.enemyDeployed).toBe(true);
+      expect(enemyBodies(g)).toBe(3);
+      expect(g.phase).toBe('fight');
     }
-    beginTurn(g);
+  });
+
+  it('gives the squad one action per body that can act, and a turn ends when the pool is spent', () => {
+    const g = createGame(tscVsScavvers, 2);
+    startFight(g);
+    expect(g.turn).toBe('P');
+    expect(g.round).toBe(1);
+    expect(g.pool).toBe(3);
     const acts = listActions(g);
     expect(acts.some((a) => a.kind === 'basic')).toBe(true);
     expect(acts.some((a) => a.kind === 'cycle')).toBe(true);
-    // fuel is always affordable from the rest of the hand
+    expect(acts.some((a) => a.kind === 'pass')).toBe(true);
     for (const a of acts) expect(a.fuel).toBeLessThanOrEqual(g.hand.length * 2);
+    perform(g, acts.find((a) => a.kind === 'cycle')!, [g.hand[0]!.iid]);
+    expect(g.pool).toBe(2);
+    expect(g.turn).toBe('P');
+    expect(g.hand).toHaveLength(7);
+  });
+
+  it('a unit stunned when the turn opens adds no action', () => {
+    const g = createGame(tscVsScavvers, 2);
+    startFight(g);
+    expect(playerBodies(g)).toBe(3);
+    inLane(g, 'P', 1)[0]!.stunned = true;
+    expect(playerBodies(g)).toBe(2);
+  });
+
+  it('draws initiative every round, and the round only closes when both sides have gone', () => {
+    const g = createGame(tscVsScavvers, 3);
+    startFight(g);
+    expect(g.round).toBe(1);
+    endTurn(g);
+    expect(g.round).toBe(2);
+    endTurn(g, 'E');
+    // The enemy went first in round 3: its whole turn already played, and it is now the squad's.
+    expect(g.round).toBe(3);
+    expect(g.first).toBe('E');
+    expect(g.turn).toBe('P');
   });
 });
 
@@ -82,7 +113,7 @@ describe('whole fights', () => {
     expect(a.stats).toEqual(b.stats);
   });
 
-  it('matches the paper-fight sim: the stand-in crew beats the Scavver pack in about ten actions', () => {
+  it('the stand-in crew beats the Scavver pack in a couple of rounds of bursts', () => {
     let wins = 0;
     let rounds = 0;
     let downed = 0;
@@ -90,14 +121,14 @@ describe('whole fights', () => {
     for (let seed = 0; seed < N; seed++) {
       const g = createGame(tscVsScavversPaper, seed);
       if (autoPlay(g) === 'win') wins++;
-      rounds += g.round - 3;
+      rounds += g.round;
       downed += g.units.filter((u) => u.side === 'P' && u.downed).length;
     }
     const avg = rounds / N;
-    // Python paper sim: 2000/2000 wins, 10.0 actions after setup, 0.0 downed.
+    // Pooled actions: five bodies, a few rounds. The paper sim won 2000/2000 with 0.0 downed.
     expect(wins / N).toBeGreaterThan(0.97);
-    expect(avg).toBeGreaterThan(7);
-    expect(avg).toBeLessThan(14);
+    expect(avg).toBeGreaterThan(1);
+    expect(avg).toBeLessThan(5);
     expect(downed / N).toBeLessThan(0.3);
   });
 });

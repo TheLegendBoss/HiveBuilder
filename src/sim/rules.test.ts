@@ -4,7 +4,7 @@ import { tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from './actions';
 import { enemyAct, enemyPlan } from './enemy';
 import { attackLanes, createGame, deployUnit, hitUnit, unitById } from './state';
-import { beginTurn } from './turn';
+import { endTurn, enterFight, handOver } from './testkit';
 import type { Action, Game, Unit } from './types';
 
 /** A fight past setup: Line A, Vanguard and Heavy in lane 1, Line B and Repair in lane 2, the Scavver pack in place. */
@@ -23,7 +23,7 @@ function fight(hand: string[], seed = 5): Game {
   deployUnit(g, foes[2]!, 0, ev);
   g.enemyDeck = [foes[3]!.id, foes[4]!.id];
   g.round = 4;
-  g.turn = 'P';
+  enterFight(g);
   // Put the named cards in hand and fill the rest with plain fuel (Ammo Crates are worth 2).
   g.deck.push(...g.hand.splice(0), ...g.discard.splice(0));
   for (const n of hand) {
@@ -45,7 +45,7 @@ const find = (g: Game, f: (a: Action) => boolean): Action => {
 const unitNamed = (g: Game, n: string, side: 'P' | 'E' = 'P'): Unit => g.units.find((u) => u.name === n && u.side === side)!;
 
 describe('card rules', () => {
-  it('Burst Fire deals 3 to a unit in the actor lane, passes the turn, and cannot reach other lanes', () => {
+  it('Burst Fire deals 3 to a unit in the actor lane, spends one action from the pool, and cannot reach other lanes', () => {
     const g = fight(['Burst Fire']);
     const chief = unitNamed(g, 'Scavver Chief', 'E');
     const lineA = unitNamed(g, 'Line A');
@@ -53,7 +53,8 @@ describe('card rules', () => {
     const scav = g.units.find((u) => u.side === 'E' && u.lane === 0)!;
     perform(g, find(g, (a) => a.card === 'Burst Fire' && a.actor === lineA.id && a.targets[0]?.k === 'unit' && a.targets[0].id === scav.id));
     expect(scav.dead).toBe(true);
-    expect(g.turn).toBe('E');
+    expect(g.pool).toBe(4);
+    expect(g.turn).toBe('P');
   });
 
   it('only offers targets in the actor lane until a lane is captured', () => {
@@ -69,8 +70,7 @@ describe('card rules', () => {
     const scav = g.units.find((u) => u.side === 'E' && u.lane === 0)!;
     perform(g, find(g, (a) => a.card === 'Focus Fire' && a.targets[0]?.k === 'unit' && a.targets[0].id === scav.id));
     expect(g.focus).toBe(scav.id);
-    enemyAct(g);
-    beginTurn(g);
+    endTurn(g);
     const hp = scav.hp;
     perform(g, find(g, (a) => a.card === 'Burst Fire' && a.targets[0]?.k === 'unit' && a.targets[0].id === scav.id));
     expect(hp - scav.hp).toBe(3);
@@ -90,6 +90,7 @@ describe('card rules', () => {
     // The pointer starts at lane 1's first unit, which is the stunned Scavver.
     const plan = enemyPlan(g);
     expect(plan.kind).toBe('stunned');
+    handOver(g);
     enemyAct(g);
     expect(scav.stunned).toBe(false);
   });
@@ -108,8 +109,7 @@ describe('card rules', () => {
     const g = fight(['Overdrive']);
     perform(g, find(g, (a) => a.card === 'Overdrive'));
     expect(g.discount).toBe(1);
-    enemyAct(g);
-    beginTurn(g);
+    endTurn(g);
     const shot = find(g, (a) => a.kind === 'basic' && a.label === 'Single shot');
     expect(shot.fuel).toBe(0);
     perform(g, shot);
@@ -121,8 +121,7 @@ describe('card rules', () => {
     const lineA = unitNamed(g, 'Line A');
     perform(g, find(g, (a) => a.card === 'Sight Alignment' && a.actor === lineA.id));
     expect(lineA.sight).toBe(true);
-    enemyAct(g);
-    beginTurn(g);
+    endTurn(g);
     const scav = g.units.find((u) => u.side === 'E' && u.lane === 0)!;
     const shot = find(g, (a) => a.kind === 'basic' && a.actor === lineA.id && a.targets[0]?.k === 'unit' && a.targets[0].id === scav.id);
     expect(shot.fuel).toBe(0);
@@ -139,6 +138,7 @@ describe('card rules', () => {
     const plan = enemyPlan(g);
     expect(plan.kind).toBe('attack');
     expect(plan.victim).toEqual({ k: 'unit', id: van.id });
+    handOver(g);
     enemyAct(g);
     expect(g.bulwark[0]).toBeNull();
   });
@@ -151,6 +151,7 @@ describe('card rules', () => {
     perform(g, find(g, (a) => a.card === 'Counter' && a.actor === van.id));
     const attacker = unitById(g, enemyPlan(g).unit!);
     const before = attacker.hp;
+    handOver(g);
     enemyAct(g);
     expect(before - attacker.hp).toBeGreaterThanOrEqual(2);
     expect(van.counter).toBe(false);
@@ -161,7 +162,7 @@ describe('card rules', () => {
     const van = unitNamed(g, 'Vanguard');
     unitNamed(g, 'Line A').hp = 1; // the enemy will hit Line A, not the Vanguard
     perform(g, find(g, (a) => a.card === 'Counter' && a.actor === van.id));
-    enemyAct(g);
+    endTurn(g);
     expect(van.counter).toBe(false);
   });
 
@@ -210,5 +211,21 @@ describe('card rules', () => {
     expect(ev.some((e) => e.t === 'result')).toBe(true);
     expect(listActions(g)).toEqual([]);
     expect(enemyAct(g)).toEqual([]);
+  });
+
+  it('Put Out spends one action and a fuel point to clear Burning on a unit in the actor lane, itself included', () => {
+    const g = fight([]);
+    const van = unitNamed(g, 'Vanguard');
+    const heavy = unitNamed(g, 'Heavy');
+    van.burning = 3;
+    expect(listActions(g).some((a) => a.kind === 'putout' && a.actor === heavy.id && a.targets[0]?.k === 'unit' && a.targets[0].id === van.id)).toBe(true);
+    // Line B stands in the other lane, so it cannot reach the fire.
+    expect(listActions(g).some((a) => a.kind === 'putout' && a.actor === unitNamed(g, 'Line B').id)).toBe(false);
+    const act = find(g, (a) => a.kind === 'putout' && a.actor === van.id && a.targets[0]?.k === 'unit' && a.targets[0].id === van.id);
+    expect(act.fuel).toBe(1);
+    const pool = g.pool;
+    perform(g, act);
+    expect(van.burning).toBe(0);
+    expect(g.pool).toBe(pool - 1);
   });
 });

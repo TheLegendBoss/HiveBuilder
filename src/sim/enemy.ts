@@ -2,7 +2,6 @@ import {
   adjacent,
   bodiesInLane,
   checkResult,
-  closeRound,
   deployUnit,
   hitLane,
   hitUnit,
@@ -12,6 +11,7 @@ import {
   unitById,
   unitTarget
 } from './state';
+import { endEnemyTurn, enemyBodies } from './turn';
 import type { EnemyActionDef, Ev, EnemyPlan, Game, Target, Unit } from './types';
 
 function pickVictim(g: Game, lane: number): { target: Target; redirected: boolean } | null {
@@ -101,7 +101,6 @@ function applyEffects(t: Unit, burn: number | undefined, stun: boolean | undefin
   }
   if (stun && !t.stunned) {
     t.stunned = true;
-    t.stunWait = t.side === 'P' ? 1 : 0;
     t.charging = null;
     ev.push({ t: 'status', unit: t.id, status: 'stunned', on: true });
     ev.push({ t: 'log', text: `${t.name} is stunned` });
@@ -110,22 +109,10 @@ function applyEffects(t: Unit, burn: number | undefined, stun: boolean | undefin
 
 /** What the enemy will do on its next action. Nothing here changes the game. */
 export function enemyPlan(g: Game): EnemyPlan {
-  // When the enemy goes first the round counter has already moved on by the time the player looks ahead.
-  const round = g.first === 'E' && g.turn === 'P' ? g.round + 1 : g.round;
   const pass = (text: string): EnemyPlan => ({
     kind: 'pass', unit: null, name: 'Pass', dmg: 0, melee: false, victim: null, redirected: false,
     lane: null, nextPtr: g.eptr, nextPi: null, text
   });
-  if (round <= g.scenario.setupRounds) {
-    const id = g.enemyStart[round - 1];
-    if (id === undefined) return pass('Nothing left to deploy');
-    const u = unitById(g, id);
-    const lane = g.scenario.startLanes?.[round - 1] ?? round - 1;
-    return {
-      kind: 'deploy', unit: u.id, name: 'Deploy', dmg: 0, melee: false, victim: null, redirected: false,
-      lane, nextPtr: g.eptr, nextPi: null, text: `${u.name} takes lane ${lane + 1}`
-    };
-  }
   const units = enemyUnitsInOrder(g);
   const n = units.length;
   if (n === 0) return pass('No units left to act');
@@ -187,7 +174,7 @@ export function enemyPlan(g: Game): EnemyPlan {
   return pass('Nothing legal to do');
 }
 
-/** Run the enemy's action, then close the round. */
+/** Run one of the enemy's actions. Its turn ends when the pool is spent; the round closes after both sides have gone. */
 export function enemyAct(g: Game): Ev[] {
   const ev: Ev[] = [];
   if (g.result || g.turn !== 'E') return ev;
@@ -197,16 +184,6 @@ export function enemyAct(g: Game): Ev[] {
   if (u && plan.nextPi !== null) u.pi = plan.nextPi;
 
   switch (plan.kind) {
-    case 'deploy':
-      deployUnit(g, u!, plan.lane!, ev);
-      ev.push({ t: 'log', text: `${u!.name} deploys to lane ${plan.lane! + 1}` });
-      for (const a of g.enemyAlso) {
-        if (a.lane !== plan.lane) continue;
-        const extra = unitById(g, a.id);
-        deployUnit(g, extra, a.lane, ev);
-        ev.push({ t: 'log', text: `${extra.name} deploys to lane ${a.lane + 1}` });
-      }
-      break;
     case 'stunned':
       u!.stunned = false;
       u!.charging = null;
@@ -294,9 +271,8 @@ export function enemyAct(g: Game): Ev[] {
 
   checkResult(g, ev);
   if (!g.result) {
-    // With the enemy first, the round closes after the squad's action instead (see perform).
-    if (g.first === 'P') closeRound(g, ev);
-    if (!g.result) g.turn = 'P';
+    g.epool -= 1;
+    if (g.epool <= 0 || enemyBodies(g) === 0) endEnemyTurn(g, ev);
   }
   return ev;
 }

@@ -573,11 +573,13 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 
 **Actions and turns**
 
-- Sides alternate single actions. On your action you do one thing, then pass: play a card, activate gear (fuel is paid as part of the action), deploy a squad member from the unit deck, or discard and draw.
+- **Shared action pool (decided after playtest 02: one action a side felt like a chore).** A turn is a pool of actions, one per body that can act when the turn opens: a unit on the board, up, and not stunned. The squad spends the pool on anything it could do before (play a card, activate gear, discard and draw, or Put Out) in any order and on any unit; every action costs 1, and a 0-fuel action is not free. The turn ends when the pool is spent or the player ends it early. The enemy takes one action per body on the board, its units in lane order. Perks can refill the pool or be action neutral. There is no mid-fight deploy: deployment is its own phase (below).
 - At the start of each of your actions you draw back up to your maximum hand size (baseline 7). When your action deck runs out, you reshuffle the discard pile into it.
 - Discard and draw: discard up to 2 cards. Skills and upgrades can raise that limit. You refill at the start of your next action.
-- A round is one action from each side. Delays and statuses count in rounds.
-- Setup: in the first three rounds, each side must deploy a squad member into every lane. After that, every deployment is an action you did not spend attacking, and you do not have to deploy everyone.
+- A round is one turn from each side. Delays and statuses count in rounds. Every round both sides draw for initiative from the results deck (high card wins, suits break ties) and the winner takes the first turn, so one side can go twice in a row (last turn of one round, first turn of the next).
+- **Deployment phase.** Before round 1 each side deploys. A deployment draw (one per fight) decides the order: the higher card deploys second, so it sees the other lineup. The enemy puts its whole starting force on the board. The squad deploys any of its units, one at a time, into any lane with no cap, then says Ready. Nobody deploys after that. Every deployed unit is one action a turn, so the dilemma is whether to bring an injured unit: an extra action, but it may be lost.
+- **Put Out.** Any unit can spend an action (1 fuel) to put out Burning on a unit in its lane, itself included. Burning still counts in rounds, so a long burn is worth an action.
+- **Stun.** A stunned squad unit adds no action to the pool for its turn, and the stun clears at the end of that turn.
 - Ambushes and traps can give the enemy the first actions, so you start with empty, exposed lanes.
 
 **Gear timing and statuses**
@@ -631,7 +633,7 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 
 **Statuses**
 
-- Statuses are conditions shown as counters on the unit card. They count down at the end of each full round (one action from each side). There will be more conditions than the starting set below, so the list is open.
+- Statuses are conditions shown as counters on the unit card. They count down at the end of each full round (a turn from each side). There will be more conditions than the starting set below, so the list is open.
 - Starting set (placeholders): **Stunned** (the unit's next action is skipped and any wind-up is cancelled), **Burning** (a timer counter for a set number of rounds; while it lasts, burn cards sit in the unit's action deck and each deals 1 damage to the unit when discarded), **Exposed** (+1 damage from the next hit), **Slowed** (wind-ups and recoveries last 1 round longer), Suppressed (every action the unit takes costs +1 fuel while it lasts) and Webbed (working: the unit skips its actions until it breaks free, which costs a set amount of fuel burned from the hand). It is not built until a faction uses it.
 - Statuses clear when a fight ends. Only stress and aftermath results carry over. Statuses are counters like the others, and Webbed ends when the unit breaks free. Hidden/Revealed is not adopted for now. *(Working rules.)*
 - Stress break: when a unit fills its stress track it panics and skips its next action, then it reads the affliction face of a drawn aftermath card (which can be no affliction) and draws a results card to see whether it flees: ace to 5 means it flees and 6 and up means it holds, and its stress resets either way. A unit that flees is out of the lane for the rest of the fight, takes no injury, and rejoins the next fight with its stress reset. Droids have no stress track at all, which is part of what makes them easier to run. An affliction is short-term or lasting depending on which one it is. Short-term ones clear at a rest room, and lasting ones need a new building (a chapel or shrine, name to come) or a consumable that cures one chosen milder lasting affliction and is used up. The affliction is drawn from the aftermath deck, whose cards are double-faced: one face is the injury and the other is the affliction, so a downed unit reads the injury face and a stressed-out unit reads the affliction face. The two faces are paired by severity: lasting-injury cards carry lasting-affliction faces and short-term cards carry short-term ones. *(Working rule.)*
@@ -655,7 +657,7 @@ Combat is a lane duel of alternating single actions, inspired by Caravan from *F
 Five small forces for testing the starter decks. They are not a bestiary. Each stresses a different part of the card system.
 
 - **Test battlefield, Service corridor.** Lane HP 3 / 4 / 3 for both sides, no modifiers.
-- **How scripted forces act (working rule).** The force takes one action per enemy action, cycling through its lanes in order (lane 1, 2, 3) with the unit there, and each unit steps through its printed actions in order and repeats. A unit with no legal action is skipped. Wind-ups are telegraphed as usual.
+- **How scripted forces act (working rule).** The force takes one action per body on its turn, cycling through its lanes in order (lane 1, 2, 3) with the unit there, and each unit steps through its printed actions in order and repeats. A unit with no legal action is skipped. Wind-ups are telegraphed as usual.
 - **Unit table columns.** HP, soak (an absorb pool that does not refill), where it starts, and printed actions in order.
 
 **1. Scavver pack** (non-gang humanoids, patrol tier). Tests area cards. Tags: ruins, scrap. Reward: 1 loot draw and 2 Eagles.
@@ -816,7 +818,7 @@ Combat is now a Caravan-style lane duel, and the hand and reshuffle rules are se
 - [x] Do units screen their lane's HP (clear the units, then hit the HP)? Decided: yes.
 - [x] Captured lanes: can the enemy still deploy into a lane that has been captured, and does a captured lane's HP ever recover? Decided: the enemy can still deploy into a captured lane, and a captured lane's HP never recovers.
 - [x] Downed members: Decided: their gear and cards stay in play, so other members can burn them as fuel or play them. (Also decided: a downed member does not screen their lane and cannot act, healing can stand them back up mid-fight, and after a fight they rise at 1 HP.)
-- [x] Is a round one action from each side? Decided: yes.
+- [x] Is a round one action from each side? Superseded: a round is one turn from each side, and a turn is a pool of one action per body (see Actions and turns).
 - [x] *Guns Akimbo*: Decided: one action fires both guns as two separate attacks. It needs two weapon slots, which opens the question in the next item about hands and weapon slots.
 - [x] Hand size and discard and draw: Decided: each faction has its own baseline hand size, and discard and draw discards up to 2 cards, which skills and upgrades can raise. The per-faction baselines and the upgrades that raise the limit are set as each faction and the skill tree are designed.
 - [ ] Disposable gear: Decided: it is common at low tiers, and at higher tiers it is a rare perk of buildings, a few pieces per expedition. Consumed cards leave your collection for good. Also decided: only one-shot items are disposable (grenades, stims, charges), they sit in a separate belt or bandolier slot, and each kind has its own producing building (grenades and charges from an armory, stims from a clinic, tools from a workshop). A basic building produces 1 to 2 pieces per expedition, rising to 4 to 5 from a top-tier building, and the building tier also sets the rarity of what it makes (working numbers). Still open: exact rarity per building tier and the rest of the faction buildings.

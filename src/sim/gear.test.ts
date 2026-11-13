@@ -6,9 +6,8 @@ import { deckFor, tscSquad, tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from './actions';
 import { autoPlay } from './autoplay';
 import { equip, equipProblem, handsUsed, templateOf, unequip } from './campaign';
-import { enemyAct } from './enemy';
 import { createGame, inLane } from './state';
-import { beginTurn } from './turn';
+import { startFight } from './testkit';
 import type { Game, UnitTemplate } from './types';
 import { lootPool } from '../data/loot';
 
@@ -17,12 +16,7 @@ const item = (name: string) => lootPool.find((i) => i.name === name)!;
 /** A game with the given squad, set up and ready for the first real action. */
 function ready(squad: UnitTemplate[], seed = 3): Game {
   const g = createGame({ ...tscVsScavvers, squad, deck: deckFor(squad) }, seed);
-  for (let i = 0; i < 3; i++) {
-    beginTurn(g);
-    perform(g, listActions(g).find((a) => a.kind === 'deploy' && a.unit === g.units[i]!.id && a.lane === i)!);
-    enemyAct(g);
-  }
-  beginTurn(g);
+  startFight(g);
   return g;
 }
 

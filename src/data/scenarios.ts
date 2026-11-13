@@ -37,7 +37,6 @@ export const tscVsScavvers: Scenario = {
   enemyStart: [scavver, chief, scavver],
   enemyDeck: [scavver, scavver],
   enemyActions: scavverActions,
-  setupRounds: 3,
   laneCap: null,
   cycleLimit: 2
 };

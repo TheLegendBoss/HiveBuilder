@@ -2,29 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { tscVsScavvers } from '../data/scenarios';
 import { listActions, perform } from '../sim/actions';
 import { chooseAction } from '../sim/autoplay';
-import { enemyAct } from '../sim/enemy';
 import { createGame } from '../sim/state';
-import { beginTurn } from '../sim/turn';
+import { runEnemy, startFight } from '../sim/testkit';
+import { openFight } from '../sim/turn';
 import type { Game } from '../sim/types';
 import { needsConfirm, nextStep, pickActor, pickTarget, resolve, type Sel } from './selection';
 
 function afterSetup(seed: number): Game {
   const g = createGame(tscVsScavvers, seed);
-  const lanes: Record<string, number> = { 'Line A': 0, Vanguard: 1, 'Line B': 2 };
-  for (let i = 0; i < 3; i++) {
-    beginTurn(g);
-    const a = listActions(g).find((x) => lanes[g.units.find((u) => u.id === x.unit)!.name] === x.lane)!;
-    perform(g, a);
-    enemyAct(g);
-  }
-  beginTurn(g);
+  startFight(g);
   return g;
 }
 
 describe('selection steps', () => {
   it('walks a deploy through the lane choice', () => {
     const g = createGame(tscVsScavvers, 1);
-    beginTurn(g);
+    openFight(g);
     const acts = listActions(g);
     const sel: Sel = { item: { kind: 'deploy', unit: g.units[0]!.id }, targets: [] };
     const s = nextStep(acts, sel);
@@ -52,16 +45,11 @@ describe('selection steps', () => {
   });
 
   it('keeps asking for a second target on Sustained Fire but allows firing with one', () => {
-    let g = afterSetup(1);
-    const heavy = g.units.find((u) => u.name === 'Heavy')!;
-    perform(g, listActions(g).find((a) => a.kind === 'deploy' && a.unit === heavy.id && a.lane === 1)!);
-    enemyAct(g);
-    beginTurn(g);
+    let g = createGame(tscVsScavvers, 1);
+    startFight(g, { Heavy: 1 });
     for (let seed = 1; seed < 300 && !g.hand.some((c) => c.name === 'Sustained Fire'); seed++) {
-      g = afterSetup(seed);
-      perform(g, listActions(g).find((a) => a.kind === 'deploy' && a.unit === g.units.find((u) => u.name === 'Heavy')!.id && a.lane === 1)!);
-      enemyAct(g);
-      beginTurn(g);
+      g = createGame(tscVsScavvers, seed);
+      startFight(g, { Heavy: 1 });
     }
     const acts = listActions(g);
     const sel: Sel = { item: { kind: 'card', name: 'Sustained Fire' }, targets: [] };
@@ -76,26 +64,9 @@ describe('selection steps', () => {
 });
 
 describe('resolve: choices with one answer are made for you', () => {
-  it('puts a unit into the last empty lane without asking', () => {
-    const g = createGame(tscVsScavvers, 4);
-    const lanes: Record<string, number> = { 'Line A': 0, Vanguard: 1, 'Line B': 2 };
-    for (let i = 0; i < 2; i++) {
-      beginTurn(g);
-      perform(g, listActions(g).find((x) => lanes[g.units.find((u) => u.id === x.unit)!.name] === x.lane)!);
-      enemyAct(g);
-    }
-    beginTurn(g);
-    const acts = listActions(g);
-    const unit = g.units.find((u) => u.side === 'P' && u.lane === null)!;
-    const empty = [0, 1, 2].find((L) => !g.units.some((u) => u.side === 'P' && u.lane === L))!;
-    const r = resolve(acts, { item: { kind: 'deploy', unit: unit.id }, targets: [] });
-    expect(r.step.step).toBe('ready');
-    expect(r.sel.lane).toBe(empty);
-  });
-
   it('still asks which lane while there is a choice', () => {
     const g = createGame(tscVsScavvers, 4);
-    beginTurn(g);
+    openFight(g);
     const r = resolve(listActions(g), { item: { kind: 'deploy', unit: g.units[0]!.id }, targets: [] });
     expect(r.step.step).toBe('lane');
   });
@@ -123,8 +94,7 @@ describe('resolve: choices with one answer are made for you', () => {
         if (!c) break;
         perform(g, c.action, c.cards);
         if (g.result) break;
-        enemyAct(g);
-        beginTurn(g);
+        runEnemy(g);
       }
     }
     expect(one).toBe(true);
@@ -142,3 +112,15 @@ describe('resolve: choices with one answer are made for you', () => {
   });
 });
 
+describe('put out', () => {
+  it('is its own pick: actor, then the burning unit, then fire', () => {
+    const g = afterSetup(3);
+    const lane = [0, 1, 2].find((L) => g.units.filter((u) => u.side === 'P' && u.lane === L).length >= 1)!;
+    const burning = g.units.find((u) => u.side === 'P' && u.lane === lane)!;
+    burning.burning = 2;
+    const acts = listActions(g);
+    const r = resolve(acts, { item: { kind: 'putout' }, targets: [] });
+    expect(r.step.step).toBe('ready');
+    if (r.step.step === 'ready') expect(r.step.action.kind).toBe('putout');
+  });
+});

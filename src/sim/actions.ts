@@ -2,17 +2,18 @@ import { cardDefs } from '../data/cards';
 import { fallbackAction, gearActions, type GearAction } from '../data/gear';
 import { applyGearAction, cardRules, gearTargets, needsActor, type Variant } from './cards';
 import {
-  bodiesInLane,
   bump,
   checkResult,
-  closeRound,
   deployUnit,
+  drawUp,
+  inLane,
   inSetup,
   isLive,
   laneHasRoom,
   targetKey,
   unitById
 } from './state';
+import { endPlayerTurn, finishDeployment } from './turn';
 import type { Action, Ev, Game, Target, Unit } from './types';
 
 function fuelFor(g: Game, actor: Unit | null, base: number, gear: string | null): { fuel: number; baseFuel: number } {
@@ -45,30 +46,32 @@ function basicGearActions(actor: Unit): GearAction[] {
 
 /** Everything the player can do right now. Empty on the enemy's turn or when the fight is over. */
 export function listActions(g: Game): Action[] {
-  if (g.result || g.turn !== 'P') return [];
+  if (g.result) return [];
   const out: Action[] = [];
 
-  // Deploying: during setup it is the only thing allowed, one unit into each empty lane.
-  const setup = inSetup(g);
-  for (const u of g.units.filter((x) => x.side === 'P' && x.lane === null && isLive(x))) {
-    for (let L = 0; L < 3; L++) {
-      if (!laneHasRoom(g, 'P', L)) continue;
-      if (setup && bodiesInLane(g, 'P', L) > 0) continue;
-      out.push({
-        key: `deploy:${u.id}:${L}`,
-        kind: 'deploy',
-        label: `Deploy ${u.name} to lane ${L + 1}`,
-        unit: u.id,
-        lane: L,
-        targets: [],
-        fuel: 0,
-        baseFuel: 0,
-        ammo: 0
-      });
+  // Deployment: any unit, any lane, one at a time; Ready ends it. Nothing else happens until then.
+  if (inSetup(g)) {
+    const placed = g.units.some((x) => x.side === 'P' && x.lane !== null && !x.dead);
+    for (const u of g.units.filter((x) => x.side === 'P' && x.lane === null && isLive(x))) {
+      for (let L = 0; L < 3; L++) {
+        if (!laneHasRoom(g, 'P', L)) continue;
+        out.push({
+          key: `deploy:${u.id}:${L}`,
+          kind: 'deploy',
+          label: `Deploy ${u.name} to lane ${L + 1}`,
+          unit: u.id,
+          lane: L,
+          targets: [],
+          fuel: 0,
+          baseFuel: 0,
+          ammo: 0
+        });
+      }
     }
+    if (placed) out.push({ key: 'ready', kind: 'ready', label: 'Ready', targets: [], fuel: 0, baseFuel: 0, ammo: 0 });
+    return out;
   }
-  // During setup the squad must deploy first. With nobody left to deploy (a small squad), it may act instead of stalling.
-  if (setup && out.length > 0) return out;
+  if (g.turn !== 'P') return [];
 
   const actors = actorsFor(g);
   const seen = new Set<string>();
@@ -122,9 +125,29 @@ export function listActions(g: Game): Action[] {
     }
   }
 
+  // Put Out: any unit can spend an action on putting a fire out on a unit in its lane (itself included).
+  for (const actor of actors) {
+    const { fuel, baseFuel } = fuelFor(g, actor, 1, null);
+    if (fuel > fuelAvailable(g, undefined)) continue;
+    for (const t of inLane(g, 'P', actor.lane!, false)) {
+      if (t.burning <= 0 || t.dead) continue;
+      out.push({
+        key: `putout:${actor.id}:${t.id}`,
+        kind: 'putout',
+        label: 'Put Out',
+        actor: actor.id,
+        targets: [{ k: 'unit', id: t.id }],
+        fuel,
+        baseFuel,
+        ammo: 0
+      });
+    }
+  }
+
   if (g.hand.length > 0 && g.scenario.cycleLimit > 0) {
     out.push({ key: 'cycle', kind: 'cycle', label: 'Discard and draw', targets: [], fuel: 0, baseFuel: 0, ammo: 0 });
   }
+  out.push({ key: 'pass', kind: 'pass', label: 'End turn', targets: [], fuel: 0, baseFuel: 0, ammo: 0 });
   return out;
 }
 
@@ -190,6 +213,15 @@ export function perform(g: Game, action: Action, cards?: number[]): Ev[] {
     const u = unitById(g, a.unit!);
     deployUnit(g, u, a.lane!, ev);
     ev.push({ t: 'log', text: `${u.name} deploys to lane ${a.lane! + 1}` });
+    return ev;
+  } else if (a.kind === 'ready') {
+    ev.push({ t: 'log', text: 'The squad is ready.' });
+    finishDeployment(g, ev);
+    return ev;
+  } else if (a.kind === 'pass') {
+    ev.push({ t: 'log', text: 'The squad ends its turn.' });
+    endPlayerTurn(g, ev);
+    return ev;
   } else {
     const burn = a.fuel > 0 ? (cards ?? suggestBurn(g, a, actions)) : [];
     const have = burn.reduce((s, iid) => {
@@ -216,6 +248,11 @@ export function perform(g: Game, action: Action, cards?: number[]): Ev[] {
 
     if (a.kind === 'play') {
       cardRules[a.card!]!.apply(g, actor, { targets: a.targets, variant: a.variant }, ev);
+    } else if (a.kind === 'putout') {
+      const t = unitById(g, (a.targets[0] as { id: number }).id);
+      t.burning = 0;
+      ev.push({ t: 'status', unit: t.id, status: 'burning', on: false });
+      ev.push({ t: 'log', text: `${actor!.name} puts out the fire on ${t.name === actor!.name ? 'themself' : t.name}` });
     } else {
       const ga = [...gearActions, fallbackAction].find((x) => x.gear === a.gear && x.name === a.label)!;
       applyGearAction(g, actor!, ga, a.targets, ev);
@@ -224,9 +261,10 @@ export function perform(g: Game, action: Action, cards?: number[]): Ev[] {
 
   checkResult(g, ev);
   if (!g.result) {
-    // With the enemy first, the squad's action is the one that closes the round.
-    if (g.first === 'E') closeRound(g, ev);
-    if (!g.result) g.turn = 'E';
+    // One action spent. The hand refills before the next one; an empty pool ends the turn.
+    g.pool -= 1;
+    drawUp(g, ev);
+    if (g.pool <= 0) endPlayerTurn(g, ev);
   }
   return ev;
 }
